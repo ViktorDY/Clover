@@ -5,14 +5,14 @@ import { useState } from "react";
 const TESTIMONIALS = [
   {
     id: 1,
-    quote: "[Sett inn ekte tilbakemelding her]",
-    name: "[Navn]",
+    quote: "Много мъжествен сайт, браво на момчето",
+    name: "Роналдо",
     initials: "AB",
   },
   {
     id: 2,
-    quote: "[Sett inn ekte tilbakemelding her]",
-    name: "[Navn]",
+    quote: "Allahuakbar",
+    name: "Bin Laden",
     initials: "CD",
   },
   {

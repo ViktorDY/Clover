@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import KretzMark from "./KretzMark";
 import { useLang } from "../lib/langContext";
+import { forgetJoined } from "../lib/memberJoin";
 
 const SAVED_EMAIL_KEY = "kretz.login.email";
 
 // Demo credentials, carried over from the design canvas.
 const DEMO_EMAILS = ["test@kretz.no", "test@kredz.no"];
 const DEMO_PASSWORD = "000000";
+// Signing in with this one forgets the joined club, so the member page
+// opens on its first-run join screen instead of the dashboard.
+const FIRST_TIME_PASSWORD = "111111";
 
 function readSavedEmail() {
   try {
@@ -43,12 +47,16 @@ export default function LoginModal({ isOpen, onClose, onMemberSignIn }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     const mail = email.trim().toLowerCase();
-    const ok = DEMO_EMAILS.includes(mail) && password === DEMO_PASSWORD;
+    const knownMail = DEMO_EMAILS.includes(mail);
+    const firstTime = knownMail && password === FIRST_TIME_PASSWORD;
+    const ok = knownMail && (password === DEMO_PASSWORD || firstTime);
 
     if (!ok) {
       setError(t("Feil e-post eller passord.", "Wrong email or password."));
       return;
     }
+
+    if (firstTime) forgetJoined();
 
     try {
       if (remember) window.localStorage.setItem(SAVED_EMAIL_KEY, mail);

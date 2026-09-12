@@ -2,14 +2,19 @@ import { useMemo, useState } from "react";
 import KretzMark from "../components/KretzMark";
 import StatTiles from "../components/member/StatTiles";
 import UpcomingPanel from "../components/member/UpcomingPanel";
+import ActivityModal from "../components/member/ActivityModal";
+import PostModal from "../components/member/PostModal";
+import JoinClub from "../components/member/JoinClub";
 import PaymentsPanel from "../components/member/PaymentsPanel";
 import NoticesPanel from "../components/member/NoticesPanel";
 import MessagesView from "../components/member/MessagesView";
 import PostsView from "../components/member/PostsView";
 import MemberBookPicker from "../components/member/MemberBookPicker";
 import { useLang } from "../lib/langContext";
+import { readJoined } from "../lib/memberJoin";
 import {
   ACTIVITIES,
+  groupsFor,
   MEMBER_CLUBS,
   NOTICES,
   PAYMENTS,
@@ -43,8 +48,25 @@ export default function MemberPage({ onExit, onBook }) {
   // A pinned club is remembered between visits and becomes the default filter.
   const [pinned, setPinned] = useState(readPinnedClub);
   const [club, setClub] = useState(pinned || "all");
+  const [group, setGroup] = useState("all");
   const [view, setView] = useState("home");
   const [calOpen, setCalOpen] = useState(false);
+  // The calendar browses September–December; picking a day lists it below.
+  const [calMonth, setCalMonth] = useState(9);
+  const [calPick, setCalPick] = useState("");
+  // Which activity is open in the detail modal, and the answers given so far.
+  const [openActivity, setOpenActivity] = useState("");
+  const [rsvp, setRsvp] = useState({});
+  const [activityComments, setActivityComments] = useState({});
+  const [commentDraft, setCommentDraft] = useState("");
+  // Posts: which have been opened, the reaction given, and their comments.
+  const [openPost, setOpenPost] = useState("");
+  const [readPosts, setReadPosts] = useState({});
+  const [postReactions, setPostReactions] = useState({});
+  const [postComments, setPostComments] = useState({});
+  const [postDraft, setPostDraft] = useState("");
+  // A member who has not joined a club yet gets the join screen instead.
+  const [joined, setJoined] = useState(readJoined);
   const [bookPickerOpen, setBookPickerOpen] = useState(false);
   const [threads, setThreads] = useState(seedThreads);
   // Conversation order: unread first initially, then most recently active.
@@ -64,7 +86,12 @@ export default function MemberPage({ onExit, onBook }) {
   const keep = (item) => showAll || item.club === club;
   const clubShortOf = (slug) => (MEMBER_CLUBS.find((c) => c.slug === slug) || {}).short || "";
 
-  const activities = ACTIVITIES.filter(keep);
+  // Groups belong to a single club, so the filter only bites once one is picked.
+  const myGroups = showAll ? [] : groupsFor(club);
+  const groupAll = group === "all" || showAll || !myGroups.some((g) => g.id === group);
+  const activities = ACTIVITIES.filter(keep).filter(
+    (activity) => groupAll || activity.group === group,
+  );
   const payments = PAYMENTS.filter(keep);
   const notices = NOTICES.filter(keep);
   const posts = POSTS.filter(keep);
@@ -234,6 +261,42 @@ export default function MemberPage({ onExit, onBook }) {
     setPinned(next);
   };
 
+  const activeActivity = ACTIVITIES.find((activity) => activity.id === openActivity) || null;
+
+  // Comments typed in this session are kept per activity, newest last.
+  const sendActivityComment = (id) => {
+    const text = commentDraft.trim();
+    if (!text) return;
+    const now = new Date();
+    const stamp = `${t("i dag", "today")} ${String(now.getHours()).padStart(2, "0")}:${String(
+      now.getMinutes(),
+    ).padStart(2, "0")}`;
+    setActivityComments((prev) => ({
+      ...prev,
+      [id]: [...(prev[id] || []), { from: t("Du", "You"), when: stamp, text, me: true }],
+    }));
+    setCommentDraft("");
+  };
+
+  const activePost = POSTS.find((post) => post.id === openPost) || null;
+
+  const stampNow = () => {
+    const now = new Date();
+    return `${t("i dag", "today")} ${String(now.getHours()).padStart(2, "0")}:${String(
+      now.getMinutes(),
+    ).padStart(2, "0")}`;
+  };
+
+  const sendPostComment = (id) => {
+    const text = postDraft.trim();
+    if (!text) return;
+    setPostComments((prev) => ({
+      ...prev,
+      [id]: [...(prev[id] || []), { from: t("Du", "You"), when: stampNow(), text, me: true }],
+    }));
+    setPostDraft("");
+  };
+
   const nextActivity = activities[0];
 
   const tiles = [
@@ -243,7 +306,7 @@ export default function MemberPage({ onExit, onBook }) {
         ? t(`${nextActivity.day}. sep`, `${nextActivity.day} Sep`)
         : t("Ingenting planlagt", "Nothing planned"),
       note: nextActivity
-        ? `${nextActivity.meta[lang].split("· ")[1]} · ${nextActivity.title[lang]} · ${clubShortOf(nextActivity.club)}`
+        ? `${nextActivity.time[lang]} · ${nextActivity.title[lang]} · ${clubShortOf(nextActivity.club)}`
         : "—",
       variant: "plain",
     },
@@ -271,6 +334,12 @@ export default function MemberPage({ onExit, onBook }) {
     },
   ];
 
+  const dueByClub = {};
+  PAYMENTS.filter((payment) => !payment.paid).forEach((payment) => {
+    dueByClub[payment.club] = (dueByClub[payment.club] || 0) + 1;
+  });
+  const dueTotal = Object.values(dueByClub).reduce((sum, n) => sum + n, 0);
+
   const clubTabs = [
     { slug: "all", label: t("Alle klubber", "All clubs"), pinnable: false },
     ...MEMBER_CLUBS.map((c) => ({ slug: c.slug, label: c.short, pinnable: true })),
@@ -284,6 +353,12 @@ export default function MemberPage({ onExit, onBook }) {
     // Varden's bookable venue is registered under the bordtennis slug.
     onBook(club === "varden" ? "bordtennis" : club);
   };
+
+  if (!joined) {
+    return (
+      <JoinClub firstName={firstName} onBack={onExit} onJoined={() => setJoined(true)} />
+    );
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-paper text-ink">
@@ -408,12 +483,26 @@ export default function MemberPage({ onExit, onBook }) {
               >
                 <button
                   type="button"
-                  onClick={() => setClub(tab.slug)}
-                  className={`cursor-pointer whitespace-nowrap border-0 bg-transparent px-4 py-2.5 font-heading text-[13px] font-extrabold transition-colors duration-300 ${
+                  onClick={() => {
+                    setClub(tab.slug);
+                    setGroup("all");
+                  }}
+                  className={`inline-flex cursor-pointer items-center gap-2 whitespace-nowrap border-0 bg-transparent px-4 py-2.5 font-heading text-[13px] font-extrabold transition-colors duration-300 ${
                     active ? "text-paper" : "text-ink"
                   }`}
                 >
                   {tab.label}
+                  {(tab.slug === "all" ? dueTotal : dueByClub[tab.slug] || 0) > 0 && (
+                    <span
+                      title={t(
+                        `${tab.slug === "all" ? dueTotal : dueByClub[tab.slug]} ubetalte fakturaer`,
+                        `${tab.slug === "all" ? dueTotal : dueByClub[tab.slug]} unpaid invoices`,
+                      )}
+                      className="grid h-5 min-w-5 place-items-center rounded-full bg-[#7c4dcf] px-1.5 font-heading text-[11px] font-extrabold text-white"
+                    >
+                      {tab.slug === "all" ? dueTotal : dueByClub[tab.slug]}
+                    </span>
+                  )}
                 </button>
                 {tab.pinnable && (
                   <button
@@ -438,6 +527,31 @@ export default function MemberPage({ onExit, onBook }) {
             );
           })}
         </div>
+
+        {myGroups.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-xs font-semibold uppercase tracking-[0.12em] text-ink/50">
+              {t("Treningsgruppe", "Training group")}
+            </span>
+            {[{ id: "all", name: t("Alle grupper", "All groups") }, ...myGroups].map((entry) => {
+              const label = typeof entry.name === "string" ? entry.name : entry.name[lang];
+              const active = groupAll ? entry.id === "all" : entry.id === group;
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => setGroup(entry.id)}
+                  className={`cursor-pointer whitespace-nowrap rounded-full px-3.5 py-2 font-heading text-[12.5px] font-extrabold text-ink transition-colors duration-300 ${
+                    active ? "border border-grass bg-grass/32" : "border border-ink/14 bg-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="mt-2.5 text-[13px] text-ink/60">
           {pinned
             ? t(
@@ -456,15 +570,20 @@ export default function MemberPage({ onExit, onBook }) {
 
             <div className="mt-4.5 grid gap-4.5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
               <UpcomingPanel
-                activities={activities.map((activity) => ({
-                  club: activity.club,
-                  day: activity.day,
-                  kind: activity.kind,
-                  title: activity.title[lang],
-                  meta: `${showAll ? `${clubShortOf(activity.club)} · ` : ""}${activity.meta[lang]}`,
-                }))}
+                activities={activities}
+                showAll={showAll}
+                clubShortOf={clubShortOf}
+                rsvp={rsvp}
+                onOpenActivity={setOpenActivity}
                 calOpen={calOpen}
                 onToggleCalendar={() => setCalOpen((prev) => !prev)}
+                calMonth={calMonth}
+                onMonthChange={(month) => {
+                  setCalMonth(month);
+                  setCalPick("");
+                }}
+                calPick={calPick}
+                onPickDay={setCalPick}
               />
 
               <div className="grid content-start gap-4.5">
@@ -520,19 +639,47 @@ export default function MemberPage({ onExit, onBook }) {
 
         {view === "posts" && (
           <PostsView
-            posts={posts.map((post) => ({
-              club: post.club,
-              clubName: clubShortOf(post.club),
-              initials: clubShortOf(post.club).slice(0, 2).toUpperCase(),
-              when: post.when[lang],
-              title: post.title[lang],
-              text: post.text[lang],
-              likes: post.likes[lang],
-              comments: post.comments[lang],
-            }))}
+            posts={posts}
+            clubNameOf={clubShortOf}
+            readPosts={readPosts}
+            onOpenPost={(id) => {
+              setReadPosts((prev) => ({ ...prev, [id]: true }));
+              setPostDraft("");
+              setOpenPost(id);
+            }}
           />
         )}
       </main>
+
+      {activeActivity && (
+        <ActivityModal
+          activity={activeActivity}
+          clubNameOf={(slug) => (MEMBER_CLUBS.find((c) => c.slug === slug) || {}).name || ""}
+          rsvp={rsvp[activeActivity.id]}
+          onRsvp={(id, answer) => setRsvp((prev) => ({ ...prev, [id]: answer }))}
+          comments={activityComments[activeActivity.id]}
+          draft={commentDraft}
+          onDraftChange={setCommentDraft}
+          onSendComment={sendActivityComment}
+          onClose={() => setOpenActivity("")}
+        />
+      )}
+
+      {activePost && (
+        <PostModal
+          post={activePost}
+          clubNameOf={clubShortOf}
+          reaction={postReactions[activePost.id]}
+          onReact={(id, kind) =>
+            setPostReactions((prev) => ({ ...prev, [id]: prev[id] === kind ? "" : kind }))
+          }
+          comments={postComments[activePost.id]}
+          draft={postDraft}
+          onDraftChange={setPostDraft}
+          onSendComment={sendPostComment}
+          onClose={() => setOpenPost("")}
+        />
+      )}
 
       {bookPickerOpen && (
         <MemberBookPicker

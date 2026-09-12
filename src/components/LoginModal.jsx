@@ -115,7 +115,23 @@ export default function LoginModal({ isOpen, onClose, onMemberSignIn }) {
         </button>
 
         <div className="relative">
-          <KretzMark size={44} tone={isAdmin ? "light" : "dark"} />
+          {/* The two tones cross-fade as the role switches, matching the panel. */}
+          <div className="relative h-11 w-11">
+            <KretzMark
+              size={44}
+              tone="dark"
+              className={`absolute inset-0 transition-opacity duration-[350ms] ${
+                isAdmin ? "opacity-0" : "opacity-100"
+              }`}
+            />
+            <KretzMark
+              size={44}
+              tone="light"
+              className={`absolute inset-0 transition-opacity duration-[350ms] ${
+                isAdmin ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          </div>
 
           <h3
             className={`mb-3.5 ml-0 mr-9 mt-4 font-heading text-2xl font-extrabold tracking-[-0.025em] ${

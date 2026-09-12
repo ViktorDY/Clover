@@ -1,1 +1,226 @@
 @import "tailwindcss";
+
+/*
+  Kretz design tokens.
+
+  Everything here is lifted from the Kretz design canvas so that the
+  components can speak in named colours instead of raw hex. The heading face
+  in the source design is "Nority Inktrap", which is not a public webfont —
+  Bricolage Grotesque is the documented fallback and is what actually ships.
+*/
+@theme {
+  --font-heading: "Bricolage Grotesque", "Archivo", system-ui, sans-serif;
+  --font-body: "Instrument Sans", "Archivo", system-ui, sans-serif;
+
+  /* Ink + paper */
+  --color-ink: #16241a;
+  --color-ink-soft: #24382a;
+  --color-paper: #f6f8f3;
+  --color-paper-2: #f2f5f1;
+  --color-mute: #f4f8f2;
+  --color-mute-2: #f7f9f5;
+
+  /* Greens */
+  --color-grass: #74cd85;
+  --color-grass-soft: #a3e2ae;
+  --color-grass-tint: #eaf7ed;
+  --color-grass-tint-2: #d9f2e0;
+  --color-moss: #1f7a3a;
+  --color-moss-deep: #1f6b34;
+  --color-moss-dark: #2c5c39;
+  --color-moss-darker: #1d4a29;
+
+  /* Accents */
+  --color-amber: #ffc94a;
+  --color-amber-ink: #7a5406;
+  --color-amber-note: #96690a;
+  --color-amber-pin: #d39b00;
+  --color-clay: #b3401c;
+
+  /* Radii used by the artboards */
+  --radius-card: 32px;
+  --radius-panel: 34px;
+  --radius-slab: 44px;
+  --radius-bowl: 52px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.03em;
+}
+
+/* ---- Motion -------------------------------------------------------------- */
+
+@keyframes kz-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -5%, 0) scale(1.1);
+  }
+}
+
+@keyframes kz-drift2 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.06);
+  }
+  50% {
+    transform: translate3d(-5%, 4%, 0) scale(1);
+  }
+}
+
+@keyframes kz-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes kz-orbit {
+  0%,
+  100% {
+    transform: rotate(0) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.06);
+  }
+}
+
+@keyframes kz-pan-x {
+  to {
+    background-position: 200px 0;
+  }
+}
+
+.kz-drift {
+  animation: kz-drift 20s ease-in-out infinite;
+}
+.kz-drift-slow {
+  animation: kz-drift 22s ease-in-out infinite;
+}
+.kz-drift2 {
+  animation: kz-drift2 26s ease-in-out infinite;
+}
+.kz-pulse {
+  animation: kz-pulse 2.4s ease-in-out infinite;
+}
+.kz-orbit {
+  animation: kz-orbit 48s ease-in-out infinite;
+}
+.kz-orbit-fast {
+  animation: kz-orbit 44s ease-in-out infinite;
+}
+.kz-pan {
+  animation: kz-pan-x 40s linear infinite;
+}
+
+/* Scroll reveal. Elements start shifted and fade up once observed. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity 1s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 1s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+[data-reveal].kz-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .kz-drift,
+  .kz-drift-slow,
+  .kz-drift2,
+  .kz-pulse,
+  .kz-orbit,
+  .kz-orbit-fast,
+  .kz-pan {
+    animation: none !important;
+  }
+}
+
+/* ---- Details / FAQ ------------------------------------------------------- */
+
+details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details[open] .kz-plus {
+  transform: rotate(45deg);
+}
+
+/* ---- Dotted + grid backdrops -------------------------------------------- */
+
+.kz-dots {
+  background-image: radial-gradient(rgba(22, 36, 26, 0.14) 1.4px, transparent 1.4px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(70% 60% at 50% 40%, #000 15%, transparent 75%);
+  -webkit-mask-image: radial-gradient(70% 60% at 50% 40%, #000 15%, transparent 75%);
+}
+
+.kz-dots-cta {
+  background-image: radial-gradient(rgba(22, 36, 26, 0.13) 1.4px, transparent 1.4px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(60% 70% at 72% 28%, #000, transparent 72%);
+  -webkit-mask-image: radial-gradient(60% 70% at 72% 28%, #000, transparent 72%);
+}
+
+.kz-dots-modal {
+  background-image: radial-gradient(rgba(31, 122, 58, 0.16) 1.3px, transparent 1.3px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(70% 60% at 90% 0%, #000, transparent 70%);
+  -webkit-mask-image: radial-gradient(70% 60% at 90% 0%, #000, transparent 70%);
+}
+
+.kz-dots-plain {
+  background-image: radial-gradient(rgba(31, 122, 58, 0.28) 2px, transparent 2px);
+  background-size: 24px 24px;
+}
+
+.kz-grid {
+  background-image:
+    linear-gradient(rgba(22, 36, 26, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 36, 26, 0.07) 1px, transparent 1px);
+  background-size: 88px 88px;
+  mask-image: linear-gradient(#000, transparent 72%);
+  -webkit-mask-image: linear-gradient(#000, transparent 72%);
+}
+
+/* Thin scrollbars inside the member dashboard panes. */
+.kz-scroll {
+  scrollbar-width: thin;
+}

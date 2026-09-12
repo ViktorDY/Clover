@@ -1,65 +1,58 @@
-export default function Hero() {
-  const trustItems = [
-    "Ingen binding",
-    "GDPR-sikker",
-    "Laget for norske klubber",
-    "Tilpasset deg og dine behov",
-  ];
+import { useLang } from "../lib/langContext";
+
+export default function Hero({ onOpenBooking }) {
+  const { t } = useLang();
 
   return (
     <section
-      id="top"
-      className="relative w-full overflow-hidden bg-gradient-to-br from-green-100 via-green-50 to-stone-100 px-6 py-32 text-center"
+      id="topp"
+      className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#dceade,#e8f1e6_62%,#f6f8f3)] px-5 py-24 sm:px-7"
     >
-      <div className="mx-auto flex max-w-5xl flex-col items-center">
-        {/* Eyebrow badge */}
-        <span className="mb-10 inline-flex items-center gap-2 rounded-full border border-green-300 bg-green-100/70 px-5 py-2 text-base text-green-800">
-          <span className="h-2 w-2 rounded-full bg-green-700" />
-          Nytt — nå tilgjengelig for norske idrettslag
-        </span>
+      {/* Decorative backdrop: drifting glows, a panning dot field, a slow ring. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-[-10%] top-[-20%] -z-10 h-[820px]"
+      >
+        <div className="kz-drift absolute left-[8%] top-[6%] h-[640px] w-[640px] rounded-full bg-[radial-gradient(circle,rgba(116,205,133,0.5),rgba(116,205,133,0)_70%)] blur-[34px]" />
+        <div className="kz-dots kz-pan absolute inset-0" />
+        <div className="kz-orbit absolute left-1/2 top-[4%] -ml-[260px] h-[520px] w-[520px] rounded-full border-[1.5px] border-moss/20" />
+        <div className="kz-drift2 absolute right-[4%] top-[20%] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,rgba(255,201,74,0.4),rgba(255,201,74,0)_70%)] blur-[40px]" />
+      </div>
 
-        {/* Headline */}
-        <h1 className="text-6xl font-extrabold leading-[1.05] tracking-tight text-gray-950 sm:text-7xl">
-          ALT KLUBBEN
-          <br />
-          TRENGER.
-          <br />
-          <span className="text-green-500">Ett sted.</span>
-        </h1>
-
-        {/* Subtext */}
-        <p className="mt-10 max-w-2xl text-xl text-gray-500">
-          Clover samler økonomi, kommunikasjon, booking og administrasjon i en
-          plattform — bygget spesielt for idrettslag.
-        </p>
-
-        {/* CTA buttons */}
-        <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-          <a
-            href="#kom-i-gang"
-            className="rounded-md bg-gradient-to-b from-green-400 to-green-500 px-8 py-4 text-base font-semibold text-white shadow-md hover:from-green-500 hover:to-green-600"
-          >
-            Start gratis prøveperiode --&gt;
-          </a>
-          <a
-            href="#laer-mer"
-            className="rounded-md bg-green-950 px-8 py-4 text-base font-semibold tracking-wide text-white hover:bg-green-900"
-          >
-            LÆR MER
-          </a>
+      <div data-reveal className="mx-auto max-w-[900px] text-center">
+        <div className="inline-flex items-center gap-2.5 rounded-full border border-grass/40 bg-grass/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-moss-deep">
+          <span className="kz-pulse h-[7px] w-[7px] rounded-full bg-grass" />
+          {t("For klubber og lag", "For clubs and teams")}
         </div>
 
-        {/* Trust strip */}
-        <ul className="mt-24 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-base font-medium text-gray-500">
-          {trustItems.map((item, i) => (
-            <li key={item} className="flex items-center gap-4">
-              <span>{item}</span>
-              {i < trustItems.length - 1 && (
-                <span className="text-gray-300">|</span>
-              )}
-            </li>
-          ))}
-        </ul>
+        <h1 className="m-0 mt-6 text-pretty font-heading text-[clamp(42px,6vw,82px)] font-extrabold leading-[0.98] tracking-[-0.035em]">
+          {t("Alt klubben trenger.", "Everything the club needs.")}
+          <br />
+          <span className="text-grass">{t("Ett sted.", "One place.")}</span>
+        </h1>
+
+        <p className="mx-auto mt-5 max-w-[34em] text-lg leading-[1.65] text-ink/70">
+          {t(
+            "Barn, ungdom, foreldre og styret i samme app: treninger, påmelding, kontingent og hallbooking. Mindre papir, mer spilletid.",
+            "Kids, teens, parents and the board in one app: training, sign-ups, fees and hall booking. Less paperwork, more playing time.",
+          )}
+        </p>
+
+        <div className="mt-8 flex flex-wrap justify-center gap-3.5">
+          <a
+            href="#kom-i-gang"
+            className="whitespace-nowrap rounded-full bg-grass px-8 py-4 font-heading text-base font-extrabold text-ink shadow-[0_16px_44px_rgba(116,205,133,0.32)] transition-all duration-300 hover:-translate-y-[3px] hover:shadow-[0_22px_56px_rgba(116,205,133,0.42)]"
+          >
+            {t("Book demo", "Book a demo")}
+          </a>
+          <button
+            type="button"
+            onClick={onOpenBooking}
+            className="cursor-pointer whitespace-nowrap rounded-full border border-ink/25 bg-transparent px-8 py-4 font-heading text-base font-extrabold text-ink transition-colors duration-300 hover:border-ink/40 hover:bg-ink/8"
+          >
+            {t("Book halltid", "Book a hall")}
+          </button>
+        </div>
       </div>
     </section>
   );

@@ -1,54 +1,71 @@
-export default function Navbar({ onOpenLogin }) {
-  const navLinks = [
-    { label: "Slik fungerer det", href: "#slik-fungerer-det" },
-    { label: "Om oss", href: "#om-oss" },
-    { label: "Kontakt", href: "#kontakt" },
+import KretzMark from "./KretzMark";
+import { useLang } from "../lib/langContext";
+
+export default function Navbar({ onOpenLogin, onOpenBooking }) {
+  const { t, isEn, toggleLang } = useLang();
+  const langLabel = isEn ? "NO" : "EN";
+
+  const links = [
+    { label: t("Slik funker det", "How it works"), href: "#slik" },
+    { label: t("Funksjoner", "Features"), href: "#funksjoner" },
+    { label: t("Spørsmål", "FAQ"), href: "#faq" },
   ];
 
   return (
-    <header className="w-full bg-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-8 py-5 lg:px-12">
-        {/* Logo */}
-        <a href="#top" className="flex items-center gap-2.5">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M12 2C9 2 7 4.5 8 7c-2.5-1-5 1-4 3.5S7 13 9 12c-1 2.5.5 5 3 5s4-2.5 3-5c2 1 4.5-.5 5-3s-1.5-4.5-4-3.5c1-2.5-1-5-4-5Z"
-              fill="#22A45D"
-            />
-            <rect x="11" y="14" width="2" height="7" rx="1" fill="#22A45D" />
-          </svg>
-          <span className="text-2xl font-bold text-gray-900">clover</span>
+    <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/85 backdrop-blur-xl">
+      <nav className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-4 px-4 py-4 sm:gap-7 sm:px-7">
+        <a
+          href="#topp"
+          className="flex items-center gap-2.5 font-heading text-[22px] font-extrabold tracking-[-0.025em] text-ink"
+        >
+          <KretzMark size={30} className="drop-shadow-[0_0_14px_rgba(116,205,133,0.45)]" />
+          Kretz
         </a>
 
-        {/* Center nav links */}
-        <nav className="hidden items-center gap-12 md:flex">
-          {navLinks.map((link) => (
+        <div className="hidden flex-1 md:block" />
+
+        <div className="hidden items-center gap-6 text-sm font-medium lg:flex">
+          {links.map((link) => (
             <a
-              key={link.label}
+              key={link.href}
               href={link.href}
-              className="text-base text-gray-700 hover:text-gray-900"
+              className="whitespace-nowrap text-ink/70 transition-colors hover:text-ink"
             >
               {link.label}
             </a>
           ))}
-        </nav>
-
-        {/* Right side actions */}
-        <div className="hidden items-center gap-4 md:flex">
           <button
-            onClick={onOpenLogin}
-            className="rounded-full border border-gray-300 px-6 py-2.5 text-base font-semibold text-gray-900 hover:bg-gray-50"
+            type="button"
+            onClick={onOpenBooking}
+            className="cursor-pointer whitespace-nowrap bg-transparent text-sm font-medium text-ink/70 transition-colors hover:text-ink"
           >
-            Logg inn
+            Booking
+          </button>
+        </div>
+
+        <div className="flex flex-1 items-center justify-end gap-2.5 sm:gap-3.5">
+          <button
+            type="button"
+            onClick={toggleLang}
+            className="cursor-pointer rounded-full border border-ink/20 px-3.5 py-2 font-heading text-xs font-extrabold tracking-[0.08em] text-ink transition-colors hover:bg-ink/10"
+          >
+            {langLabel}
           </button>
           <a
             href="#kom-i-gang"
-            className="rounded-full bg-gradient-to-b from-green-500 to-green-600 px-6 py-2.5 text-base font-semibold text-white shadow-sm hover:from-green-600 hover:to-green-700"
+            className="whitespace-nowrap rounded-full bg-grass px-4 py-3 font-heading text-sm font-extrabold text-ink shadow-[0_10px_30px_rgba(116,205,133,0.3)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-moss sm:px-5.5"
           >
-            Kom i gang
+            {t("Book demo", "Book a demo")}
           </a>
+          <button
+            type="button"
+            onClick={onOpenLogin}
+            className="cursor-pointer whitespace-nowrap rounded-full border border-ink bg-transparent px-4 py-3 font-heading text-sm font-extrabold text-ink transition-all duration-300 hover:-translate-y-0.5 hover:bg-ink hover:text-paper sm:px-5.5"
+          >
+            {t("Logg inn", "Log in")}
+          </button>
         </div>
-      </div>
+      </nav>
     </header>
   );
 }

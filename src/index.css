@@ -224,3 +224,15 @@ details[open] .kz-plus {
 .kz-scroll {
   scrollbar-width: thin;
 }
+
+/* Scrollable panels that should not show a scrollbar at all (sign-up modal). */
+.kz-noscroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.kz-noscroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}

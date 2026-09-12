@@ -4,7 +4,7 @@ import { useLang } from "../lib/langContext";
 export default function GetStarted() {
   const { t } = useLang();
   const [sent, setSent] = useState(false);
-  const [form, setForm] = useState({ club: "", email: "" });
+  const [form, setForm] = useState({ message: "", email: "" });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -51,16 +51,15 @@ export default function GetStarted() {
         <form
           data-reveal
           onSubmit={handleSubmit}
-          className="mt-8 flex max-w-[680px] flex-wrap gap-3"
+          className="mt-8 flex max-w-[680px] flex-wrap items-start gap-3"
         >
-          <input
-            type="text"
-            required
-            value={form.club}
-            onChange={update("club")}
-            placeholder={t("Klubbnavn", "Club name")}
-            aria-label={t("Klubbnavn", "Club name")}
-            className="min-w-0 flex-[1_1_180px] rounded-full border border-ink/25 bg-ink/7 px-6 py-4 text-base text-ink outline-none transition-colors focus:border-grass focus:bg-ink/12"
+          <textarea
+            rows={3}
+            value={form.message}
+            onChange={update("message")}
+            placeholder={t("Fortell kort hva det gjelder", "Tell us briefly what it is about")}
+            aria-label={t("Fortell kort hva det gjelder", "Tell us briefly what it is about")}
+            className="box-border h-[148px] min-w-0 flex-[3_1_100%] resize-none rounded-[30px] border border-ink/25 bg-ink/7 px-6 py-4 font-body text-base text-ink outline-none transition-colors focus:border-grass focus:bg-ink/12"
           />
           <input
             type="email"
@@ -77,7 +76,7 @@ export default function GetStarted() {
           >
             {sent
               ? t("Takk — vi tar kontakt", "Thanks — we'll be in touch")
-              : t("Book demo", "Book a demo")}
+              : t("Kontakt oss", "Contact us")}
           </button>
         </form>
 

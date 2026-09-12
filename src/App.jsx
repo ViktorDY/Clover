@@ -5,7 +5,9 @@ import useReveal from "./lib/useReveal";
 import LandingPage from "./pages/LandingPage";
 import BookingPage from "./pages/BookingPage";
 import MemberPage from "./pages/MemberPage";
+import VilkarPage from "./pages/VilkarPage";
 import LoginModal from "./components/LoginModal";
+import SignupModal from "./components/SignupModal";
 import BookingPickerModal from "./components/BookingPickerModal";
 
 export default function App() {
@@ -19,6 +21,7 @@ export default function App() {
 function Routes() {
   const { path, params, navigate } = useHashRoute();
   const [isLoginOpen, setLoginOpen] = useState(false);
+  const [isSignupOpen, setSignupOpen] = useState(false);
   const [isPickerOpen, setPickerOpen] = useState(false);
 
   // Every view is its own page as far as the reader is concerned, so start
@@ -45,6 +48,10 @@ function Routes() {
     );
   }
 
+  if (path === "/vilkar") {
+    return <VilkarPage onBack={() => navigate("/")} />;
+  }
+
   if (path === "/medlem") {
     return (
       <MemberPage
@@ -58,8 +65,19 @@ function Routes() {
     <>
       <LandingPage
         onOpenLogin={() => setLoginOpen(true)}
+        onOpenSignup={() => setSignupOpen(true)}
         onOpenBooking={() => setPickerOpen(true)}
       />
+
+      {isSignupOpen && (
+        <SignupModal
+          onClose={() => setSignupOpen(false)}
+          onOpenTerms={() => {
+            setSignupOpen(false);
+            navigate("/vilkar");
+          }}
+        />
+      )}
 
       <LoginModal
         isOpen={isLoginOpen}

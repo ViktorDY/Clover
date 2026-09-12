@@ -3,13 +3,14 @@ import { useCallback, useEffect, useState } from "react";
 /*
   Dependency-free hash routing.
 
-  The design canvas links between three separate .dc.html files. In the React
-  build those become three views behind the hash, which keeps GitHub Pages
-  happy (no server rewrites needed) and adds no router dependency.
+  The design canvas links between separate .dc.html files. In the React build
+  those become views behind the hash, which keeps GitHub Pages happy (no
+  server rewrites needed) and adds no router dependency.
 
     #/            → landing
     #/booking     → hall booking  (?klubb=<slug>&from=member)
     #/medlem      → member dashboard
+    #/vilkar      → terms of use
 */
 
 function parse(hash) {

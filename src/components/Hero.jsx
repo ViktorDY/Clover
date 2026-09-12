@@ -43,7 +43,7 @@ export default function Hero({ onOpenBooking }) {
             href="#kom-i-gang"
             className="whitespace-nowrap rounded-full bg-grass px-8 py-4 font-heading text-base font-extrabold text-ink shadow-[0_16px_44px_rgba(116,205,133,0.32)] transition-all duration-300 hover:-translate-y-[3px] hover:shadow-[0_22px_56px_rgba(116,205,133,0.42)]"
           >
-            {t("Book demo", "Book a demo")}
+            {t("Kontakt oss", "Contact us")}
           </a>
           <button
             type="button"

@@ -9,10 +9,14 @@ import Faq from "../components/Faq";
 import GetStarted from "../components/GetStarted";
 import Footer from "../components/Footer";
 
-export default function LandingPage({ onOpenLogin, onOpenBooking }) {
+export default function LandingPage({ onOpenLogin, onOpenSignup, onOpenBooking }) {
   return (
     <div className="overflow-x-hidden bg-paper text-ink">
-      <Navbar onOpenLogin={onOpenLogin} onOpenBooking={onOpenBooking} />
+      <Navbar
+        onOpenLogin={onOpenLogin}
+        onOpenSignup={onOpenSignup}
+        onOpenBooking={onOpenBooking}
+      />
       <Hero onOpenBooking={onOpenBooking} />
       <HowItWorks />
       <Features />

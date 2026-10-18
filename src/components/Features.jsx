@@ -1,128 +1,229 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import SectionLink from "./SectionLink";
 import { useLang } from "../lib/langContext";
+import coach from "../assets/design/about-coach.jpg";
+import tripletex from "../assets/design/logo-tripletex.svg";
+import fiken from "../assets/design/logo-fiken.svg";
+import unimicro from "../assets/design/logo-unimicro.svg";
+import nif from "../assets/design/logo-nif.svg";
+import vipps from "../assets/design/logo-vipps.svg";
+import ms365 from "../assets/design/logo-ms365.svg";
+
+// Counts from 0 to `to` (ease-out, 1.4 s) the first time it scrolls into view.
+function CountUp({ to }) {
+  const ref = useRef(null);
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const reduce =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+
+    const run = () => {
+      if (reduce) {
+        setValue(to);
+        return;
+      }
+      const t0 = performance.now();
+      const step = (now) => {
+        const p = Math.min(1, (now - t0) / 1400);
+        setValue(Math.round(to * (1 - Math.pow(1 - p, 3))));
+        if (p < 1) raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    };
+
+    if (typeof IntersectionObserver === "undefined") {
+      run();
+      return () => cancelAnimationFrame(raf);
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          io.disconnect();
+          run();
+        }
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.1 },
+    );
+    io.observe(node);
+    return () => {
+      io.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [to]);
+
+  return <span ref={ref}>{value}</span>;
+}
+
+const INTEGRATIONS = [
+  { name: "Tripletex", logo: tripletex },
+  { name: "Fiken", logo: fiken },
+  { name: "Uni Micro", logo: unimicro },
+  { name: "NIF", logo: nif, sub: "Min idrett" },
+  { name: "Vipps", logo: vipps, wordmark: true },
+  { name: "Microsoft 365", logo: ms365 },
+];
+
+const statNumber =
+  "font-heading text-[clamp(30px,3.4vw,44px)] font-extrabold tracking-[-0.03em]";
+const statLabel = "mt-1 text-[14px] leading-[1.4] text-[#4C5E50]";
 
 export default function Features() {
   const { t } = useLang();
-  // -1 means no panel open; the chips toggle.
-  const [open, setOpen] = useState(-1);
-
-  const features = [
-    {
-      label: t("Medlemmer", "Members"),
-      title: t("Medlemsregister", "Member register"),
-      body: t(
-        "Én sannhet om hvert medlem: familie, lag, samtykker og historikk — alltid oppdatert.",
-        "One truth about every member: family links, teams, consents and history — always up to date.",
-      ),
-    },
-    {
-      label: t("Kontingent", "Fees"),
-      title: t("Kontingent og faktura", "Fees and invoicing"),
-      body: t(
-        "Automatisk kontingent, avdrag, purring og Vipps — uten en eneste manuell liste.",
-        "Automatic fees, instalments, reminders and Vipps — without a single manual list.",
-      ),
-    },
-    {
-      label: t("Aktiviteter", "Activities"),
-      title: t("Aktiviteter og påmelding", "Activities and sign-ups"),
-      body: t(
-        "Kalender, oppmøte og dugnadsvakter foreldrene fikser fra sidelinja.",
-        "Calendar, attendance and dugnad shifts the parents can handle from the sideline.",
-      ),
-    },
-    {
-      label: "Booking",
-      title: t("Hallbooking", "Hall booking"),
-      body: t(
-        "Medlemmene booker bord og baner selv, og betaler i samme flyt.",
-        "Members book tables and courts themselves, and pay in the same flow.",
-      ),
-    },
-    {
-      label: t("Økonomi", "Finance"),
-      title: t("Økonomi og rapport", "Finance and reporting"),
-      body: t(
-        "Budsjett, regnskapseksport, søknader om støtte og revisjonsspor i én flyt.",
-        "Budget, accounting export, grant applications and audit trail in one flow.",
-      ),
-    },
-    {
-      label: t("Tilgang", "Access"),
-      title: t("Roller og tilgang", "Roles and access"),
-      body: t(
-        "Trenere, kasserer, styret og foreldre ser presis det de trenger.",
-        "Coaches, treasurer, board and parents each see exactly what they need.",
-      ),
-    },
-  ];
-
-  const isOpen = open >= 0 && open < features.length;
-  const active = features[isOpen ? open : 0];
 
   return (
-    <section
-      id="funksjoner"
-      className="relative isolate mx-2 my-6 overflow-hidden rounded-[34px] bg-[linear-gradient(170deg,#dff0e0,#eaf7e4_58%,#f4f7ea)] px-4 py-14 sm:px-7 sm:py-18 md:rounded-bowl"
-    >
-      {/* Decorative blobs, dots and dashed ring from the artboard. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-[-40px] -ml-[350px] h-[700px] w-[700px] rounded-full bg-[radial-gradient(circle,rgba(116,205,133,0.36),rgba(116,205,133,0)_66%)] blur-[30px]" />
-        <div className="absolute right-[-90px] top-[-70px] h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(255,201,74,0.5),rgba(255,201,74,0)_68%)] blur-[26px]" />
-        <div className="absolute left-[8%] top-[30px] h-[9px] w-[9px] rounded-full bg-amber" />
-        <div className="absolute bottom-[60px] right-[12%] h-[7px] w-[7px] rounded-full bg-grass" />
-        <div className="absolute bottom-[40px] right-[-130px] h-[420px] w-[420px] rounded-full border-[1.5px] border-dashed border-moss/20" />
-        <div className="absolute bottom-[-90px] left-[-110px] h-[380px] w-[380px] rounded-full bg-[radial-gradient(circle,rgba(255,201,74,0.34),rgba(255,201,74,0)_70%)] blur-[20px]" />
+    <section id="funksjoner" className="kz-pad kz-pad-m relative pt-6 max-[560px]:mx-2 max-[560px]:my-4 max-[560px]:pb-[52px] max-[560px]:pt-12">
+      {/* Made for volunteers */}
+      <div
+        data-reveal
+        className="mx-auto grid max-w-[1200px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-[clamp(28px,4vw,56px)] max-[760px]:grid-cols-[minmax(0,1fr)] min-[1680px]:max-w-[1440px]"
+      >
+        <div>
+          <h2 className="m-0 font-heading text-[clamp(32px,4vw,52px)] font-extrabold leading-[1.04] tracking-[-0.035em]! text-ink">
+            {t("Skapt for frivillige.", "Made for volunteers.")}
+            <br />
+            {t("Bygget sammen med klubber i Midt-Norge.", "Built together with clubs in Central Norway.")}
+          </h2>
+          <p className="mb-0 mt-[18px] max-w-[32em] text-[17px] leading-[1.65] text-[#4C5E50]">
+            {t(
+              "Kretz startet i Trondheim, der frivillige brukte mer tid på fakturaer enn på spillerne. Vi bygger verktøyet vi selv skulle hatt – sammen med klubber i Midt-Norge.",
+              "Kretz started in Trondheim, where volunteers spent more time on invoices than on the players. We're building the tool we wished we had – together with clubs in Central Norway.",
+            )}
+          </p>
+          <div className="mt-8 grid grid-cols-3">
+            <div className="border-r border-[#D6E2D2] pr-5">
+              <div className={`${statNumber} text-ink`}>
+                <CountUp to={500} />+
+              </div>
+              <div className={statLabel}>
+                {t("klubber", "clubs")}
+                <br />
+                {t("undersøkt", "surveyed")}
+              </div>
+            </div>
+            <div className="border-r border-[#D6E2D2] px-5">
+              <div className={`${statNumber} text-ink`}>
+                <CountUp to={10} />+
+              </div>
+              <div className={statLabel}>
+                {t("idretter", "sports")}
+                <br />
+                {t("i kontakt", "in contact")}
+              </div>
+            </div>
+            <div className="pl-5">
+              <div className={`${statNumber} text-[#5FA866]`}>
+                <CountUp to={62} />%
+              </div>
+              <div className={statLabel}>
+                {t("tar beslutninger uten", "make decisions without")}
+                <br />
+                {t("oppdaterte økonomitall", "up-to-date financial figures")}
+              </div>
+            </div>
+          </div>
+          <SectionLink
+            to="om-oss"
+            className="kz-arrow-btn mt-8 inline-flex items-center gap-2.5 rounded-full bg-[#8BCB8B] px-6 py-3.5 font-heading text-[15px] font-extrabold text-ink"
+          >
+            {t("Les mer om oss", "Read more about us")}{" "}
+            <span className="kz-arr" aria-hidden="true">
+              →
+            </span>
+          </SectionLink>
+        </div>
+
+        <div className="relative min-h-[380px]">
+          <div className="absolute inset-0 overflow-hidden rounded-[36px] shadow-[0_30px_70px_rgba(22,36,26,0.18)]">
+            <img
+              src={coach}
+              alt={t("Trener samler laget på kunstgresset", "Coach gathers the team on the artificial turf")}
+              className="block h-full w-full object-cover"
+            />
+          </div>
+          <div className="absolute bottom-9 left-[-24px] flex max-w-[320px] items-start gap-3 rounded-3xl border border-[#D6E2D2] bg-[#F4F7F1] px-5 py-[18px] shadow-[0_20px_44px_rgba(22,36,26,0.14)]">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#E3ECDF] text-[14px] font-extrabold text-[#5FA866]">
+              “
+            </span>
+            <span>
+              <span className="block text-[15px] font-bold leading-[1.45] text-ink">
+                {t(
+                  "«Endelig et system som faktisk er laget for idrettslag.»",
+                  "“Finally a system that's actually made for sports clubs.”",
+                )}
+              </span>
+              <span className="mt-1.5 block text-[13px] text-[#4C5E50]">
+                {t("– Trener, G14", "– Coach, G14")}
+              </span>
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="mx-auto max-w-[1200px]">
-        <div data-reveal className="mx-auto mb-8 max-w-[34em] text-center">
-          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-moss-dark">
-            {t("I plattformen", "In the platform")}
+      {/* Integrations */}
+      <div
+        data-reveal
+        className="mx-auto mt-12 grid max-w-[1200px] grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] items-center gap-[clamp(28px,4vw,56px)] rounded-[40px] bg-[#E3ECDF] p-[clamp(28px,4.5vw,56px)] max-[760px]:grid-cols-[minmax(0,1fr)] min-[1680px]:max-w-[1440px]"
+      >
+        <div>
+          <div className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#4C5E50]">
+            {t("Integrasjoner", "Integrations")}
           </div>
-          <h2 className="mb-3 mt-3.5 font-heading text-[clamp(30px,3.8vw,48px)] font-extrabold leading-[1.04] tracking-[-0.032em]">
-            {t("Én plattform, hele klubben", "One platform, the whole club")}
+          <h2 className="mb-0 mt-3 font-heading text-[clamp(28px,3.6vw,46px)] font-extrabold leading-[1.04] tracking-[-0.035em]! text-ink">
+            {t("Fungerer med verktøyene dere allerede bruker", "Works with the tools you already use")}
           </h2>
-          <p className="m-0 text-[17px] leading-[1.6] text-ink/70">
-            {t("Trykk på en funksjon for å se hva den gjør.", "Tap a function to see what it does.")}
+          <p className="mb-0 mt-4 max-w-[30em] text-[16px] leading-[1.6] text-[#4C5E50]">
+            {t(
+              "Kretz integrerer med populære systemer, slik at dere får alt samlet på ett sted.",
+              "Kretz integrates with popular systems, so you get everything in one place.",
+            )}
           </p>
         </div>
-
-        <div data-reveal className="flex flex-wrap justify-center gap-2.5">
-          {features.map((feature, i) => {
-            const on = isOpen && i === open;
-            return (
-              <button
-                key={feature.title}
-                type="button"
-                aria-expanded={on}
-                onClick={() => setOpen((prev) => (prev === i ? -1 : i))}
-                className={`cursor-pointer whitespace-nowrap rounded-full px-4 py-2.5 font-heading text-[13px] font-extrabold transition-all duration-300 ${
-                  on
-                    ? "-translate-y-0.5 border border-ink bg-ink text-paper"
-                    : "border border-ink/16 bg-white text-ink hover:border-ink/30"
-                }`}
+        <div className="relative mb-[92px]">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+            {INTEGRATIONS.map((item) => (
+              <div
+                key={item.name}
+                className="box-border flex min-h-[72px] items-center gap-3 rounded-[20px] border border-[#D6E2D2] bg-white px-5 py-[18px] transition-[translate,box-shadow] duration-300 ease-[cubic-bezier(.2,.7,.2,1)] hover:-translate-y-[3px] hover:shadow-[0_14px_30px_rgba(22,36,26,0.1)]"
               >
-                {feature.label}
-              </button>
-            );
-          })}
-        </div>
-
-        <div
-          className="mx-auto max-w-[720px] overflow-hidden transition-all duration-[600ms] ease-[cubic-bezier(0.2,0.7,0.2,1)]"
-          style={{ maxHeight: isOpen ? "340px" : "0px", opacity: isOpen ? 1 : 0 }}
-        >
-          <div className="mt-4.5 rounded-[30px] border border-grass/50 bg-white px-8 py-7 text-center shadow-[0_22px_50px_rgba(22,36,26,0.1)]">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-              {t("I plattformen", "In the platform")} · {(isOpen ? open : 0) + 1}/{features.length}
-            </div>
-            <h3 className="my-2.5 font-heading text-[clamp(21px,2.4vw,30px)] font-extrabold leading-[1.12] tracking-[-0.03em]">
-              {active.title}
-            </h3>
-            <p className="mx-auto my-0 max-w-[34em] text-base leading-[1.6] text-ink/75">
-              {active.body}
-            </p>
+                {item.wordmark ? (
+                  <img src={item.logo} alt={item.name} className="h-7 w-16 shrink-0 object-contain" />
+                ) : (
+                  <>
+                    <img src={item.logo} alt="" className="h-7 w-7 shrink-0 object-contain" />
+                    <span>
+                      <span className="block text-[15px] font-bold text-ink">{item.name}</span>
+                      {item.sub && <span className="block text-[12px] text-[#4C5E50]">{item.sub}</span>}
+                    </span>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+          <div
+            aria-hidden="true"
+            className="kz-hand pointer-events-none absolute bottom-[-92px] right-2 -rotate-8 text-center text-[20px] leading-[1.1] text-ink"
+          >
+            {t("Automatisk", "Automatic")}
+            <br />
+            {t("og oppdatert", "and up to date")}
+            <svg
+              width="46"
+              height="34"
+              viewBox="0 0 46 34"
+              fill="none"
+              stroke="#16241A"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              className="mx-auto mt-0.5 block rotate-10"
+            >
+              <path d="M40 2c-6 16-20 26-36 28" />
+              <path d="M10 25l-6 5 7 2" />
+            </svg>
           </div>
         </div>
       </div>

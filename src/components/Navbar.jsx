@@ -1,77 +1,83 @@
+import { useEffect, useState } from "react";
 import KretzMark from "./KretzMark";
+import SectionLink from "./SectionLink";
 import { useLang } from "../lib/langContext";
+
+const linkClass =
+  "whitespace-nowrap text-ink/72 transition-colors hover:text-ink min-[1440px]:text-[17px] min-[1800px]:text-[19px]";
+
+const btnSize =
+  "max-[620px]:px-3.5 max-[620px]:text-[13px] min-[1440px]:px-6.5 min-[1440px]:py-3.5 min-[1440px]:text-[16px] min-[1800px]:px-7.5 min-[1800px]:py-4 min-[1800px]:text-[18px]";
 
 export default function Navbar({ onOpenLogin, onOpenSignup, onOpenBooking }) {
   const { t, isEn, toggleLang } = useLang();
-  const langLabel = isEn ? "NO" : "EN";
+  const [scrolled, setScrolled] = useState(false);
 
-  const links = [
-    { label: t("Slik funker det", "How it works"), href: "#slik" },
-    { label: t("Funksjoner", "Features"), href: "#funksjoner" },
-    { label: t("Booking", "Booking"), onClick: onOpenBooking },
-    { label: t("Spørsmål", "FAQ"), href: "#faq" },
-    { label: t("Kontakt oss", "Contact us"), href: "#kom-i-gang" },
-  ];
+  // The bar is transparent over the hero and frosts once the page moves.
+  useEffect(() => {
+    const onScroll = () => setScrolled((window.scrollY || 0) > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/85 backdrop-blur-xl">
-      <nav className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-4 px-4 py-4 sm:gap-7 sm:px-7">
-        <a
-          href="#topp"
-          className="flex items-center gap-2.5 font-heading text-[22px] font-extrabold tracking-[-0.025em] text-ink"
+    <header className={`kz-header sticky top-0 z-30 ${scrolled ? "kz-scrolled" : ""}`}>
+      <nav className="mx-auto flex max-w-[1200px] items-center gap-7 px-7 py-[15px] max-[1080px]:gap-4 max-[1080px]:px-[18px] max-[760px]:flex-wrap max-[760px]:gap-y-2.5 max-[760px]:px-4 max-[620px]:gap-2 min-[1440px]:max-w-[1440px] min-[1440px]:gap-9 min-[1440px]:py-5 min-[1800px]:max-w-[1680px]">
+        <SectionLink
+          to="topp"
+          className="flex items-center gap-[11px] font-heading text-[22px] font-extrabold tracking-[-0.025em] text-ink min-[1440px]:gap-[13px] min-[1440px]:text-[28px] min-[1800px]:text-[32px]"
         >
-          <KretzMark size={30} className="drop-shadow-[0_0_14px_rgba(116,205,133,0.45)]" />
+          <KretzMark
+            size={30}
+            className="drop-shadow-[0_0_14px_rgba(116,205,133,0.45)] min-[1440px]:h-[38px]! min-[1440px]:w-[38px]! min-[1800px]:h-11! min-[1800px]:w-11!"
+          />
           Kretz
-        </a>
+        </SectionLink>
 
-        <div className="hidden flex-1 md:block" />
-
-        <div className="hidden items-center gap-6 text-sm font-medium lg:flex">
-          {links.map((link) =>
-            link.href ? (
-              <a
-                key={link.label}
-                href={link.href}
-                className="whitespace-nowrap text-ink/70 transition-colors hover:text-ink"
-              >
-                {link.label}
-              </a>
-            ) : (
-              <button
-                key={link.label}
-                type="button"
-                onClick={link.onClick}
-                className="cursor-pointer whitespace-nowrap bg-transparent text-sm font-medium text-ink/70 transition-colors hover:text-ink"
-              >
-                {link.label}
-              </button>
-            ),
-          )}
+        <div className="flex items-center gap-6 text-[14px] font-medium max-[1080px]:gap-4 max-[1080px]:text-[13.5px] max-[1000px]:hidden min-[1440px]:gap-8 min-[1800px]:gap-10">
+          <SectionLink to="funksjoner" className={linkClass}>
+            {t("Funksjoner", "Features")}
+          </SectionLink>
+          <button
+            type="button"
+            onClick={onOpenBooking}
+            className={`cursor-pointer border-0 bg-transparent p-0 font-body text-[14px] font-medium max-[1080px]:text-[13.5px] ${linkClass}`}
+          >
+            Booking
+          </button>
+          <SectionLink to="om-oss" className={linkClass}>
+            {t("Om oss", "About us")}
+          </SectionLink>
+          <SectionLink to="kom-i-gang" className={linkClass}>
+            {t("Kontakt oss", "Contact us")}
+          </SectionLink>
         </div>
 
-        <div className="flex flex-1 items-center justify-end gap-2.5 sm:gap-3.5">
-          <button
-            type="button"
-            onClick={toggleLang}
-            className="cursor-pointer rounded-full border border-ink/20 px-3.5 py-2 font-heading text-xs font-extrabold tracking-[0.08em] text-ink transition-colors hover:bg-ink/10"
-          >
-            {langLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onOpenLogin}
-            className="cursor-pointer whitespace-nowrap rounded-full bg-grass px-4 py-3 font-heading text-sm font-extrabold text-ink shadow-[0_10px_30px_rgba(116,205,133,0.3)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-moss sm:px-5.5"
-          >
-            {t("Logg inn", "Sign in")}
-          </button>
-          <button
-            type="button"
-            onClick={onOpenSignup}
-            className="cursor-pointer whitespace-nowrap rounded-full border border-ink bg-transparent px-4 py-3 font-heading text-sm font-extrabold text-ink transition-all duration-300 hover:-translate-y-0.5 hover:bg-ink hover:text-paper sm:px-5.5"
-          >
-            {t("Registrer deg", "Sign up")}
-          </button>
-        </div>
+        {/* Spacer; on phones it becomes a line break so the buttons wrap below the logo. */}
+        <div className="flex-1 max-[620px]:h-0 max-[620px]:basis-full" />
+
+        <button
+          type="button"
+          onClick={toggleLang}
+          className={`cursor-pointer rounded-full border border-ink/22 bg-transparent px-[15px] py-[9px] font-heading text-[12px] font-extrabold tracking-[0.08em] text-ink transition-colors duration-300 hover:bg-ink/10 ${btnSize}`}
+        >
+          {isEn ? "NO" : "EN"}
+        </button>
+        <button
+          type="button"
+          onClick={onOpenLogin}
+          className={`cursor-pointer whitespace-nowrap rounded-full border-0 bg-grass px-[22px] py-3 font-heading text-[14px] font-extrabold text-ink shadow-[0_10px_28px_rgba(116,205,133,0.6),0_2px_10px_rgba(116,205,133,0.5),0_0_0_6px_rgba(116,205,133,0.14)] transition-[background,transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:bg-grass-soft hover:shadow-[0_16px_38px_rgba(116,205,133,0.7),0_4px_14px_rgba(116,205,133,0.55),0_0_0_8px_rgba(116,205,133,0.18)] ${btnSize}`}
+        >
+          {t("Logg inn", "Sign in")}
+        </button>
+        <button
+          type="button"
+          onClick={onOpenSignup}
+          className={`cursor-pointer whitespace-nowrap rounded-full border border-ink bg-transparent px-[22px] py-3 font-heading text-[14px] font-extrabold text-ink transition-[background,color,transform] duration-300 hover:-translate-y-0.5 hover:bg-ink hover:text-paper ${btnSize}`}
+        >
+          {t("Registrer deg", "Sign up")}
+        </button>
       </nav>
     </header>
   );

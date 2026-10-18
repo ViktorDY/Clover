@@ -24,7 +24,7 @@ function readSavedEmail() {
   }
 }
 
-export default function LoginModal({ isOpen, onClose, onMemberSignIn }) {
+export default function LoginModal({ isOpen, onClose, onMemberSignIn, onAdminSignIn }) {
   const { t } = useLang();
   const [savedEmail] = useState(readSavedEmail);
   const [role, setRole] = useState("member");
@@ -75,7 +75,9 @@ export default function LoginModal({ isOpen, onClose, onMemberSignIn }) {
       if (firstTime) forgetJoined();
       rememberEmail(mail);
       if (isAdmin) {
-        adminComingSoon();
+        // The demo account opens the administrator view once App wires it.
+        if (onAdminSignIn) onAdminSignIn();
+        else adminComingSoon();
         return;
       }
       onMemberSignIn();

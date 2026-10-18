@@ -1,206 +1,53 @@
-import { useEffect, useRef, useState } from "react";
 import { useLang } from "../lib/langContext";
+import nardo from "../assets/design/club-nardo.png";
+import trondheimBtk from "../assets/design/club-trondheim-btk.png";
+import rbk from "../assets/design/club-rbk.png";
+import skoiteklubb from "../assets/design/club-skoiteklubb.png";
+import nca from "../assets/design/club-nca.png";
 
-// How many cards sit side by side at a given viewport width.
-function perViewFor(width) {
-  if (width < 620) return 1;
-  if (width < 980) return 2;
-  return 3;
-}
+const CLUBS = [
+  { src: nardo, alt: "Nardo FK", h: 78 },
+  { src: trondheimBtk, alt: "Trondheim Bordtennisklubb", h: 66 },
+  { src: rbk, alt: "Rosenborg BK", h: 50 },
+  { src: skoiteklubb, alt: "Trondhjems Skøiteklub", h: 52 },
+  { src: nca, alt: "Norwegian Combat Academy", h: 62 },
+];
 
+// Club logo strip with a quote from Nardo FK, right under the hero.
 export default function Customers() {
   const { t } = useLang();
 
-  const reviews = [
-    {
-      quote: t(
-        "«Vi gikk fra fire regneark og en skoeske til én skjerm. Kassereren smiler faktisk i november nå.»",
-        "“We went from four spreadsheets and a shoebox to one screen. The treasurer actually smiles in November now.”",
-      ),
-      who: t(
-        "Marit Sunde · styreleder, Vålerenga Håndball",
-        "Marit Sunde · board leader, Vålerenga Håndball",
-      ),
-    },
-    {
-      quote: t(
-        "«Cup-påmelding tok før en hel helg. Nå tar det en kaffepause.»",
-        "“Sign-ups for cups used to take a full weekend. Now it takes a coffee break.”",
-      ),
-      who: t("Jonas Reite · sportslig leder, IL Fana", "Jonas Reite · sports director, IL Fana"),
-    },
-    {
-      quote: t(
-        "«Sponsorene ser endelig hva de får. Fornyelser gikk fra ringerunde til formalitet.»",
-        "“Our sponsors finally see what they get. Renewals went from a phone campaign to a formality.”",
-      ),
-      who: t("Ida Krogh · partneransvarlig, Molde Turn", "Ida Krogh · partner manager, Molde Turn"),
-    },
-    {
-      quote: t(
-        "«Foreldrene booker halltid selv. Telefonen min er stille på søndag kveld.»",
-        "“Parents book hall time themselves. My phone is quiet on Sunday evenings.”",
-      ),
-      who: t("Thomas Lie · hallansvarlig, Varden BTK", "Thomas Lie · hall manager, Varden BTK"),
-    },
-    {
-      quote: t(
-        "«Søknaden om støtte tok én ettermiddag i stedet for tre helger.»",
-        "“The grant report took one afternoon instead of three weekends.”",
-      ),
-      who: t("Anne Bjørk · kasserer, Fana Turn", "Anne Bjørk · treasurer, Fana Turn"),
-    },
-  ];
-
-  const count = reviews.length;
-  // `index` is deliberately unbounded so the track can slide in either
-  // direction; it is rebased silently once it drifts a full lap.
-  const [index, setIndex] = useState(0);
-  const [noAnim, setNoAnim] = useState(false);
-  const [width, setWidth] = useState(() =>
-    typeof window === "undefined" ? 1200 : window.innerWidth,
-  );
-  const pausedUntil = useRef(0);
-
-  useEffect(() => {
-    let timer;
-    const onResize = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => setWidth(window.innerWidth), 150);
-    };
-    window.addEventListener("resize", onResize);
-    return () => {
-      window.removeEventListener("resize", onResize);
-      window.clearTimeout(timer);
-    };
-  }, []);
-
-  useEffect(() => {
-    const tick = window.setInterval(() => {
-      if (Date.now() < pausedUntil.current) return;
-      setIndex((prev) => prev + 1);
-    }, 6000);
-    return () => window.clearInterval(tick);
-  }, []);
-
-  // Once the index has travelled a whole lap, snap it back to the equivalent
-  // position without animating so the loop is seamless.
-  useEffect(() => {
-    if (index < count && index > -count) return;
-    // Wait for the slide to finish, then jump back with animation disabled.
-    const settle = window.setTimeout(() => {
-      setNoAnim(true);
-      setIndex(((index % count) + count) % count);
-    }, 960);
-    return () => window.clearTimeout(settle);
-  }, [index, count]);
-
-  useEffect(() => {
-    if (!noAnim) return;
-    const release = window.setTimeout(() => setNoAnim(false), 80);
-    return () => window.clearTimeout(release);
-  }, [noAnim]);
-
-  const step = (dir) => {
-    pausedUntil.current = Date.now() + 14000;
-    setIndex((prev) => prev + dir);
-  };
-
-  const perView = perViewFor(width);
-  const focusPos = count + index;
-  const slotTrack = 100 / (3 * count);
-  const trackWidth = (3 * count * (100 / perView)).toFixed(2);
-  const shift = (-(focusPos - (perView >= 3 ? 1 : 0)) * slotTrack).toFixed(4);
-  const position = ((index % count) + count) % count;
-
-  // The list is tripled so there is always a card either side of the focus.
-  const track = [];
-  for (let copy = 0; copy < 3; copy++) {
-    for (let i = 0; i < count; i++) {
-      track.push({ key: `${copy}-${i}`, pos: copy * count + i, ...reviews[i] });
-    }
-  }
-
   return (
-    <section id="kunder" className="relative isolate overflow-hidden bg-paper-2 px-5 py-24 sm:px-7">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-[-140px] top-[-120px] h-[460px] w-[460px] rounded-full bg-[radial-gradient(circle,rgba(255,201,74,0.28),rgba(255,201,74,0)_70%)] blur-[20px]" />
-        <div className="absolute bottom-[-160px] right-[-100px] h-[520px] w-[520px] rounded-full border-[1.5px] border-moss/18" />
-        <div className="kz-dots-plain absolute right-[60px] top-[70px] h-[220px] w-[220px] opacity-50" />
-      </div>
-
-      <div className="mx-auto max-w-[1200px]">
-        <div data-reveal className="max-w-[32em]">
-          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-moss-dark">
-            {t("Kundehistorier", "Customer stories")}
+    <section className="kz-pad kz-pad-m relative pt-[72px]">
+      <div
+        data-reveal
+        className="mx-auto grid max-w-[1200px] grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-center gap-8 max-[760px]:grid-cols-[minmax(0,1fr)] min-[1680px]:max-w-[1440px]"
+      >
+        <div>
+          <div className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#3E8A48]">
+            {t("Kan brukes av klubber i hele Norge", "Can be used by clubs across Norway")}
           </div>
-          <h2 className="m-0 mt-4 font-heading text-[clamp(32px,4vw,50px)] font-extrabold tracking-[-0.032em]">
-            {t("Klubber som fikk kveldene tilbake", "Clubs that got their evenings back")}
-          </h2>
+          <div className="mt-[18px] grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] items-center gap-[22px]">
+            {CLUBS.map((club) => (
+              <div key={club.alt} className="grid min-w-0 place-items-center">
+                <img
+                  src={club.src}
+                  alt={club.alt}
+                  className="block w-auto max-w-full object-contain"
+                  style={{ height: club.h }}
+                />
+              </div>
+            ))}
+          </div>
         </div>
-
-        <div data-reveal className="mt-11">
-          <div className="-mx-1 overflow-hidden px-3.5 py-1.5">
-            <div
-              className="flex"
-              style={{
-                width: `${trackWidth}%`,
-                transform: `translateX(${shift}%)`,
-                transition: noAnim ? "none" : "transform .9s cubic-bezier(.3,.72,.18,1)",
-              }}
-            >
-              {track.map((card) => {
-                const focused = card.pos === focusPos;
-                return (
-                  <div
-                    key={card.key}
-                    className="min-w-0 px-3 py-6.5"
-                    style={{ flex: `0 0 ${slotTrack.toFixed(4)}%` }}
-                    aria-hidden={!focused}
-                  >
-                    <div
-                      className={`box-border h-full rounded-[36px] bg-white transition-all duration-[900ms] ease-[cubic-bezier(0.3,0.72,0.18,1)] ${
-                        focused
-                          ? "scale-[1.07] border border-grass p-9 opacity-100 shadow-[0_30px_66px_rgba(22,36,26,0.16)]"
-                          : "scale-[0.86] border border-ink/10 p-7 opacity-40"
-                      }`}
-                    >
-                      <div className="flex gap-1 text-[15px] text-amber">★★★★★</div>
-                      <p
-                        className="m-0 mt-4 font-heading font-extrabold leading-[1.4] tracking-[-0.02em]"
-                        style={{ fontSize: focused ? "23px" : "17px" }}
-                      >
-                        {card.quote}
-                      </p>
-                      <div className="mt-5 text-sm text-ink/60">{card.who}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="mt-6 flex items-center justify-center gap-3.5">
-            <button
-              type="button"
-              onClick={() => step(-1)}
-              aria-label={t("Forrige omtale", "Previous review")}
-              className="grid h-[52px] w-[52px] cursor-pointer place-items-center rounded-full border border-ink/20 bg-white text-xl text-ink transition-all duration-300 hover:-translate-x-0.5 hover:bg-grass-tint"
-            >
-              ←
-            </button>
-            <div className="min-w-[62px] text-center text-sm text-ink/60">
-              {position + 1} / {count}
-            </div>
-            <button
-              type="button"
-              onClick={() => step(1)}
-              aria-label={t("Neste omtale", "Next review")}
-              className="grid h-[52px] w-[52px] cursor-pointer place-items-center rounded-full border border-ink/20 bg-white text-xl text-ink transition-all duration-300 hover:translate-x-0.5 hover:bg-grass-tint"
-            >
-              →
-            </button>
-          </div>
+        <div className="border-l border-ink/14 pl-8 max-[760px]:border-l-0 max-[760px]:border-t max-[760px]:pl-0 max-[760px]:pt-5">
+          <p className="m-0 text-[17px] leading-[1.6] text-ink [text-wrap:pretty]">
+            {t(
+              "«Kretz gir oss bedre oversikt og sparer oss for mye administrasjon. Nå kan vi bruke mer tid på spillerne.»",
+              "“Kretz gives us a better overview and saves us a lot of administration. Now we can spend more time on the players.”",
+            )}
+          </p>
+          <div className="mt-3 text-[14px] text-[#4C5E50]">– Nardo Fotballklubb</div>
         </div>
       </div>
     </section>

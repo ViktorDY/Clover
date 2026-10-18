@@ -1,27 +1,37 @@
-import { useEffect, useState } from "react";
-import { MY_BOOK_CLUBS, OTHER_BOOK_CLUBS } from "../../lib/memberData";
+import { useState } from "react";
+import { MY_BOOK_CLUBS, OTHER_BOOK_CLUBS, initialsOf } from "../../lib/memberData";
+import { useVenueStore, venueHoursFor, venueIsClosed } from "../../lib/clubs";
 import { useLang } from "../../lib/langContext";
+import useEscape from "./useEscape";
 
-function initialsOf(name) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word.slice(0, 1).toUpperCase())
-    .join("");
+function isoOf(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-// Mounted only while open, so the search box starts empty every time.
+/*
+  "Hvor vil du booke?" — the member's own clubs first, then other clubs on
+  Kretz. Each row shows today's opening hours and the member price from the
+  shared venue store. Mounted only while open, so the search starts empty.
+*/
 export default function MemberBookPicker({ onClose, onPick }) {
   const { t, lang } = useLang();
   const [query, setQuery] = useState("");
+  const store = useVenueStore();
+  useEscape(onClose);
 
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  const today = new Date();
+  const weekday = (today.getDay() + 6) % 7;
+  const liveMeta = (club) => {
+    const venue = store[club.slug];
+    if (!venue) return club.meta[lang];
+    const hours = venueHoursFor(venue, weekday);
+    const open =
+      venueIsClosed(venue, isoOf(today)) || !hours
+        ? t("stengt i dag", "closed today")
+        : `${t("åpent", "open")} ${hours[0]}–${hours[1]}`;
+    const price = `${t("medlem kr ", "members kr ")}${venue.memberPrice || venue.price}${t("/t", "/h")}`;
+    return `${club.meta[lang]} · ${open} · ${price}`;
+  };
 
   const needle = query.trim().toLowerCase();
   const filter = (list) =>
@@ -48,7 +58,7 @@ export default function MemberBookPicker({ onClose, onPick }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block font-heading text-base font-extrabold">{club.name}</span>
-        <span className="mt-0.5 block text-[13px] text-ink/60">{club.meta[lang]}</span>
+        <span className="mt-0.5 block text-[13px] text-ink/60">{liveMeta(club)}</span>
       </span>
       <span className="shrink-0 text-base">→</span>
     </button>
@@ -56,7 +66,7 @@ export default function MemberBookPicker({ onClose, onPick }) {
 
   return (
     <div
-      className="fixed inset-0 z-60 grid place-items-center bg-ink/45 p-6 backdrop-blur-[6px]"
+      className="fixed inset-0 z-60 grid place-items-center bg-ink/42 p-3 backdrop-blur-[6px] sm:p-6"
       onClick={onClose}
       role="presentation"
     >
@@ -65,7 +75,7 @@ export default function MemberBookPicker({ onClose, onPick }) {
         aria-modal="true"
         aria-label={t("Hvor vil du booke?", "Where do you want to book?")}
         onClick={(e) => e.stopPropagation()}
-        className="relative max-h-[84vh] w-full max-w-[520px] overflow-y-auto rounded-panel border border-ink/12 bg-white p-7 shadow-[0_34px_90px_rgba(22,36,26,0.28)]"
+        className="relative box-border max-h-[84vh] w-full max-w-[520px] overflow-y-auto rounded-panel border border-ink/12 bg-white p-6 sm:p-[30px] shadow-[0_34px_90px_rgba(22,36,26,0.28)]"
       >
         <button
           type="button"

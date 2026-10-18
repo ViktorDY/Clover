@@ -1,0 +1,42 @@
+/*
+  Member dashboard extras that Tailwind classes can't express neatly.
+  Imported by MemberPage and BookingPage.
+*/
+
+/* The dotted shimmer in the corner of the dark "Å betale nå" card. */
+.kz-dots-due {
+  background-image: radial-gradient(rgba(238, 243, 236, 0.16) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(70% 70% at 90% 10%, #000, transparent 72%);
+  -webkit-mask-image: radial-gradient(70% 70% at 90% 10%, #000, transparent 72%);
+}
+
+/* Post previews clamp to three lines. */
+.kz-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kz-plan-sheet,
+  .kz-plan-scrim {
+    transition: none !important;
+  }
+}
+
+/*
+  The canvas styles the dashboard on a 15px / 1.55 body, but its buttons and
+  fields keep the browser's own `line-height: normal`. Tailwind's preflight
+  makes them inherit instead, so put the canvas behaviour back — in the base
+  layer, so line-height utilities still win where they are used.
+*/
+@layer base {
+  .kz-member button,
+  .kz-member input,
+  .kz-member select,
+  .kz-member textarea {
+    line-height: normal;
+  }
+}

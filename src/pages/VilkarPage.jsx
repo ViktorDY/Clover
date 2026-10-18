@@ -84,7 +84,7 @@ export default function VilkarPage({ onBack }) {
   return (
     <div className="min-h-screen bg-paper font-body text-ink">
       <header className="sticky top-0 z-20 border-b border-ink/10 bg-paper/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[880px] items-center gap-3.5 px-6 py-3.5">
+        <div className="mx-auto flex max-w-[880px] items-center gap-3.5 px-4 py-3.5 sm:px-6">
           <button
             type="button"
             onClick={onBack}
@@ -109,7 +109,7 @@ export default function VilkarPage({ onBack }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[880px] px-6 pb-[90px] pt-[52px]">
+      <main className="mx-auto max-w-[880px] px-4 pb-[90px] pt-[52px] sm:px-6">
         <h1 className="m-0 font-heading text-[clamp(32px,5vw,52px)] font-extrabold leading-[1.04]">
           Vilkår for bruk av Kretz
         </h1>
@@ -121,7 +121,7 @@ export default function VilkarPage({ onBack }) {
         <div className="grid gap-[34px]">
           {SECTIONS.map((section) => (
             <section key={section.title}>
-              <h2 className="mb-2.5 mt-0 font-heading text-[22px] font-extrabold">
+              <h2 className="mb-2.5 mt-0 font-heading text-[22px] font-extrabold leading-[1.12]">
                 {section.title}
               </h2>
 
@@ -134,7 +134,7 @@ export default function VilkarPage({ onBack }) {
               </p>
 
               {section.list && (
-                <ul className="m-0 grid gap-2 pl-[22px] text-base leading-[1.7] text-ink/78">
+                <ul className="m-0 grid list-disc gap-2 pl-[22px] text-base leading-[1.7] text-ink/78">
                   {section.list.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
@@ -142,18 +142,18 @@ export default function VilkarPage({ onBack }) {
               )}
 
               {section.after && (
-                <p className="mb-0 mt-3 text-base leading-[1.75] text-ink/78">{section.after}</p>
+                <p className="mb-0 mt-3.5 text-base leading-[1.75] text-ink/78">{section.after}</p>
               )}
             </section>
           ))}
         </div>
 
-        <div className="my-10 h-0.5 bg-ink/16" />
+        <div className="mb-6 mt-11 h-0.5 bg-ink/16" />
 
         <button
           type="button"
           onClick={onBack}
-          className="cursor-pointer rounded-full border border-ink/25 bg-transparent px-7 py-3.5 font-heading text-[15px] font-extrabold text-ink transition-colors duration-300 hover:bg-ink/8"
+          className="inline-flex cursor-pointer items-center gap-2.5 rounded-full border-0 bg-grass px-6 py-3.5 font-heading text-[15px] font-extrabold text-ink transition-all duration-300 ease-[cubic-bezier(0.2,0.7,0.2,1)] hover:-translate-y-0.5 hover:bg-moss"
         >
           ← Tilbake til Kretz
         </button>

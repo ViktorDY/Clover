@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import KretzMark from "./KretzMark";
 import { useLang } from "../lib/langContext";
 import { siteUrl, supabase } from "../lib/supabase";
+import { DEFAULT_PHONE_COUNTRY, normalizePhone, PHONE_COUNTRIES, phoneCountry } from "../lib/phone";
 
 /*
   Sign-up.
@@ -19,8 +20,14 @@ import { siteUrl, supabase } from "../lib/supabase";
     "Konto opprettet" for a beat and then opens the dashboard.
 */
 export default function SignupModal({ onClose, onOpenTerms, onSignedIn }) {
-  const { t } = useLang();
-  const [form, setForm] = useState({ email: "", firstName: "", lastName: "", phone: "" });
+  const { t, lang } = useLang();
+  const [form, setForm] = useState({
+    email: "",
+    firstName: "",
+    lastName: "",
+    phoneCountry: DEFAULT_PHONE_COUNTRY,
+    phone: "",
+  });
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -78,6 +85,18 @@ export default function SignupModal({ onClose, onOpenTerms, onSignedIn }) {
   const onSubmit = async (event) => {
     event.preventDefault();
     if (busy || done) return;
+    // One string, no spaces, dialling code first: "+4741234567".
+    const phone = normalizePhone(form.phone, form.phoneCountry);
+    if (!phone) {
+      const country = phoneCountry(form.phoneCountry);
+      setError(
+        t(
+          `Mobilnummeret ser ikke riktig ut. Skriv 8 siffer, for eksempel ${country.example}.`,
+          `That mobile number doesn't look right. Enter 8 digits, for example ${country.example}.`,
+        ),
+      );
+      return;
+    }
     if (password.length < 8) {
       setError(
         t("Passordet må være minst 8 tegn.", "The password must be at least 8 characters."),
@@ -95,7 +114,7 @@ export default function SignupModal({ onClose, onOpenTerms, onSignedIn }) {
         data: {
           first_name: form.firstName.trim(),
           last_name: form.lastName.trim(),
-          phone: form.phone.trim(),
+          phone,
         },
       },
     });
@@ -205,15 +224,40 @@ export default function SignupModal({ onClose, onOpenTerms, onSignedIn }) {
             />
           </div>
 
-          <input
-            type="tel"
-            required
-            name="tel"
-            autoComplete="tel"
-            {...field("phone")}
-            placeholder={t("Mobilnummer", "Mobile number")}
-            className={`w-full ${inputClass}`}
-          />
+          <div className="flex gap-2.5">
+            {/* The dialling code. Only Norway for now; add more in lib/phone.js. */}
+            <div className="relative shrink-0">
+              <select
+                name="tel-country-code"
+                autoComplete="tel-country-code"
+                aria-label={t("Landkode", "Country code")}
+                {...field("phoneCountry")}
+                className={`h-full cursor-pointer appearance-none pr-10 ${inputClass}`}
+              >
+                {PHONE_COUNTRIES.map((country) => (
+                  <option key={country.iso} value={country.iso}>
+                    {country.flag} {country.dial} {lang === "en" ? country.name.en : country.name.no}
+                  </option>
+                ))}
+              </select>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-ink/60"
+              >
+                ▼
+              </span>
+            </div>
+            <input
+              type="tel"
+              required
+              inputMode="tel"
+              name="tel-national"
+              autoComplete="tel-national"
+              {...field("phone")}
+              placeholder={t("Mobilnummer", "Mobile number")}
+              className={`min-w-0 flex-1 ${inputClass}`}
+            />
+          </div>
 
           <input
             type="password"

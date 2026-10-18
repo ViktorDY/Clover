@@ -10,6 +10,7 @@ import NoticesPanel from "../components/member/NoticesPanel";
 import MessagesView from "../components/member/MessagesView";
 import PostsView from "../components/member/PostsView";
 import MemberBookPicker from "../components/member/MemberBookPicker";
+import AccountMenu from "../components/member/AccountMenu";
 import { useLang } from "../lib/langContext";
 import { readJoined } from "../lib/memberJoin";
 import {
@@ -410,9 +411,7 @@ export default function MemberPage({ onExit, onLogOut = onExit, onBook }) {
             {isEn ? "NO" : "EN"}
           </button>
 
-          <span className="grid h-[38px] w-[38px] place-items-center rounded-full bg-ink font-heading text-sm font-extrabold text-paper">
-            {initials}
-          </span>
+          <AccountMenu initials={initials} onDeleted={onExit} />
 
           <button
             type="button"

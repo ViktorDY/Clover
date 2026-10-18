@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Bekreft kontoen din i Kretz</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f6f8f3;">
+    <!-- Preview text shown next to the subject in the inbox -->
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+      Ett klikk til, så er Kretz-kontoen din klar.
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f6f8f3;">
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+            <!-- Logo -->
+            <tr>
+              <td style="padding:0 8px 24px 8px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="vertical-align:middle;">
+                      <img src="https://viktordy.github.io/Clover/email/kretz-mark.png" width="36" height="36" alt="" style="display:block;border:0;" />
+                    </td>
+                    <td style="vertical-align:middle;padding-left:10px;font-family:'Bricolage Grotesque',Helvetica,Arial,sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#16241a;">
+                      Kretz
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Card -->
+            <tr>
+              <td style="background:#ffffff;border:1px solid #e3e9df;border-radius:28px;padding:40px 36px;">
+                <p style="margin:0 0 6px 0;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#2f8a47;">
+                  Velkommen til Kretz
+                </p>
+                <h1 style="margin:0 0 18px 0;font-family:'Bricolage Grotesque',Helvetica,Arial,sans-serif;font-size:28px;line-height:1.2;font-weight:800;letter-spacing:-0.03em;color:#16241a;">
+                  Hei {{ .Data.first_name }}, bekreft e-posten din
+                </h1>
+                <p style="margin:0 0 14px 0;font-family:Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#3d4a40;">
+                  Takk for at du registrerte deg! Trykk på knappen under for å bekrefte at
+                  <strong style="color:#16241a;">{{ .Email }}</strong> er din e-postadresse.
+                  Da blir du logget inn og sendt rett til medlemssiden din.
+                </p>
+                <p style="margin:0 0 28px 0;font-family:Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#3d4a40;">
+                  I Kretz finner du treninger og påmeldinger, kontingent, hallbooking og
+                  meldinger fra klubben — alt på ett sted.
+                </p>
+
+                <!-- Button -->
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center" bgcolor="#74cd85" style="border-radius:999px;">
+                      <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:16px 34px;font-family:'Bricolage Grotesque',Helvetica,Arial,sans-serif;font-size:16px;font-weight:800;color:#16241a;text-decoration:none;border-radius:999px;">
+                        Bekreft kontoen min
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:28px 0 6px 0;font-family:Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#6b766d;">
+                  Virker ikke knappen? Kopier denne lenken inn i nettleseren:
+                </p>
+                <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;word-break:break-all;">
+                  <a href="{{ .ConfirmationURL }}" style="color:#2f8a47;">{{ .ConfirmationURL }}</a>
+                </p>
+
+                <hr style="border:0;border-top:1px solid #e3e9df;margin:28px 0;" />
+
+                <p style="margin:0 0 4px 0;font-family:Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;color:#16241a;">
+                  Welcome to Kretz
+                </p>
+                <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#6b766d;">
+                  Tap the button above to confirm your email address and you'll be signed in
+                  to your dashboard.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:24px 12px 0 12px;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#8a948c;">
+                Du får denne e-posten fordi noen registrerte en Kretz-konto med denne adressen.
+                Var det ikke deg, kan du se bort fra den — ingen konto blir aktivert uten at
+                lenken over blir brukt.<br /><br />
+                Kretz · Alt klubben trenger. Ett sted. ·
+                <a href="https://kretz.no" style="color:#8a948c;">kretz.no</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

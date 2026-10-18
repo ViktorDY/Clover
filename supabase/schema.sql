@@ -1,6 +1,6 @@
 -- Kretz: member accounts
 -- Paste this whole file into Supabase → SQL Editor → New query, and click Run.
--- It is safe to run more than once.
+-- It is safe to run more than once — after a change, just run it again.
 
 -- 1. Profiles ---------------------------------------------------------------
 -- Supabase keeps the login itself (email + hashed password) in auth.users.
@@ -52,7 +52,8 @@ begin
     new.email,
     coalesce(new.raw_user_meta_data ->> 'first_name', ''),
     coalesce(new.raw_user_meta_data ->> 'last_name', ''),
-    coalesce(new.raw_user_meta_data ->> 'phone', '')
+    -- Stored as one string without spaces, e.g. +4741234567.
+    regexp_replace(coalesce(new.raw_user_meta_data ->> 'phone', ''), '\s', '', 'g')
   )
   on conflict (id) do nothing;
   return new;
@@ -80,3 +81,46 @@ drop trigger if exists profiles_touch_updated_at on public.profiles;
 create trigger profiles_touch_updated_at
   before update on public.profiles
   for each row execute function public.touch_updated_at();
+
+-- 4. Phone numbers --------------------------------------------------------------
+-- One format for every number: "+" and digits only, e.g. +4741234567. The
+-- website already sends it like that; this makes the database insist on it.
+-- (NOT VALID leaves rows saved before this rule alone.)
+alter table public.profiles drop constraint if exists profiles_phone_format;
+alter table public.profiles
+  add constraint profiles_phone_format
+  check (phone = '' or phone ~ '^\+[1-9][0-9]{6,14}$') not valid;
+
+-- 5. Deleting your own account ------------------------------------------------
+-- The website can't delete accounts directly (that needs the secret key), so
+-- this function does it on the member's behalf — but only for the member who
+-- is signed in, and only after their password checks out. Deleting the
+-- account also deletes their profile (on delete cascade above).
+create or replace function public.delete_own_account(current_password text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  member_id uuid := auth.uid();
+  stored_hash text;
+begin
+  if member_id is null then
+    raise exception 'not_signed_in';
+  end if;
+
+  select encrypted_password into stored_hash from auth.users where id = member_id;
+
+  if stored_hash is null
+     or stored_hash = ''
+     or extensions.crypt(current_password, stored_hash) <> stored_hash then
+    raise exception 'wrong_password';
+  end if;
+
+  delete from auth.users where id = member_id;
+end;
+$$;
+
+revoke all on function public.delete_own_account(text) from public, anon;
+grant execute on function public.delete_own_account(text) to authenticated;

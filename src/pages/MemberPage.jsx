@@ -42,7 +42,7 @@ function formatSize(bytes) {
     : `${Math.max(1, Math.round(bytes / 1024))} kB`;
 }
 
-export default function MemberPage({ onExit, onBook }) {
+export default function MemberPage({ onExit, onLogOut = onExit, onBook }) {
   const { t, lang, isEn, toggleLang } = useLang();
 
   // A pinned club is remembered between visits and becomes the default filter.
@@ -416,7 +416,7 @@ export default function MemberPage({ onExit, onBook }) {
 
           <button
             type="button"
-            onClick={onExit}
+            onClick={onLogOut}
             className="cursor-pointer whitespace-nowrap rounded-full border border-ink/22 px-4.5 py-2.5 font-heading text-[13px] font-extrabold text-ink transition-colors duration-300 hover:bg-ink/8"
           >
             {t("Logg ut", "Log out")}

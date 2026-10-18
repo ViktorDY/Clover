@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import KretzMark from "./KretzMark";
 import { useLang } from "../lib/langContext";
 import { forgetJoined } from "../lib/memberJoin";
+import { supabase } from "../lib/supabase";
 
 const SAVED_EMAIL_KEY = "kretz.login.email";
 
-// Demo credentials, carried over from the design canvas.
+// Demo credentials, carried over from the design canvas. They still work for
+// showing the dashboard without an account; every other address is checked
+// against the real accounts in Supabase.
 const DEMO_EMAILS = ["test@kretz.no", "test@kredz.no"];
 const DEMO_PASSWORD = "000000";
 // Signing in with this one forgets the joined club, so the member page
@@ -29,6 +32,7 @@ export default function LoginModal({ isOpen, onClose, onMemberSignIn }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [remember, setRemember] = useState(true);
+  const [busy, setBusy] = useState(false);
 
   // Close on Escape, like any modal should.
   useEffect(() => {
@@ -44,29 +48,75 @@ export default function LoginModal({ isOpen, onClose, onMemberSignIn }) {
 
   const isAdmin = role === "admin";
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const mail = email.trim().toLowerCase();
-    const knownMail = DEMO_EMAILS.includes(mail);
-    const firstTime = knownMail && password === FIRST_TIME_PASSWORD;
-    const ok = knownMail && (password === DEMO_PASSWORD || firstTime);
-
-    if (!ok) {
-      setError(t("Feil e-post eller passord.", "Wrong email or password."));
-      return;
-    }
-
-    if (firstTime) forgetJoined();
-
+  const rememberEmail = (mail) => {
     try {
       if (remember) window.localStorage.setItem(SAVED_EMAIL_KEY, mail);
       else window.localStorage.removeItem(SAVED_EMAIL_KEY);
     } catch {
       // Not being able to remember the address is not worth failing over.
     }
+  };
+
+  const adminComingSoon = () =>
+    setError(t("Administratorportalen kommer snart.", "Administrator portal is coming soon."));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (busy) return;
+    const mail = email.trim().toLowerCase();
+
+    // The canvas's demo accounts: no network, straight to the dashboard.
+    if (DEMO_EMAILS.includes(mail)) {
+      const firstTime = password === FIRST_TIME_PASSWORD;
+      if (password !== DEMO_PASSWORD && !firstTime) {
+        setError(t("Feil e-post eller passord.", "Wrong email or password."));
+        return;
+      }
+      if (firstTime) forgetJoined();
+      rememberEmail(mail);
+      if (isAdmin) {
+        adminComingSoon();
+        return;
+      }
+      onMemberSignIn();
+      return;
+    }
+
+    // A real account, checked by Supabase.
+    setBusy(true);
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: mail,
+      password,
+    });
+    setBusy(false);
+
+    if (signInError) {
+      if (signInError.code === "email_not_confirmed") {
+        setError(
+          t(
+            "Bekreft e-posten din først — lenken ligger i innboksen din.",
+            "Confirm your email first — the link is in your inbox.",
+          ),
+        );
+      } else if (signInError.code === "invalid_credentials") {
+        setError(t("Feil e-post eller passord.", "Wrong email or password."));
+      } else {
+        setError(
+          t(
+            "Kunne ikke logge inn akkurat nå. Prøv igjen om litt.",
+            "Couldn't log in right now. Try again in a moment.",
+          ),
+        );
+      }
+      return;
+    }
+
+    rememberEmail(mail);
 
     if (isAdmin) {
-      setError(t("Administratorportalen kommer snart.", "Administrator portal is coming soon."));
+      // Nothing for administrators yet, so don't leave them half signed in.
+      await supabase.auth.signOut();
+      adminComingSoon();
       return;
     }
 
@@ -225,7 +275,9 @@ export default function LoginModal({ isOpen, onClose, onMemberSignIn }) {
                 type="button"
                 onClick={() => {
                   setEmail(savedEmail);
-                  setPassword(DEMO_PASSWORD);
+                  // Only the demo account has a password we know; real
+                  // members type their own.
+                  if (DEMO_EMAILS.includes(savedEmail)) setPassword(DEMO_PASSWORD);
                   setError("");
                 }}
                 className={`flex w-full cursor-pointer items-center gap-3 rounded-[22px] p-3 px-4 font-body transition-all duration-300 ${
@@ -266,9 +318,10 @@ export default function LoginModal({ isOpen, onClose, onMemberSignIn }) {
 
             <button
               type="submit"
-              className="cursor-pointer rounded-full border-0 bg-grass px-6 py-3.5 font-heading text-[15px] font-extrabold text-ink shadow-[0_12px_30px_rgba(116,205,133,0.3)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-moss"
+              disabled={busy}
+              className="cursor-pointer rounded-full border-0 bg-grass px-6 py-3.5 font-heading text-[15px] font-extrabold text-ink shadow-[0_12px_30px_rgba(116,205,133,0.3)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-moss disabled:cursor-wait disabled:opacity-70"
             >
-              {t("Logg inn", "Log in")}
+              {busy ? t("Logger inn …", "Logging in …") : t("Logg inn", "Log in")}
             </button>
           </form>
 

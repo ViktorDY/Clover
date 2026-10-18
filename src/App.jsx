@@ -9,6 +9,7 @@ import VilkarPage from "./pages/VilkarPage";
 import LoginModal from "./components/LoginModal";
 import SignupModal from "./components/SignupModal";
 import BookingPickerModal from "./components/BookingPickerModal";
+import { arrivedFromAuthLink, supabase } from "./lib/supabase";
 
 export default function App() {
   return (
@@ -30,6 +31,15 @@ function Routes() {
     window.scrollTo(0, 0);
   }, [path]);
   useReveal(path);
+
+  // Someone who just clicked the confirmation link in their sign-up email
+  // lands here already signed in; take them on to the dashboard.
+  useEffect(() => {
+    if (!arrivedFromAuthLink) return;
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate("/medlem");
+    });
+  }, [navigate]);
 
   const goBooking = (slug, fromMember = false) => {
     const query = new URLSearchParams({ klubb: slug });
@@ -56,6 +66,11 @@ function Routes() {
     return (
       <MemberPage
         onExit={() => navigate("/")}
+        onLogOut={() => {
+          // Ends a real Supabase session; harmless for the demo account.
+          supabase.auth.signOut();
+          navigate("/");
+        }}
         onBook={(slug) => goBooking(slug, true)}
       />
     );
@@ -72,6 +87,10 @@ function Routes() {
       {isSignupOpen && (
         <SignupModal
           onClose={() => setSignupOpen(false)}
+          onSignedIn={() => {
+            setSignupOpen(false);
+            navigate("/medlem");
+          }}
           onOpenTerms={() => {
             setSignupOpen(false);
             navigate("/vilkar");

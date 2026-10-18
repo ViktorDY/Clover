@@ -1,33 +1,83 @@
 import { useEffect, useState } from "react";
 import KretzMark from "./KretzMark";
 import { useLang } from "../lib/langContext";
+import { siteUrl, supabase } from "../lib/supabase";
 
 /*
   Sign-up.
 
-  A prototype form, like the login modal: nothing is sent anywhere. The only
-  real rule is the canvas's — a password under 8 characters is rejected — and
-  on success the panel shows "Konto opprettet" for a beat before closing.
+  Creates a real account in Supabase. The login itself (email + hashed
+  password) lives in Supabase Auth; first name, last name and phone travel
+  along as metadata and a database trigger copies them into the profiles
+  table (supabase/schema.sql).
+
+  Two endings:
+  - Email confirmation on (Supabase's default): no session yet, so the panel
+    asks the member to open the link in their inbox. That link brings them
+    back to the site, signed in, and App sends them to the dashboard.
+  - Email confirmation off: a session comes straight back, the panel shows
+    "Konto opprettet" for a beat and then opens the dashboard.
 */
-export default function SignupModal({ onClose, onOpenTerms }) {
+export default function SignupModal({ onClose, onOpenTerms, onSignedIn }) {
   const { t } = useLang();
+  const [form, setForm] = useState({ email: "", firstName: "", lastName: "", phone: "" });
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  // null while filling in, "signed-in" or "check-email" once the account exists.
+  const [done, setDone] = useState(null);
 
-  // The modal is mounted only while open, so each opening starts clean; the
-  // success state then closes itself.
+  // The modal is mounted only while open, so each opening starts clean; a
+  // sign-up that came back signed in moves on to the dashboard by itself.
   useEffect(() => {
-    if (!done) return undefined;
-    const timer = setTimeout(onClose, 1200);
+    if (done !== "signed-in") return undefined;
+    const timer = setTimeout(onSignedIn, 1200);
     return () => clearTimeout(timer);
-  }, [done, onClose]);
+  }, [done, onSignedIn]);
+
+  const field = (key) => ({
+    value: form[key],
+    onChange: (event) => {
+      setForm((current) => ({ ...current, [key]: event.target.value }));
+      setError("");
+    },
+  });
 
   const inputClass =
     "min-w-0 box-border rounded-full border border-ink/14 bg-white px-5 py-3.5 font-body text-[15px] text-ink outline-none transition-colors duration-300 placeholder:text-ink/45 focus:border-grass";
 
-  const onSubmit = (event) => {
+  const describeError = (err) => {
+    switch (err?.code) {
+      case "user_already_exists":
+      case "email_exists":
+        return t(
+          "Det finnes allerede en konto med denne e-posten. Prøv å logge inn.",
+          "An account with this email already exists. Try logging in.",
+        );
+      case "weak_password":
+        return t(
+          "Passordet er for svakt. Velg et lengre eller mindre vanlig passord.",
+          "That password is too weak. Pick a longer or less common one.",
+        );
+      case "email_address_invalid":
+        return t("E-postadressen ser ikke gyldig ut.", "That email address doesn't look valid.");
+      case "over_email_send_rate_limit":
+      case "over_request_rate_limit":
+        return t(
+          "For mange forsøk akkurat nå. Vent litt og prøv igjen.",
+          "Too many attempts right now. Wait a moment and try again.",
+        );
+      default:
+        return t(
+          "Noe gikk galt. Sjekk nettforbindelsen og prøv igjen.",
+          "Something went wrong. Check your connection and try again.",
+        );
+    }
+  };
+
+  const onSubmit = async (event) => {
     event.preventDefault();
+    if (busy || done) return;
     if (password.length < 8) {
       setError(
         t("Passordet må være minst 8 tegn.", "The password must be at least 8 characters."),
@@ -35,7 +85,34 @@ export default function SignupModal({ onClose, onOpenTerms }) {
       return;
     }
     setError("");
-    setDone(true);
+    setBusy(true);
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: form.email.trim().toLowerCase(),
+      password,
+      options: {
+        emailRedirectTo: siteUrl(),
+        data: {
+          first_name: form.firstName.trim(),
+          last_name: form.lastName.trim(),
+          phone: form.phone.trim(),
+        },
+      },
+    });
+    setBusy(false);
+
+    if (signUpError) {
+      setError(describeError(signUpError));
+      return;
+    }
+    // With confirmation on, Supabase answers an existing address with a user
+    // that has no identities instead of an error, so the address can't be
+    // probed. Telling our own visitor is still the kind thing to do.
+    if (data.user && data.user.identities?.length === 0) {
+      setError(describeError({ code: "user_already_exists" }));
+      return;
+    }
+    setDone(data.session ? "signed-in" : "check-email");
   };
 
   return (
@@ -73,12 +150,36 @@ export default function SignupModal({ onClose, onOpenTerms }) {
           {t("Registrer deg i Kretz", "Create your Kretz account")}
         </h3>
 
+        {done === "check-email" ? (
+          <div className="grid gap-4">
+            <p className="m-0 text-[15px] leading-[1.6] text-ink/75">
+              {t(
+                `Kontoen er opprettet. Vi har sendt en bekreftelseslenke til ${form.email.trim()}. Åpne den for å aktivere kontoen — da blir du logget inn automatisk.`,
+                `Your account is created. We've sent a confirmation link to ${form.email.trim()}. Open it to activate the account and you'll be signed in automatically.`,
+              )}
+            </p>
+            <p className="m-0 text-[12.5px] leading-[1.45] text-ink/62">
+              {t(
+                "Finner du den ikke? Sjekk søppelpost-mappen.",
+                "Can't find it? Check your spam folder.",
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="cursor-pointer rounded-full border-0 bg-grass px-6 py-3.5 font-heading text-base font-extrabold text-ink shadow-[0_16px_40px_rgba(116,205,133,0.32)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-moss"
+            >
+              {t("Den er grei", "Got it")}
+            </button>
+          </div>
+        ) : (
         <form onSubmit={onSubmit} className="grid gap-2.5">
           <input
             type="email"
             required
             name="email"
             autoComplete="email"
+            {...field("email")}
             placeholder={t("E-post", "Email")}
             className={`w-full ${inputClass}`}
           />
@@ -89,6 +190,7 @@ export default function SignupModal({ onClose, onOpenTerms }) {
               required
               name="given-name"
               autoComplete="given-name"
+              {...field("firstName")}
               placeholder={t("Fornavn", "First name")}
               className={`flex-[1_1_140px] ${inputClass}`}
             />
@@ -97,6 +199,7 @@ export default function SignupModal({ onClose, onOpenTerms }) {
               required
               name="family-name"
               autoComplete="family-name"
+              {...field("lastName")}
               placeholder={t("Etternavn", "Last name")}
               className={`flex-[1_1_140px] ${inputClass}`}
             />
@@ -107,6 +210,7 @@ export default function SignupModal({ onClose, onOpenTerms }) {
             required
             name="tel"
             autoComplete="tel"
+            {...field("phone")}
             placeholder={t("Mobilnummer", "Mobile number")}
             className={`w-full ${inputClass}`}
           />
@@ -137,11 +241,17 @@ export default function SignupModal({ onClose, onOpenTerms }) {
 
           <button
             type="submit"
-            className="cursor-pointer rounded-full border-0 bg-grass px-6 py-3.5 font-heading text-base font-extrabold text-ink shadow-[0_16px_40px_rgba(116,205,133,0.32)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-moss"
+            disabled={busy}
+            className="cursor-pointer rounded-full border-0 bg-grass px-6 py-3.5 font-heading text-base font-extrabold text-ink shadow-[0_16px_40px_rgba(116,205,133,0.32)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-moss disabled:cursor-wait disabled:opacity-70"
           >
-            {done ? t("Konto opprettet", "Account created") : t("Registrere meg", "Sign me up")}
+            {done === "signed-in"
+              ? t("Konto opprettet", "Account created")
+              : busy
+                ? t("Oppretter konto …", "Creating account …")
+                : t("Registrere meg", "Sign me up")}
           </button>
         </form>
+        )}
 
         <p className="mb-0 mt-3.5 text-[12.5px] leading-[1.5] text-ink/62">
           {t("Ved registrering godtar du vår ", "By signing up you accept our ")}

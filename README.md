@@ -3,8 +3,9 @@
 Marketing site and member-facing prototype for **Kretz** — one platform for
 Norwegian sports clubs: training, sign-ups, membership fees and hall booking.
 
-Built with React 19, Vite and Tailwind CSS v4. Frontend only; there is no
-backend yet, so forms, payments and sign-in are local state.
+Built with React 19, Vite and Tailwind CSS v4. Accounts (sign-up and log-in)
+are real and stored in Supabase; everything else — payments, bookings and the
+dashboard content — is still local prototype state.
 
 ## Running it
 
@@ -31,9 +32,21 @@ rewrites. No router dependency.
 `biljard`) and `?from=member`, which sends the back button to the dashboard
 instead of the landing page.
 
-### Signing in
+### Accounts (Supabase)
 
-The login modal is a prototype with fixed demo credentials:
+Sign-up creates a real account in Supabase (`src/lib/supabase.js` holds the
+project URL and the public anon key). Email and password live in Supabase
+Auth; first name, last name and phone are copied into the `profiles` table by
+a trigger. The table, its security rules and the trigger are defined in
+`supabase/schema.sql` — run it once in the Supabase SQL Editor.
+
+With email confirmation on, a new member gets a link by email; opening it
+brings them back to the site signed in and on to `#/medlem`. **Logg ut** ends
+the session.
+
+### Demo sign-in
+
+The demo credentials from the design canvas still work, without an account:
 
 ```
 test@kretz.no / 000000

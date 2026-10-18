@@ -1,0 +1,219 @@
+/*
+  Landing page motion and layout rules that Tailwind classes cannot express
+  cleanly: the pinned hero with its scroll-driven headline, the handwritten
+  notes, the floating app cards and the arrow buttons. Ported from the
+  Kretz.dc.html design export.
+*/
+
+/* Caveat (handwritten notes) is loaded by LandingPage.jsx. */
+.kz-hand {
+  font-family: "Caveat", "Bradley Hand", "Segoe Script", cursive;
+}
+
+/* ---- Section side padding (design: 28px, 18px ≤900, 16px ≤760) ---------- */
+.kz-pad {
+  padding-left: 28px;
+  padding-right: 28px;
+}
+@media (max-width: 900px) {
+  .kz-pad {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+@media (max-width: 760px) {
+  .kz-pad-m {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* ---- Header ---------------------------------------------------------- */
+.kz-header {
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition:
+    background 0.4s,
+    border-color 0.4s,
+    backdrop-filter 0.4s;
+}
+.kz-header.kz-scrolled {
+  background: rgba(246, 248, 243, 0.84);
+  border-bottom-color: rgba(22, 36, 26, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* ---- Hero: pinned stage with a headline that shrinks into place -------- */
+.kz-hero {
+  --kz-pin: min(max(560px, 100svh - 74px), calc(min(104vw, 1120px) * 0.91));
+  --kz-pb: max(24px, calc(min(104vw, 1120px) * 0.455 - var(--kz-pin) / 2 + 23px));
+  padding-bottom: var(--kz-pb);
+  min-height: calc(var(--kz-pin) + 200px + var(--kz-pb));
+  background: linear-gradient(180deg, #fafcf8 0%, #f4f8f1 100%);
+}
+.kz-hero-pin {
+  position: sticky;
+  top: 74px;
+  height: var(--kz-pin);
+  display: grid;
+  place-items: center;
+}
+
+@keyframes kz-h1in {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+.kz-hero-h1 {
+  white-space: nowrap;
+  transform-origin: 50% 50%;
+  will-change: transform;
+  animation: kz-h1in 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@media (min-width: 561px) {
+  .kz-hero-h1 {
+    width: max-content;
+    max-width: none;
+    position: relative;
+    left: 50%;
+    translate: -50% 0;
+  }
+}
+@media (max-width: 560px) {
+  .kz-hero-h1 {
+    white-space: normal;
+    font-size: clamp(24px, 7.2vw, 36px) !important;
+  }
+}
+
+[data-kz-stage] {
+  opacity: 0;
+  transform: translateY(72px);
+  transition:
+    opacity 0.55s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.65s cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: opacity, transform;
+}
+[data-kz-stage].kz-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* "Book halltid" button: one cell of the little court grid lights up. */
+.kz-book:hover .kz-book-dot,
+.kz-book:focus-visible .kz-book-dot {
+  background: #ffd23f !important;
+  transform: scale(1.15);
+}
+
+/* ---- Arrow buttons -------------------------------------------------- */
+.kz-arrow-btn {
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  transition:
+    outline-color 0.25s,
+    outline-offset 0.25s,
+    transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
+    translate 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 0.35s,
+    background 0.3s;
+}
+.kz-arrow-btn:hover,
+.kz-arrow-btn:focus-visible {
+  outline-color: #1f7a3a;
+  outline-offset: 4px;
+}
+.kz-arr {
+  display: inline-block;
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.kz-arrow-btn:hover .kz-arr,
+.kz-arrow-btn:focus-visible .kz-arr {
+  transform: translateX(7px);
+}
+
+/* ---- App promo: floating phone and card ------------------------------- */
+@keyframes kz-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--rot, 0deg));
+  }
+  50% {
+    transform: translateY(-8px) rotate(var(--rot, 0deg));
+  }
+}
+.kz-float {
+  animation: kz-float 8s ease-in-out infinite;
+}
+.kz-float-late {
+  animation: kz-float 9s ease-in-out 1s infinite;
+}
+.kz-app-photo {
+  clip-path: polygon(12% 0, 100% 0, 100% 100%, 0 100%);
+}
+
+@media (max-width: 760px) {
+  .kz-app-col {
+    min-height: 0 !important;
+    display: grid !important;
+    gap: 18px;
+    padding: 0 24px 28px;
+  }
+  .kz-app-col > .kz-app-photo {
+    position: relative !important;
+    inset: auto;
+    height: 220px;
+    border-radius: 24px !important;
+    clip-path: none;
+  }
+  .kz-app-col > .kz-app-phone {
+    position: relative !important;
+    left: auto !important;
+    bottom: auto !important;
+    width: min(240px, 80%) !important;
+    margin: 0 auto;
+    --rot: 0deg;
+    transform: none !important;
+    animation: none !important;
+  }
+  .kz-app-col > .kz-app-card {
+    position: relative !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    --rot: 0deg;
+    transform: none !important;
+    animation: none !important;
+  }
+}
+
+/* ---- Reduced motion --------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .kz-hero-h1 {
+    animation: none;
+  }
+  [data-kz-stage] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .kz-arrow-btn,
+  .kz-arr {
+    transition: none !important;
+  }
+  .kz-float,
+  .kz-float-late {
+    animation: none;
+  }
+}
+
+/* Native buttons keep the browser's "normal" line height, as in the design. */
+.kz-landing button {
+  line-height: normal;
+}

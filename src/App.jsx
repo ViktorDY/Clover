@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import LangProvider from "./lib/LangProvider";
 import useHashRoute from "./lib/useHashRoute";
 import useReveal from "./lib/useReveal";
@@ -10,6 +10,9 @@ import LoginModal from "./components/LoginModal";
 import SignupModal from "./components/SignupModal";
 import BookingPickerModal from "./components/BookingPickerModal";
 import { arrivedFromAuthLink, supabase } from "./lib/supabase";
+
+// The admin portal is large; only download it when someone opens it.
+const AdminPage = lazy(() => import("./pages/AdminPage"));
 
 export default function App() {
   return (
@@ -62,6 +65,20 @@ function Routes() {
     return <VilkarPage onBack={() => navigate("/")} />;
   }
 
+  if (path === "/admin") {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+        <AdminPage
+          onExit={() => navigate("/")}
+          onLogOut={() => {
+            supabase.auth.signOut();
+            navigate("/");
+          }}
+        />
+      </Suspense>
+    );
+  }
+
   if (path === "/medlem") {
     return (
       <MemberPage
@@ -104,6 +121,10 @@ function Routes() {
         onMemberSignIn={() => {
           setLoginOpen(false);
           navigate("/medlem");
+        }}
+        onAdminSignIn={() => {
+          setLoginOpen(false);
+          navigate("/admin");
         }}
       />
 

@@ -61,7 +61,7 @@ export default function BookingPickerModal({ onClose, onPick }) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("Søk etter klubb eller sted", "Search for a club or place")}
             aria-label={t("Søk etter klubb eller sted", "Search for a club or place")}
-            className="box-border w-full rounded-full border border-ink/18 bg-mute px-5 py-3.5 text-[15px] text-ink outline-none transition-colors focus:border-grass focus:bg-white"
+            className="box-border w-full rounded-full border border-ink/18 bg-white/85 px-5 py-3.5 text-[15px] text-ink outline-none transition-colors focus:border-grass focus:bg-white"
           />
 
           <div className="mt-4 grid max-h-[320px] gap-2.5 overflow-auto">
@@ -79,7 +79,7 @@ export default function BookingPickerModal({ onClose, onPick }) {
                   <span className="block font-heading text-[17px] font-extrabold tracking-[-0.015em] text-ink">
                     {club.name}
                   </span>
-                  <span className="mt-0.5 block text-sm text-ink/60">{club.meta[lang]}</span>
+                  <span className="mt-0.5 block text-sm text-ink/62">{club.meta[lang]}</span>
                 </span>
               </button>
             ))}

@@ -74,11 +74,22 @@ export default function SignupModal({ onClose, onOpenTerms, onSignedIn }) {
           "For mange forsøk akkurat nå. Vent litt og prøv igjen.",
           "Too many attempts right now. Wait a moment and try again.",
         );
-      default:
-        return t(
-          "Noe gikk galt. Sjekk nettforbindelsen og prøv igjen.",
-          "Something went wrong. Check your connection and try again.",
+      default: {
+        if (/sending confirmation email/i.test(err?.message || "")) {
+          return t(
+            "Kontoen kunne ikke opprettes fordi bekreftelses-e-posten ikke ble sendt. Prøv igjen om litt.",
+            "The account couldn't be created because the confirmation email failed to send. Try again shortly.",
+          );
+        }
+        // Keep Supabase's own message visible so problems can be traced.
+        const detail = err?.message ? ` (${err.message})` : "";
+        return (
+          t(
+            "Noe gikk galt. Sjekk nettforbindelsen og prøv igjen.",
+            "Something went wrong. Check your connection and try again.",
+          ) + detail
         );
+      }
     }
   };
 
@@ -121,6 +132,7 @@ export default function SignupModal({ onClose, onOpenTerms, onSignedIn }) {
     setBusy(false);
 
     if (signUpError) {
+      console.error("Kretz sign-up failed:", signUpError);
       setError(describeError(signUpError));
       return;
     }

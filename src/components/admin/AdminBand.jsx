@@ -32,6 +32,7 @@ export default function AdminBand({ v }) {
         )}
       />
       <div
+        data-kza-band=""
         data-rsp-wide=""
         data-rsp-pad=""
         style={{ maxWidth: "1160px", margin: "0 auto", padding: "46px 24px 26px" }}

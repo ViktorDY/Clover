@@ -5,6 +5,7 @@ import DailySide from "./DailySide";
 import HomeSideCards from "./HomeSideCards";
 import VolunteerView from "./VolunteerView";
 import DocsView from "./DocsView";
+import PdfPreviewModal from "./PdfPreviewModal";
 import PlanningView from "./PlanningView";
 import CommsView from "./CommsView";
 import BudgetView from "./BudgetView";
@@ -22,6 +23,7 @@ export default function SplitView({ v }) {
       )}
     >
       <div
+        data-dash-left=""
         style={sx(
           `display: grid; gap: 18px; align-content: start; min-width: 0; grid-template-columns: minmax(0, 1fr); grid-template-rows: ${v.leftRows ?? ""}`,
         )}
@@ -29,7 +31,7 @@ export default function SplitView({ v }) {
         {v.showCalendar ? <PlannerCalendar v={v} /> : null}
         {v.showMainCard ? <MainCard v={v} /> : null}
       </div>
-      <div style={{ display: "grid", gap: "16px", alignContent: "start" }}>
+      <div data-dash-right="" style={{ display: "grid", gap: "16px", alignContent: "start" }}>
         {v.showFinance ? (
           <div style={{ display: "grid", gap: "16px" }}>
             <div
@@ -344,6 +346,8 @@ export default function SplitView({ v }) {
             </div>
           </div>
         ) : null}
+        {/* Nov design: invoice PDF preview (payment requests and supplier invoices) */}
+        {v.pdfOpen ? <PdfPreviewModal v={v} /> : null}
         {v.showSupplier ? <SupplierView v={v} /> : null}
         {v.showMsgBox ? (
           <div

@@ -1,0 +1,91 @@
+/* Integrasjoner — page-specific rules (marquees, filter grid, CTA shots). */
+@keyframes kz-int-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes kz-int-panel-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.kz-int .kz-marquee-wrap {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.kz-int .kz-marquee {
+  display: flex;
+  width: max-content;
+  animation: kz-int-marquee 40s linear infinite;
+}
+.kz-int .kz-marquee.kz-slow {
+  animation-duration: 70s;
+}
+.kz-int .kz-marquee-wrap:hover .kz-marquee {
+  animation-play-state: paused;
+}
+.kz-int .kz-panel-in {
+  animation: kz-int-panel-in 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.kz-int .kz-int-tile {
+  flex: 0 0 auto;
+  width: 84px;
+  height: 84px;
+  margin: 0 10px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid rgba(116, 205, 133, 0.4);
+  box-shadow: 0 10px 24px rgba(31, 122, 58, 0.1);
+  display: grid;
+  place-items: center;
+}
+.kz-int .kz-int-quote {
+  flex: 0 0 auto;
+  width: 360px;
+  margin: 0 9px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid rgba(22, 36, 26, 0.12);
+  padding: 24px;
+  box-sizing: border-box;
+  white-space: normal;
+}
+.kz-int .kz-int-cat {
+  transition: background 0.25s, color 0.25s;
+}
+.kz-int .kz-int-cat[aria-pressed="false"]:hover {
+  border-color: #16241a !important;
+}
+.kz-int .kz-int-cat:focus-visible {
+  outline: 2px solid #1f7a3a;
+  outline-offset: 2px;
+}
+.kz-int .kz-int-shot {
+  position: absolute;
+  max-width: none;
+  background: #ffffff;
+  border: 1px solid rgba(22, 36, 26, 0.08);
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .kz-int [data-kz-int-cta] {
+    padding-right: 48px !important;
+    min-height: 0 !important;
+  }
+}
+@media (max-width: 760px) {
+  .kz-int [data-kz-int-cta] {
+    padding: 0 24px !important;
+  }
+  .kz-int .kz-int-quote {
+    width: 300px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kz-int .kz-marquee,
+  .kz-int .kz-panel-in {
+    animation: none !important;
+  }
+}

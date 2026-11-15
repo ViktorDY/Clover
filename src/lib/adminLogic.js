@@ -4,6 +4,8 @@
 import { KretzTimetable } from "./adminTimetable";
 import { KretzVenues } from "./adminVenues";
 import * as data from "./adminData";
+// November design: methods ported by the admin2 helper (see file header).
+import { midMethods } from "./adminLogicMid";
 
 // Minimal stand-in for the design runtime's base class: synchronous merge,
 // then ask React to re-render.
@@ -70,6 +72,10 @@ export class AdminLogic extends LogicBase {
     if (this._venUnsub) this._venUnsub();
     if (this._ttPoll) clearInterval(this._ttPoll);
     if (this._ttSavedT) clearTimeout(this._ttSavedT);
+    // admin2 (Nov design): listeners added by dashFit / ttWatchResize
+    if (this._dashRs) window.removeEventListener('resize', this._dashRs);
+    if (this._ttRs) window.removeEventListener('resize', this._ttRs);
+    cancelAnimationFrame(this._dashRaf);
   }
 
   ttData() {
@@ -245,53 +251,6 @@ export class AdminLogic extends LogicBase {
     };
   }
 
-  adminDocsVals(c) {
-    const en = c.en, st = this.state, v = (k, d) => (st[k] === undefined ? d : st[k]), set = (o) => this.setState(o);
-    const cats = [['all', en ? 'All' : 'Alle'], ['law', en ? 'Statutes' : 'Vedtekter'], ['minutes', en ? 'Minutes' : 'Referater'], ['acc', en ? 'Accounts' : 'Regnskap'], ['contract', en ? 'Contracts' : 'Avtaler']];
-    const catName = (id) => (cats.find(x => x[0] === id) || [0, ''])[1];
-    const base = data.documents();
-    const cat = v('dcCat', 'all'), q = (v('dcQ', '') || '').trim().toLowerCase(), del = v('dcDel', {});
-    const all = (v('dcNew', [])).concat(base).filter(d => (c.all || d.club === c.sel) && !del[d.id]);
-    const rows = all.filter(d => (cat === 'all' || d.cat === cat) && (!q || d.name.toLowerCase().includes(q)));
-    const fd = (iso) => { const p = iso.split('-'); return p[2] + '.' + p[1] + '.' + p[0]; };
-    const chip = (on) => 'cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 12.5px; padding: 8px 15px; border-radius: 999px; border: 1px solid ' + (on ? '#16241a' : 'rgba(22,36,26,.16)') + '; background: ' + (on ? '#16241a' : '#ffffff') + '; color: ' + (on ? '#f6f8f3' : '#16241a');
-    const hist = (v('dcHist', [])).concat([
-      { id: 'h1', text: en ? 'Sigrid Andersen changed the opening hours for Vardenhallen' : 'Sigrid Andersen endret åpningstidene for Vardenhallen', when: en ? 'Today 09:12' : 'I dag 09:12' },
-      { id: 'h2', text: en ? 'Silje Aas uploaded "Referat styremøte september"' : 'Silje Aas lastet opp «Referat styremøte september»', when: en ? 'Yesterday 16:40' : 'I går 16:40' },
-      { id: 'h3', text: en ? 'New invoice sent to 24 members' : 'Ny faktura sendt til 24 medlemmer', when: en ? 'Yesterday 11:05' : 'I går 11:05' },
-      { id: 'h4', text: en ? 'Marit Sunde was given the role Treasurer' : 'Marit Sunde fikk rollen Økonomiansvarlig', when: en ? '2 days ago' : '2 dager siden' },
-      { id: 'h5', text: en ? 'Activity "Autumn tournament" created' : 'Aktiviteten «Høstturnering» ble opprettet', when: en ? '4 days ago' : '4 dager siden' },
-      { id: 'h6', text: en ? 'Timetable for autumn season saved' : 'Ukeplanen for høstsesongen ble lagret', when: en ? 'Last week' : 'Forrige uke' }
-    ]);
-    return {
-      tDcTitle: en ? 'Documents and history' : 'Dokumenter og historikk', tDcUpload: en ? 'Upload document' : 'Last opp dokument', tDcSearch: en ? 'Search documents' : 'Søk i dokumenter', tDcEmpty: en ? 'No documents match.' : 'Ingen dokumenter matcher.', tHiTitle: en ? 'History' : 'Historikk',
-      dcCats: cats.map(o => ({ key: 'dk' + o[0], label: o[1], pick: () => set({ dcCat: o[0] }), style: chip(cat === o[0]) })),
-      dcQ: v('dcQ', ''), onDcQ: (e) => set({ dcQ: e.target.value }), dcEmpty: rows.length === 0,
-      onDcFiles: (ev) => { const list = Array.from(ev.target.files || []); ev.target.value = ''; if (!list.length) return; const club = c.all ? 'vif' : c.sel; const add = list.map((f, i) => ({ id: 'dn' + Date.now() + i, club: club, name: f.name, cat: cat === 'all' ? 'minutes' : cat, by: 'Sigrid Andersen', when: '2026-10-15', kb: Math.max(1, Math.round((f.size || 0) / 1000)) })); set(s2 => ({ dcNew: add.concat(s2.dcNew || []), dcHist: add.map(a => ({ id: 'hn' + a.id, text: (en ? 'Sigrid Andersen uploaded "' : 'Sigrid Andersen lastet opp «') + a.name + (en ? '"' : '»'), when: en ? 'Just now' : 'Nå nettopp' })).concat(s2.dcHist || []) })); },
-      dcRows: rows.map(d => { const ext = (d.name.split('.').pop() || '').toUpperCase().slice(0, 4); return { key: 'dr' + d.id, name: d.name, ext: ext, cat: catName(d.cat) || (en ? 'Other' : 'Annet'), meta: d.by + ' · ' + fd(d.when) + ' · ' + d.kb + ' kB' + (c.all ? ' · ' + c.clubOf(d.club) : ''),
-        iconStyle: 'width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font-size: 10.5px; font-weight: 800; ' + (ext === 'PDF' ? 'background: #fbe9e5; color: #b8240e;' : (/XLS|CSV/.test(ext) ? 'background: #eaf7ed; color: #1f7a3a;' : (/DOC/.test(ext) ? 'background: #e6f0fc; color: #2a5fae;' : 'background: #f3eefc; color: #5a2fa3;'))),
-        del: () => set(s2 => ({ dcDel: Object.assign({}, s2.dcDel || {}, { [d.id]: true }) })) }; }),
-      hiRows: hist.map(h => ({ key: 'hr' + h.id, text: h.text, meta: h.when }))
-    };
-  }
-
-  adminPlanVals(c) {
-    const en = c.en, st = this.state, v = (k, d) => (st[k] === undefined ? d : st[k]), set = (o) => this.setState(o);
-    const cols = [['idea', en ? 'Ideas' : 'Idéer', '#f4f8f2', '#b9c9b4'], ['planned', en ? 'Planned' : 'Planlagt', '#fff9e5', '#e8b923'], ['active', en ? 'In progress' : 'Pågår', '#eaf4fb', '#4a90c4'], ['done', en ? 'Done' : 'Ferdig', '#eaf7ed', '#1f7a3a']];
-    const base = data.planningItems(en);
-    const items = base.concat(v('plNew', [])).filter(p => c.all || p.club === c.sel).map(p => Object.assign({}, p, { st: (v('plMove', {}))[p.id] || p.st })).filter(p => !(v('plDel', {}))[p.id]);
-    const fd = (iso) => { const q = iso.split('-'); return q[2] + '.' + q[1] + '.' + q[0]; };
-    const moveTo = (p, k) => set(s2 => ({ plMove: Object.assign({}, s2.plMove || {}, { [p.id]: cols[k][0] }) }));
-    return {
-      tPlTitle: en ? 'Planning' : 'Planlegging', tPlAdd: en ? 'Add item' : 'Legg til', tPlName: en ? 'Name' : 'Navn', tPlOwner: en ? 'Responsible' : 'Ansvarlig', tPlDate: en ? 'Date' : 'Dato', tPlBack: en ? 'Move back' : 'Flytt tilbake', tPlFwd: en ? 'Move forward' : 'Flytt videre',
-      plFormOpen: !!v('plForm', false), plToggleForm: () => set({ plForm: !v('plForm', false) }),
-      plName: v('plName', ''), plOwner: v('plOwner', ''), plDate: v('plDate', '2026-11-15'),
-      onPlName: (e) => set({ plName: e.target.value }), onPlOwner: (e) => set({ plOwner: e.target.value }), onPlDate: (e) => set({ plDate: e.target.value }),
-      plSave: (e) => { e.preventDefault(); set(s2 => ({ plNew: (s2.plNew || []).concat([{ id: 'n' + Date.now(), club: c.all ? 'vif' : c.sel, name: v('plName', ''), owner: v('plOwner', ''), date: v('plDate', '2026-11-15'), st: 'idea' }]), plName: '', plOwner: '', plForm: false })); },
-      plCols: cols.map((col, k) => { const list = items.filter(p => p.st === col[0]).sort((a, b) => a.date < b.date ? -1 : 1); return { key: 'pc' + col[0], title: col[1], bg: col[2], dot: col[3], count: list.length, cards: list.map(p => ({ key: 'pp' + p.id, name: p.name, owner: p.owner, date: fd(p.date), club: c.clubOf(p.club), noBack: k === 0, noFwd: k === cols.length - 1, backOp: k === 0 ? .35 : 1, fwdOp: k === cols.length - 1 ? .35 : 1, back: () => k > 0 && moveTo(p, k - 1), fwd: () => k < cols.length - 1 && moveTo(p, k + 1), del: () => set(s2 => ({ plDel: Object.assign({}, s2.plDel || {}, { [p.id]: true }) })) })) }; })
-    };
-  }
-
   adminCommsVals(c) {
     const en = c.en, st = this.state, v = (k, d) => (st[k] === undefined ? d : st[k]), set = (o) => this.setState(o);
     const vis = c.clubs.filter(cl => c.all || cl.id === c.sel);
@@ -331,6 +290,8 @@ export class AdminLogic extends LogicBase {
     const push = (msg) => { if (!open) return; set(s2 => ({ cmAdd: Object.assign({}, s2.cmAdd || {}, { [open.id]: ((s2.cmAdd || {})[open.id] || []).concat([msg]) }), cmDraft: '', cmAttach: false })); setTimeout(() => { const el = document.querySelector('[data-kza-cmscroll]'); if (el) el.scrollTop = el.scrollHeight; }, 60); };
     const pickFiles = (kind) => (ev) => { const fs = Array.from(ev.target.files || []); ev.target.value = ''; fs.forEach((f, i) => push({ id: 'f' + Date.now() + i, from: en ? 'You' : 'Du', me: true, when: stamp(), file: { name: f.name, kind: kind, size: Math.max(1, Math.round((f.size || 0) / 1000)) + ' kB' } })); };
     const unreadAll = threads.filter(t => unreadOf(t) > 0).length;
+    // admin2 (Nov design): group chats, read by the priority-message composer.
+    this._cmGC = threads.filter(t => t.group).map(t => ({ id: t.id, name: t.name, people: (t.people || []).slice() }));
     const cgOn = c.tab === 'comms' && !c.all;
     const cgClub = cgOn ? c.clubs.find(x => x.id === c.sel) : null;
     const deptMap = { vif: ['Kunstløp', 'Ishockey'], fana: ['Fotball', 'Håndball'], varden: ['Bordtennis', 'Badminton'] };
@@ -460,15 +421,16 @@ export class AdminLogic extends LogicBase {
     const shown = rows.filter(r => (fB === 'all' || (fB === 'yes') === r.booked) && (fR === 'all' || fR === r.recv) && (!q || (r.p.no + ' ' + r.p.supplier + ' ' + r.p.desc + ' ' + r.po + ' ' + c.clubOf(r.p.club)).toLowerCase().includes(q)))
       .sort((a, b) => { const x = sort.k === 'no' ? a.p.no : (sort.k === 'total' ? a.p.n : (sort.k === 'booked' ? Number(a.booked) : a.p.due)); const y = sort.k === 'no' ? b.p.no : (sort.k === 'total' ? b.p.n : (sort.k === 'booked' ? Number(b.booked) : b.p.due)); return (x < y ? -1 : x > y ? 1 : 0) * sort.d; });
     // eslint-disable-next-line no-unused-vars -- kept as in the design logic
-    const pill = (on, kind) => 'display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 13.5px; white-space: nowrap; ' + (on ? 'background: rgba(116,205,133,.35); color: #16241a;' : 'color: rgba(22,36,26,.6);');
+    const pill = (on, kind) => 'display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; ' + (on ? 'background: rgba(116,205,133,.3); color: #16241a;' : 'background: rgba(22,36,26,.08); color: rgba(22,36,26,.7);');
     const chip = (on) => 'cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 12.5px; padding: 8px 15px; border-radius: 999px; white-space: nowrap; border: 1px solid ' + (on ? '#16241a' : 'rgba(22,36,26,.16)') + '; background: ' + (on ? '#16241a' : '#ffffff') + '; color: ' + (on ? '#f6f8f3' : '#16241a');
     const sortBy = (k) => () => set({ svSort: { k: k, d: sort.k === k ? -sort.d : 1 } });
     const csvRows = () => [['Nummer', 'Type', 'Forfallsdato', 'Innkjøpsordre', 'Leverandør', 'Overskrift', 'Bokført', 'Mottatt', 'Total (NOK)']].concat(shown.map(r => [r.p.no, 'Faktura', fd(r.p.due), r.po, r.p.supplier, r.p.desc, r.booked ? bl.yes : bl.no, rl[r.recv], r.p.n]));
     const rowsOut = shown.map(r => {
+      // eslint-disable-next-line no-unused-vars -- kept as in the design logic
       const p = r.p, isOpen = !!openMap[p.id], mShown = menu === p.id, pr = c.payRows.find(x => x.key === 'pb' + p.id);
       const tipFor = (t) => () => set({ svTip: t });
       return {
-        key: 'sv' + p.id, no: p.no, type: en ? 'Invoice' : 'Faktura', due: fd(p.due), po: r.po, supplier: p.supplier, club: c.clubOf(p.club), showClub: c.all, title: p.desc,
+        key: 'sv' + p.id, sel: !!v('svSel', {})[p.id], rowBg: v('svSel', {})[p.id] ? '#eaf7ed' : '#ffffff', toggleSel: () => set(s2 => { const n = Object.assign({}, s2.svSel || {}); if (n[p.id]) delete n[p.id]; else n[p.id] = true; return { svSel: n }; }), no: p.no, type: en ? 'Invoice' : 'Faktura', due: fd(p.due), po: r.po, supplier: p.supplier, club: c.clubOf(p.club), showClub: c.all, title: p.desc,
         booked: r.booked ? bl.yes : bl.no, bookedStyle: pill(r.booked), recv: rl[r.recv], recvStyle: pill(r.recv !== 'none'), total: money(p.n),
         open: isOpen, chevRot: isOpen ? 'rotate(180deg)' : 'none', desc: p.desc,
         toggle: () => set({ svOpen: Object.assign({}, openMap, { [p.id]: !isOpen }) }),
@@ -476,7 +438,7 @@ export class AdminLogic extends LogicBase {
         menuShown: mShown, dotsBorder: mShown ? '#1f7a3a' : 'transparent', tipShown: mShown && !!tip, tipText: tip,
         undo: () => set({ svBooked: Object.assign({}, bookedOv, { [p.id]: !r.booked }), svMenu: '' }), undoIn: tipFor(en ? 'Undo posting' : 'Angre bokføring'),
         copy: () => set(s2 => ({ payExtra: (s2.payExtra || []).concat([{ id: 'px' + Date.now(), club: p.club, supplier: p.supplier, no: p.no + '-K', desc: p.desc, n: p.n, due: p.due, url: p.url }]), svMenu: '' })), copyIn: tipFor(en ? 'Copy invoice' : 'Kopier faktura'),
-        look: () => pr && pr.open(), lookIn: tipFor(en ? 'Preview invoice' : 'Forhåndsvis faktura'),
+        look: () => set({ svPdfId: p.id, pdfId: '' }), lookIn: tipFor(en ? 'Preview invoice' : 'Forhåndsvis faktura'),
         payToggle: () => set(s2 => ({ payPaid: Object.assign({}, s2.payPaid, { [p.id]: !p.isPaid }) })),
         payLabel: p.isPaid ? (en ? 'Undo paid' : 'Angre betalt') : (en ? 'Mark as paid' : 'Merk som betalt'),
         payBg: p.isPaid ? '#ffffff' : '#1f7a3a', payInk: p.isPaid ? '#16241a' : '#ffffff'
@@ -484,7 +446,9 @@ export class AdminLogic extends LogicBase {
     });
     return {
       svCount: shown.length, tSvTitle: en ? 'Supplier invoices' : 'Leverandørfakturaer',
-      svCols: '30px minmax(80px,.8fr) minmax(66px,.6fr) minmax(94px,.8fr) minmax(76px,.6fr) minmax(104px,1fr) minmax(120px,1.4fr) minmax(76px,.6fr) minmax(96px,.8fr) minmax(108px,.8fr) 44px',
+      svCols: '24px 104px 96px 118px 134px minmax(140px,1.1fr) minmax(150px,1.3fr) 100px 124px 116px 84px',
+      tSvMore: en ? 'More' : 'Mer', tSvDetails: en ? 'Details' : 'Detaljer', tSvSelectAll: en ? 'Select all' : 'Velg alle', svCountLabel: (en ? 'Number of invoices: ' : 'Antall fakturaer: ') + shown.length,
+      svAllSel: shown.length > 0 && shown.every(r => v('svSel', {})[r.p.id]), svToggleAll: () => set(s2 => { const cur = s2.svSel || {}, all = shown.length > 0 && shown.every(r => cur[r.p.id]); const n = Object.assign({}, cur); shown.forEach(r => { if (all) delete n[r.p.id]; else n[r.p.id] = true; }); return { svSel: n }; }),
       tSvExport: en ? 'Export' : 'Eksporter', tSvExportCsv: en ? 'Export as CSV' : 'Eksporter som CSV', tSvExportPdf: en ? 'Print / save as PDF' : 'Skriv ut / lagre som PDF',
       svExpOpen: !!v('svExpOpen', false), svToggleExp: () => set({ svExpOpen: !v('svExpOpen', false), svFiltOpen: false }),
       svClosePops: () => set({ svExpOpen: false, svFiltOpen: false }),
@@ -502,127 +466,7 @@ export class AdminLogic extends LogicBase {
       svSortNo: sortBy('no'), svSortBooked: sortBy('booked'), svSortTotal: sortBy('total'),
       svRows: rowsOut, svEmpty: rowsOut.length === 0, svTotalAll: money(shown.reduce((n, r) => n + r.p.n, 0)),
       tSvExpand: en ? 'Show details' : 'Vis detaljer', tSvActions: en ? 'Actions' : 'Handlinger', tSvDesc: en ? 'Description' : 'Beskrivelse',
-      tSvUndoBook: en ? 'Undo posting' : 'Angre bokføring', tSvCopy: en ? 'Copy invoice' : 'Kopier faktura', tSvPreview: en ? 'Preview invoice' : 'Forhåndsvis faktura'
-    };
-  }
-
-  adminInvVals(c) {
-    const en = c.en, st = this.state, v = (k, d) => (st[k] === undefined ? d : st[k]);
-    const pad = (n) => String(n).padStart(2, '0');
-    const kr = (n) => 'kr ' + Number(n).toLocaleString('nb-NO').replace(/\u00a0/g, ' ');
-    const types = [en ? 'Membership fee' : 'Kontingent', en ? 'Tournament fee' : 'Turneringsavgift', en ? 'Kit' : 'Drakt', en ? 'Season fee' : 'Sesongavgift'];
-    const amts = [1200, 650, 899, 1500];
-    const addDays = (iso, n) => { const p = iso.split('-').map(Number); const d = new Date(p[0], p[1] - 1, p[2] + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
-    const base = this.members(en).filter(c.keep).map((m, i) => {
-      const n = parseInt(m.id.slice(1), 10) || i + 1;
-      const issue = '2026-09-' + pad(1 + (n * 5) % 26);
-      return { id: '#' + (3500 + n * 13), club: m.club, type: types[(m.seed || n) % 4], number: (n * 3 + 8) + '/9/2026', date: issue, name: m.name, amt: amts[(m.seed || n) % 4], due: addDays(issue, 14), status: m.due > 1 ? 'overdue' : (m.due > 0 ? 'unpaid' : 'paid') };
-    });
-    const created = (v('invNewList', [])).filter(x => c.all || x.club === c.sel);
-    const del = v('invDel', {}), ov = v('invOv', {});
-    const stat = v('invStatus', 'all'), q = (v('invQ', '') || '').trim().toLowerCase();
-    const merged = created.concat(base).filter(x => !del[x.id]).map(x => Object.assign({}, x, ov[x.id] || {}));
-    const shown = merged.filter(x => (stat === 'all' || x.status === stat) && (!q || (x.id + ' ' + x.type + ' ' + x.number + ' ' + x.name + ' ' + x.date).toLowerCase().includes(q)));
-    const sl = { paid: en ? 'Paid' : 'Betalt', unpaid: en ? 'Unpaid' : 'Ubetalt', overdue: en ? 'Overdue' : 'Forfalt' };
-    const ss = { paid: 'background: rgba(116,205,133,.3); color: #16241a', unpaid: 'background: rgba(148,92,214,.18); color: #4b2a85', overdue: 'background: #fbe9e5; color: #a3280e' };
-    const pillSt = (k) => 'display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; ' + ss[k];
-    const set = (o) => this.setState(o);
-    const dm = v('invModal', null); const dRow = dm ? merged.find(x => x.id === dm.id) : null;
-    const chip = (on) => 'cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 12.5px; padding: 8px 15px; border-radius: 999px; white-space: nowrap; border: 1px solid ' + (on ? '#16241a' : 'rgba(22,36,26,.16)') + '; background: ' + (on ? '#16241a' : '#ffffff') + '; color: ' + (on ? '#f6f8f3' : '#16241a');
-    const draft = (k, d) => v(k, d);
-    const allM = this.members(en);
-    const manual = v('invManual', []);
-    const totalCount = c.invCount + manual.length;
-    const chosen = c.invTargets.find(t => t.id === st.invTarget);
-    const pq = (v('invPQ', '') || '').trim().toLowerCase();
-    const pickRows = (c.scope === 'person' || c.scope === 'group') ? c.invTargets.filter(t => !pq || t.name.toLowerCase().includes(pq)).map(t => { const m = c.scope === 'person' ? allM.find(x => x.id === t.id) : null; return { key: 'pk' + t.id, label: t.name, sub: m ? (m.group + ' · ' + c.clubOf(m.club)) : '', pick: () => set({ invTarget: t.id, invSent: false }),
-      style: 'text-align: left; width: 100%; box-sizing: border-box; cursor: pointer; padding: 10px 14px; border-radius: 14px; font-family: var(--font-body); border: 1px solid ' + (st.invTarget === t.id ? '#1f7a3a' : 'rgba(22,36,26,.1)') + '; background: ' + (st.invTarget === t.id ? '#1f7a3a' : '#ffffff') + '; color: ' + (st.invTarget === t.id ? '#ffffff' : '#16241a') }; }) : [];
-    const calM = v('invCalM', 10), invDay = v('invDay', 0);
-    const evAll = (c.allActs || []).filter(a => c.all || a.club === c.sel);
-    const evDays = {}; evAll.forEach(a => { if (a.m === calM) (evDays[a.day] = evDays[a.day] || []).push(a); });
-    const lead = (new Date(2026, calM - 1, 1).getDay() + 6) % 7, nd = new Date(2026, calM, 0).getDate();
-    const calCells = []; for (let i = 0; i < lead; i++) calCells.push({ key: 'cp' + i, label: '', off: true, pick: () => {}, style: 'visibility: hidden; height: 34px' });
-    for (let d2 = 1; d2 <= nd; d2++) { const has = !!evDays[d2], on = invDay === d2; calCells.push({ key: 'cd' + d2, label: String(d2), off: !has, pick: () => set({ invDay: d2 }),
-      style: 'height: 34px; border-radius: 10px; font-family: var(--font-body); font-size: 13.5px; border: 1px solid ' + (on ? '#16241a' : (has ? '#74cd85' : 'transparent')) + '; background: ' + (on ? '#16241a' : (has ? 'rgba(116,205,133,.3)' : 'transparent')) + '; color: ' + (on ? '#f6f8f3' : (has ? '#16241a' : 'rgba(22,36,26,.35)')) + '; cursor: ' + (has ? 'pointer' : 'default') + '; font-weight: ' + (has ? '800' : '400') }); }
-    const dayEvents = (evDays[invDay] || []).map(a => ({ key: 'de' + a.id, label: a.title, sub: a.time + ' · ' + c.clubOf(a.club) + (a.signed ? ' · ' + a.signed + (en ? ' signed up' : ' påmeldt') : ''), pick: () => set({ invTarget: a.id, invSent: false }),
-      style: 'text-align: left; width: 100%; box-sizing: border-box; cursor: pointer; padding: 10px 14px; border-radius: 14px; font-family: var(--font-body); border: 1px solid ' + (st.invTarget === a.id ? '#1f7a3a' : 'rgba(22,36,26,.1)') + '; background: ' + (st.invTarget === a.id ? '#1f7a3a' : '#ffffff') + '; color: ' + (st.invTarget === a.id ? '#ffffff' : '#16241a') }));
-    const evQ = (v('invEvQ', '') || '').trim().toLowerCase();
-    const evResults = evQ ? evAll.filter(a => (a.title + ' ' + c.clubOf(a.club)).toLowerCase().includes(evQ)).slice(0, 8).map(a => ({ key: 'er' + a.id, label: a.title, sub: a.day + '.' + a.m + ' · ' + a.time + ' · ' + c.clubOf(a.club) + (a.signed ? ' · ' + a.signed + (en ? ' signed up' : ' påmeldt') : ''), pick: () => set({ invTarget: a.id, invCalM: a.m, invDay: a.day, invSent: false }),
-      style: 'text-align: left; width: 100%; box-sizing: border-box; cursor: pointer; padding: 10px 14px; border-radius: 14px; font-family: var(--font-body); border: 1px solid ' + (st.invTarget === a.id ? '#1f7a3a' : 'rgba(22,36,26,.1)') + '; background: ' + (st.invTarget === a.id ? '#1f7a3a' : '#ffffff') + '; color: ' + (st.invTarget === a.id ? '#ffffff' : '#16241a') })) : [];
-    const mqq = (v('invManQ', '') || '').trim().toLowerCase();
-    const manRes = mqq ? allM.filter(m => manual.indexOf(m.id) === -1 && m.name.toLowerCase().includes(mqq)).slice(0, 5).map(m => ({ key: 'mr' + m.id, name: m.name, sub: m.group + ' · ' + c.clubOf(m.club), add: () => set({ invManual: manual.concat([m.id]), invManQ: '' }) })) : [];
-    const manChips = manual.map(id => { const m = allM.find(x => x.id === id); return { key: 'mc' + id, name: m ? m.name : id, remove: () => set({ invManual: manual.filter(x => x !== id) }) }; });
-    return {
-      tInvoices: en ? 'Invoices' : 'Fakturaer',
-      invCountLabel: (en ? 'Number of invoices: ' : 'Antall fakturaer: ') + shown.length,
-      invQ: v('invQ', ''), onInvQ: (e) => set({ invQ: e.target.value }),
-      tInvSearch: en ? 'Search for invoice' : 'Søk etter faktura',
-      tInvFilter: en ? 'Filter' : 'Filter', tInvAdd: en ? 'Add invoice' : 'Legg til faktura', tInvMore: en ? 'More' : 'Mer',
-      invFilterOpen: !!v('invFilterOpen', false), invMoreOpen: !!v('invMoreOpen', false),
-      toggleInvFilter: () => set({ invFilterOpen: !v('invFilterOpen', false), invMoreOpen: false }),
-      toggleInvMore: () => set({ invMoreOpen: !v('invMoreOpen', false), invFilterOpen: false }),
-      closeInvPops: () => set({ invFilterOpen: false, invMoreOpen: false }),
-      tStatus: en ? 'Status' : 'Status',
-      invStatusTabs: [['all', en ? 'All' : 'Alle'], ['paid', sl.paid], ['unpaid', sl.unpaid], ['overdue', sl.overdue]].map(o => ({ key: 'is' + o[0], label: o[1], pick: () => set({ invStatus: o[0] }), style: chip(stat === o[0]) })),
-      tInvExport: en ? 'Export invoices (CSV)' : 'Eksporter fakturaer (CSV)',
-      exportInvoices: () => {
-        const qv = (x) => '"' + String(x).replace(/"/g, '""') + '"';
-        const lines = [['ID', en ? 'Type' : 'Type', en ? 'Number' : 'Nummer', en ? 'Issued' : 'Utstedt', en ? 'Name' : 'Navn', en ? 'Amount (NOK)' : 'Beløp (NOK)', 'Status'].map(qv).join(';')].concat(shown.map(x => [x.id, x.type, x.number, x.date, x.name, x.amt, sl[x.status]].map(qv).join(';')));
-        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })); a.download = 'fakturaer.csv'; document.body.appendChild(a); a.click(); a.remove(); set({ invMoreOpen: false });
-      },
-      invCols: '72px minmax(110px,1.2fr) minmax(90px,.8fr) minmax(100px,1fr) minmax(130px,1.4fr) minmax(90px,.9fr) minmax(90px,.9fr) 140px',
-      tColType: en ? 'Type' : 'Type', tColNumber: en ? 'Number' : 'Nummer', tColIssued: en ? 'Date of issue' : 'Utstedt', tColName: en ? 'Name' : 'Navn', tColAmount: en ? 'Amount' : 'Beløp', tColStatus: 'Status', tColDetails: en ? 'Details' : 'Detaljer',
-      tView: en ? 'View' : 'Vis', tEditL: en ? 'Edit' : 'Rediger', tDelete: en ? 'Delete' : 'Slett',
-      tInvEmpty: en ? 'No invoices match.' : 'Ingen fakturaer matcher.', invEmpty: shown.length === 0,
-      invRows: shown.map(x => ({ key: 'ir' + x.id, id: x.id, type: x.type, number: x.number, date: x.date, name: x.name, amount: kr(x.amt), statusLabel: sl[x.status], statusStyle: pillSt(x.status),
-        view: () => set({ invModal: { id: x.id, edit: false }, invDType: x.type, invDAmt: String(x.amt), invDDue: x.due, invDStatus: x.status }),
-        edit: () => set({ invModal: { id: x.id, edit: true }, invDType: x.type, invDAmt: String(x.amt), invDDue: x.due, invDStatus: x.status }),
-        del: () => set(s2 => ({ invDel: Object.assign({}, s2.invDel || {}, { [x.id]: true }) })) })),
-      invAddOpen: !!v('invAddOpen', false), openInvAdd: () => set({ invAddOpen: true, invSent: false, invFilterOpen: false, invMoreOpen: false }), closeInvAdd: () => set({ invAddOpen: false }),
-      invDetail: !!dRow, closeInvDetail: () => set({ invModal: null }),
-      invDTitleHead: dRow ? dRow.id + ' · ' + dRow.type : '',
-      invDName: dRow ? dRow.name : '', invDNumber: dRow ? dRow.number : '', invDDate: dRow ? dRow.date : '',
-      invDRead: !(dm && dm.edit), invDEdit: !!(dm && dm.edit), invDToEdit: () => set({ invModal: Object.assign({}, dm, { edit: true }) }),
-      invDType: draft('invDType', ''), invDAmt: draft('invDAmt', ''), invDDue: draft('invDDue', ''), invDStatus: draft('invDStatus', 'unpaid'),
-      onInvDType: (e) => set({ invDType: e.target.value }), onInvDAmt: (e) => set({ invDAmt: e.target.value }), onInvDDue: (e) => set({ invDDue: e.target.value }), onInvDStatus: (e) => set({ invDStatus: e.target.value }),
-      tInvDue: en ? 'Due date' : 'Forfallsdato',
-      invStatusOpts: ['paid', 'unpaid', 'overdue'].map(k => ({ key: 'so' + k, id: k, name: sl[k] })),
-      saveInvDetail: (e) => { e.preventDefault(); if (!dRow) return; set(s2 => ({ invOv: Object.assign({}, s2.invOv || {}, { [dRow.id]: { type: v('invDType', dRow.type), amt: parseInt(v('invDAmt', dRow.amt), 10) || dRow.amt, due: v('invDDue', dRow.due), status: v('invDStatus', dRow.status) } }), invModal: null })); },
-      invSent: !!v('invSent', false),
-      invSentText: (() => { const n = v('invSentN', totalCount); return en ? ('Invoice sent to ' + n + (n === 1 ? ' member.' : ' members.')) : ('Faktura sendt til ' + n + (n === 1 ? ' medlem.' : ' medlemmer.')); })(),
-      invRecipients: totalCount + (en ? (totalCount === 1 ? ' recipient' : ' recipients') : (totalCount === 1 ? ' mottaker' : ' mottakere')),
-      onInvScope: (e) => set({ invScope: e.target.value, invTarget: c.defaultTarget(e.target.value), invSent: false, invPQ: '', invEvQ: '', invDay: 0 }),
-      tSendTo: en ? 'Send to' : 'Send til', tChosen: en ? 'Chosen' : 'Valgt',
-      pickClub: c.scope === 'club', pickList: c.scope === 'person' || c.scope === 'group', pickEvent: c.scope === 'event',
-      pickChosen: c.scope !== 'club' && !!chosen, chosenName: chosen ? chosen.name : '',
-      pickHeading: c.scope === 'group' ? (en ? 'Choose training group' : 'Velg treningsgruppe') : (en ? 'Choose member' : 'Velg medlem'),
-      tPickSearch: c.scope === 'group' ? (en ? 'Search training group' : 'Søk etter treningsgruppe') : (en ? 'Search member by name' : 'Søk etter medlem'),
-      invPQ: v('invPQ', ''), onInvPQ: (e) => set({ invPQ: e.target.value }),
-      pickRows: pickRows, pickEmpty: pickRows.length === 0, tInvNoMatch: en ? 'No matches.' : 'Ingen treff.',
-      tPickEvent: en ? 'Or pick the event in the calendar' : 'Eller velg aktivitet i kalenderen',
-      tEvSearchHead: en ? 'Search for the event' : 'Søk etter aktivitet', tEvSearchPh: en ? 'Event name' : 'Navn på aktivitet',
-      invEvQ: v('invEvQ', ''), onInvEvQ: (e) => set({ invEvQ: e.target.value }),
-      evHasQuery: evQ.length > 0, evResults: evResults, evResEmpty: evResults.length === 0,
-      ivCalTitle: new Date(2026, calM - 1, 1).toLocaleDateString(en ? 'en-GB' : 'nb-NO', { month: 'long', year: 'numeric' }),
-      ivCalPrev: () => set({ invCalM: Math.max(1, calM - 1), invDay: 0 }), ivCalNext: () => set({ invCalM: Math.min(12, calM + 1), invDay: 0 }),
-      ivTPrev: en ? 'Previous month' : 'Forrige måned', ivTNext: en ? 'Next month' : 'Neste måned',
-      ivCalHead: (en ? ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'] : ['Ma', 'Ti', 'On', 'To', 'Fr', 'Lø', 'Sø']).map((l, i) => ({ key: 'ch' + i, label: l })),
-      ivCalCells: calCells, ivCalEvents: dayEvents, ivCalNoEvents: dayEvents.length === 0,
-      ivTCalHint: invDay ? (en ? 'No events this day.' : 'Ingen aktiviteter denne dagen.') : (en ? 'Highlighted days have events. Click a day.' : 'Markerte dager har aktiviteter. Klikk på en dag.'),
-      tManual: en ? 'Add people manually' : 'Legg til personer manuelt', tManualSearch: en ? 'Search a name to add' : 'Søk etter navn for å legge til',
-      manualTop: (c.scope === 'person' || c.scope === 'group' || c.scope === 'event') ? 'padding-top: 18px; border-top: 1px solid rgba(22,36,26,.1)' : '',
-      invManQ: v('invManQ', ''), onInvManQ: (e) => set({ invManQ: e.target.value }),
-      manRes: manRes, manHasRes: manRes.length > 0, manChips: manChips, manHasChips: manChips.length > 0,
-      tAddL: en ? 'Add' : 'Legg til', tRemoveL: en ? 'Remove' : 'Fjern',
-      sendInvoice: (e) => {
-        e.preventDefault();
-        const tg = (c.invTargets.find(t => t.id === st.invTarget) || {}).name || '';
-        const nm = c.scope === 'event' ? tg.replace(/ · .*$/, '') : tg;
-        const n = (st.invNewList || []).length;
-        const mk = (k, name, club) => ({ id: '#' + (3700 + n + k), club: club, type: st.invTitle || (en ? 'Invoice' : 'Faktura'), number: (200 + n + k) + '/10/2026', date: '2026-10-15', name: name, amt: parseInt(st.invAmount, 10) || 0, due: st.invDue, status: 'unpaid' });
-        const rows = [mk(0, nm + (c.scope === 'club' || c.scope === 'group' ? ' (' + c.invCount + ')' : ''), c.invClub)].concat(manual.map((id, k) => { const m = allM.find(x => x.id === id); return mk(k + 1, m.name, m.club); }));
-        set({ invSent: true, invSentN: totalCount, invTitle: '', invAddOpen: false, invManual: [], invManQ: '', invPQ: '', invNewList: rows.reverse().concat(st.invNewList || []) });
-      }
+      tSvUndoBook: en ? 'Undo posting' : 'Angre bokføring', tSvCopy: en ? 'Copy invoice' : 'Kopier faktura', tSvPreview: en ? 'View' : 'Vis'
     };
   }
 
@@ -648,8 +492,19 @@ export class AdminLogic extends LogicBase {
     return {
       initials: ini, firstName: first,
       goProfile: () => set({ tab: 'profile', navMenu: '', apOpen: '', apEdit: false, apContactSaved: false }),
+      // admin2 (Nov design): "more options" menu next to the profile chip in the sidebar.
+      pfmOpen: !!st.pfmOpen, pfmToggle: () => this.setState(s2 => ({ pfmOpen: !s2.pfmOpen })), pfmClose: () => this.setState({ pfmOpen: false }),
+      pfmProfile: () => set({ pfmOpen: false, tab: 'profile', navMenu: '', apOpen: '', apEdit: false, apContactSaved: false }),
+      pfmDotsStyle: 'flex: 0 0 auto; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; border: 0; cursor: pointer; color: #16241a; background: ' + (st.pfmOpen ? 'rgba(22,36,26,.08)' : 'transparent'),
+      tPfmMenu: en ? 'More options' : 'Flere valg',
+      tPfmHelp: en ? 'Help and support' : 'Hjelp og støtte', tPfmFeedback: en ? 'Report feedback or a bug' : 'Rapporter tilbakemelding eller feil',
+      tPfmSupport: en ? 'Contact support' : 'Kontakt support', tPfmSales: en ? 'Contact sales' : 'Kontakt salg', tPfmLogout: en ? 'Log out' : 'Logg ut',
+      pfmHelpHref: '#/funksjoner',
+      pfmFeedbackHref: 'mailto:kontakt@kretz.no?subject=' + encodeURIComponent(en ? 'Feedback / bug report' : 'Tilbakemelding / feil i Kretz'),
+      pfmSupportHref: 'mailto:kontakt@kretz.no?subject=' + encodeURIComponent(en ? 'Support' : 'Support'),
+      pfmSalesHref: 'mailto:kontakt@kretz.no?subject=' + encodeURIComponent(en ? 'Sales enquiry' : 'Henvendelse til salg'),
       tMyProfile: en ? 'My profile' : 'Min profil',
-      profChipStyle: 'display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; padding: 6px 8px 6px 4px; border: 0; border-radius: 16px; text-align: left; cursor: pointer; font-family: var(--font-body); color: #16241a; transition: background .25s; background: ' + (st.tab === 'profile' ? 'rgba(22,36,26,.08)' : 'transparent'),
+      profChipStyle: 'display: flex; align-items: center; gap: 10px; width: 100%; flex: 1 1 auto; min-width: 0; box-sizing: border-box; padding: 6px 8px 6px 4px; border: 0; border-radius: 16px; text-align: left; cursor: pointer; font-family: var(--font-body); color: #16241a; transition: background .25s; background: ' + (st.tab === 'profile' ? 'rgba(22,36,26,.08)' : 'transparent'),
       apAvatar38: av(38, 13), apAvatar112: av(112, 36), apAvatarText: photo ? '' : ini, apHasPhoto: !!photo,
       apFullName: full, apRoleLine: (en ? 'Administrator · ' : 'Administrator · ') + clubs.length + (en ? ' clubs' : ' klubber'),
       showProfile: st.tab === 'profile',
@@ -755,7 +610,7 @@ export class AdminLogic extends LogicBase {
         ? (dark ? ' background: #a3e2ae; border: 1px solid #a3e2ae; color: #16241a;' : ' background: #16241a; border: 1px solid #16241a; color: #f6f8f3;')
         : (dark ? ' background: rgba(246,248,243,.1); border: 1px solid rgba(246,248,243,.26); color: #f6f8f3;' : ' background: #ffffff; border: 1px solid rgba(22,36,26,.16); color: #16241a;'));
 
-    const navItem = (active) => 'display: flex; align-items: center; width: 100%; box-sizing: border-box; text-align: left; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 15px; padding: 12px 16px; border-radius: 12px; border: 0; transition: background .2s, color .2s;' + (active ? ' background: #1d3a24; color: #f6f8f3;' : ' background: transparent; color: #16241a;');
+    const navItem = (active) => 'display: flex; align-items: center; width: 100%; box-sizing: border-box; text-align: left; cursor: pointer; font-family: var(--font-body); font-weight: 500; font-size: 14px; line-height: 1.2; padding: 7px 12px; border-radius: 8px; border: 0; transition: background .2s, color .2s;' + (active ? ' background: #1d3a24; color: #f6f8f3;' : ' background: transparent; color: #16241a;');
     const tabs = [
       { id: 'finance', label: en ? 'Finance' : 'Økonomi' },
       { id: 'daily', label: en ? 'Activities' : 'Aktiviteter' },
@@ -763,11 +618,12 @@ export class AdminLogic extends LogicBase {
       { id: 'booking', label: 'Booking' },
       { id: 'sponsors', label: en ? 'Sponsors' : 'Sponsorer' },
       { id: 'timetable', label: en ? 'Week plan' : 'Ukeplan' },
-      { id: 'depts', label: en ? 'Departments and groups' : 'Avdelinger og grupper' },
+      { id: 'nif', label: en ? 'Submission to NIF' : 'Innsending til NIF' },
+      { id: 'depts', label: en ? 'Groups' : 'Grupper' },
       { id: 'roles', label: en ? 'Roles' : 'Roller' },
       { id: 'board', label: en ? 'Board' : 'Styret' },
       { id: 'comms', label: en ? 'Communication' : 'Kommunikasjon' },
-      { id: 'docs', label: en ? 'Documents and history' : 'Dokumenter og historikk' },
+      { id: 'docs', label: en ? 'Documents' : 'Dokumenter' },
       { id: 'volunteer', label: en ? 'Volunteer days' : 'Dugnader' }
     ];
     const menus = {
@@ -775,8 +631,9 @@ export class AdminLogic extends LogicBase {
         label: en ? 'Finance' : 'Økonomi',
         subs: [
           { id: 'teamfund', label: en ? 'Team fund' : 'Lagkasse', note: en ? 'Bank balance and transactions' : 'Saldo og bankbevegelser' },
-          { id: 'invoicing', label: en ? 'Member invoicing' : 'Medlem fakturering', note: en ? 'Send invoices to members' : 'Send faktura til medlemmer' },
+          { id: 'invoicing', label: en ? 'Payment requests' : 'Betalingsforespørsler', note: en ? 'Send invoices to members' : 'Send faktura til medlemmer' },
           { id: 'supplier', label: en ? 'Supplier invoices' : 'Leverandørfaktura', note: en ? 'Invoices the club must pay' : 'Fakturaer klubben skal betale' },
+          { id: 'settle', label: en ? 'Settlement reports' : 'Oppgjørsrapporter', note: en ? 'Payouts from Vipps, card and invoices' : 'Utbetalinger fra Vipps, kort og faktura' },
           { id: 'sponsors', label: en ? 'Sponsors' : 'Sponsorer', note: en ? 'Agreements, grants and funding' : 'Avtaler, støtte og midler' },
           { id: 'budget', label: en ? 'Budget' : 'Budsjett', note: en ? 'Budget versus actuals' : 'Budsjett mot regnskap' },
           { id: 'integr', label: en ? 'Integrations' : 'Integrasjoner', note: en ? 'Connect accounting, payment and bank' : 'Koble regnskap, betaling og bank' }
@@ -786,9 +643,9 @@ export class AdminLogic extends LogicBase {
         label: en ? 'Members and teams' : 'Medlemmer og lag',
         subs: [
           { id: 'members', label: en ? 'Members' : 'Medlemmer', note: en ? 'Profiles, attendance and notes' : 'Profiler, oppmøte og notater' },
-          { id: 'depts', label: en ? 'Departments and groups' : 'Avdelinger og grupper', note: en ? 'Sports, teams and who leads them' : 'Idretter, lag og hvem som leder dem' },
-          { id: 'roles', label: en ? 'Roles' : 'Roller', note: en ? 'Who does what, and what they can access' : 'Hvem gjør hva, og hva de har tilgang til' },
-          { id: 'board', label: en ? 'Board' : 'Styret', note: en ? 'Board meetings, files and decisions' : 'Styremøter, filer og vedtak' }
+          { id: 'nif', label: en ? 'Submission to NIF' : 'Innsending til NIF', note: en ? 'Report members to the sports federation' : 'Rapporter medlemmer til idrettsforbundet' },
+          { id: 'depts', label: en ? 'Groups' : 'Grupper', note: en ? 'Sports, teams and who leads them' : 'Idretter, lag og hvem som leder dem' },
+          { id: 'roles', label: en ? 'Roles' : 'Roller', note: en ? 'Who does what, and what they can access' : 'Hvem gjør hva, og hva de har tilgang til' }
         ]
       },
       followup: {
@@ -803,9 +660,10 @@ export class AdminLogic extends LogicBase {
     const navDefs = [
       { menu: 'finance' },
       { menu: 'people' },
+      { id: 'board', label: en ? 'Board' : 'Styret' },
       { menu: 'followup' },
       { id: 'comms', label: en ? 'Communication' : 'Kommunikasjon' },
-      { id: 'docs', label: en ? 'Documents and history' : 'Dokumenter og historikk' },
+      { id: 'docs', label: en ? 'Documents' : 'Dokumenter' },
       { id: 'booking', label: 'Booking' },
       { id: 'timetable', label: en ? 'Week plan' : 'Ukeplan' }
     ];
@@ -826,17 +684,32 @@ export class AdminLogic extends LogicBase {
     const ttClubId = (clubs.find(c => c.id === this.state.ttClub) || clubs.find(c => c.id === sel) || clubs[0]).id;
     const ttC = ttAll[ttClubId] || { groups: [], s: [] };
     const ttGroups = ttC.groups || [];
-    const ttSessions = ttC.s || [];
+    // ---- [admin1] Nov 2026 design: timetable week scope + dashboard fit ----
+    const ttNow = new Date();
+    const ttMon = new Date(ttNow.getFullYear(), ttNow.getMonth(), ttNow.getDate() - ((ttNow.getDay() + 6) % 7) + 7 * (this.state.ttWk || 0));
+    const ttIsoWk = (d) => { const u = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const dn = u.getUTCDay() || 7; u.setUTCDate(u.getUTCDate() + 4 - dn); const y0 = new Date(Date.UTC(u.getUTCFullYear(), 0, 1)); return [u.getUTCFullYear(), Math.ceil(((u - y0) / 86400000 + 1) / 7)]; };
+    const ttWkYN = ttIsoWk(ttMon), ttWkKey = ttWkYN[0] + '-W' + ttWkYN[1];
+    const ttIsWeek = this.state.ttScope === 'week';
+    if (tab === 'timetable' && typeof window !== 'undefined') this.ttWatchResize();
+    if (typeof window !== 'undefined') this.dashFit();
+    const ttWkHasOv = !!(ttC.wk && ttC.wk[ttWkKey]);
+    this._ttScopeWeek = ttIsWeek; this._ttWkKey = ttWkKey;
+    const ttSessions = (ttIsWeek && ttWkHasOv ? ttC.wk[ttWkKey] : ttC.s) || [];
+    const ttWkTag = ttIsWeek ? (en ? ' (week ' + ttWkYN[1] + ' only)' : ' (kun uke ' + ttWkYN[1] + ')') : '';
+    // ---- end [admin1] ----
     const ttDefaultPlace = (ttSessions[0] && ttSessions[0][4]) || '';
     const ttE = this.state.ttEdit;
     const ttDayNames = en ? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] : ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
     const ttMin = (t) => { const p = String(t).split(':'); return parseInt(p[0], 10) * 60 + parseInt(p[1], 10); };
     const ttAx = (() => {
-      const pxMin = 56 / 60, gapPx = 18;
+      const gapPx = 12; let pxMin = 56 / 60;
       const ranges = ttSessions.map(x => [Math.floor(ttMin(x[1]) / 60) * 60, Math.ceil(ttMin(x[2]) / 60) * 60]).sort((p, q) => p[0] - q[0]);
       const segs = [];
       ranges.forEach(r => { const l = segs[segs.length - 1]; if (l && r[0] <= l[1]) l[1] = Math.max(l[1], r[1]); else segs.push([r[0], r[1]]); });
       if (!segs.length) segs.push([16 * 60, 20 * 60]);
+      const spanMin = segs.reduce((n, g) => n + (g[1] - g[0]), 0) || 240;
+      const vh = (typeof window !== 'undefined' && window.innerHeight) || 900;
+      pxMin = Math.max(0.4, Math.min(56 / 60, (vh - 500 - gapPx * (segs.length - 1)) / spanMin));
       const tops = []; let acc = 0;
       segs.forEach((g, i) => { tops.push(acc); acc += (g[1] - g[0]) * pxMin + (i < segs.length - 1 ? gapPx : 0); });
       const yOf = (m) => { for (let i = 0; i < segs.length; i++) if (m >= segs[i][0] && m <= segs[i][1]) return tops[i] + (m - segs[i][0]) * pxMin; return 0; };
@@ -1095,6 +968,19 @@ export class AdminLogic extends LogicBase {
       if (kind === 'warn') return base + 'background: rgba(255,201,74,.34); color: #7a5406;';
       return base + 'background: rgba(22,36,26,.08); color: rgba(22,36,26,.75);';
     };
+    // ---- design Nov 2026: activity kinds (one date / several dates / recurring) — ported by the admin3 helper ----
+    const actKind = this.state.formKind || 'once', actFreq = this.state.formFreq || 'week', actUntil = this.state.formUntil || '2026-12-18';
+    const actKindChip = (on) => 'cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 12.5px; padding: 8px 15px; border-radius: 999px; white-space: nowrap; transition: background .3s, color .3s; border: 1px solid ' + (on ? '#16241a' : 'rgba(22,36,26,.16)') + '; background: ' + (on ? '#16241a' : '#ffffff') + '; color: ' + (on ? '#f6f8f3' : '#16241a');
+    const actOccurrences = () => {
+      const p = String(this.state.formDate || '').split('-').map(Number); if (p.length !== 3 || !p[0]) return [];
+      const start = new Date(p[0], p[1] - 1, p[2]), out = [];
+      if (actKind === 'once') out.push(start);
+      else if (actKind === 'multi') { out.push(start); (this.state.formDates || []).forEach(v => { const q = v.split('-').map(Number); out.push(new Date(q[0], q[1] - 1, q[2])); }); }
+      else { const end = new Date(String(actUntil) + 'T00:00:00'); let d = new Date(start); for (let i = 0; i < 400 && d <= end; i++) { out.push(d); d = actFreq === 'day' ? new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1) : actFreq === 'week' ? new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7) : actFreq === 'month' ? new Date(d.getFullYear(), d.getMonth() + 1, d.getDate()) : new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()); } }
+      return out.filter(d => d.getFullYear() === 2026).slice(0, 120);
+    };
+    const actOcc = actOccurrences();
+    // ---- end activity kinds ----
     const fmtDate = (iso) => {
       const p = String(iso || '').split('-');
       return p.length === 3 ? (p[2] + '.' + p[1] + '.' + p[0]) : String(iso || '');
@@ -1418,6 +1304,27 @@ export class AdminLogic extends LogicBase {
       out.sort((x, y) => (y.board - x.board) || x.name.localeCompare(y.name));
       return out;
     })();
+    // ---- design Nov 2026: new board meeting form (agenda items, place picker, member search, minutes draft) ----
+    const MF0 = [[en ? 'Approval of notice and agenda' : 'Godkjenning av innkalling og saksliste', 5, false], [en ? 'Approval of minutes from last meeting' : 'Godkjenning av protokoll fra forrige møte', 5, false], [en ? 'Financial status' : 'Økonomisk status', 15, false], [en ? 'Any other business' : 'Eventuelt', 10, false]];
+    const MFT = [[en ? 'Budget' : 'Budsjett', 30, true], [en ? 'Membership status' : 'Medlemsstatus', 10, false], [en ? 'Sponsor agreements' : 'Sponsoravtaler', 15, true], [en ? 'Hall times and facilities' : 'Halltider og anlegg', 15, false], [en ? 'Volunteer day planning' : 'Dugnadsplan', 10, false], [en ? 'Annual meeting preparations' : 'Forberedelse til årsmøtet', 20, false], [en ? 'Grant applications' : 'Søknader om støtte', 15, false], [en ? 'Police certificates and safety' : 'Politiattester og trygghet', 10, false]];
+    const mfF = this.state.meetingForm || {};
+    const mfItemsArr = mfF.items || [];
+    const mfSet = (patch) => this.setState(st => ({ meetingForm: Object.assign({}, st.meetingForm, typeof patch === 'function' ? patch(st.meetingForm || {}) : patch) }));
+    const mfPlaces = (() => { const base = [en ? 'Club house' : 'Klubbhuset', 'Teams', 'Leangen Ishall', 'Fana kunstgress', 'Fanahallen', 'Vardenhallen', 'Jordal', en ? 'Board room, town hall' : 'Møterom, rådhuset']; const out = []; base.concat(this.state.mfPlacesExtra || []).forEach(x => { if (out.indexOf(x) === -1) out.push(x); }); return out; })();
+    const mfPlaceQ = (mfF.place || '').trim();
+    const mfPlaceShown = mfPlaces.filter(x => !mfF.placeFilter || !mfPlaceQ || x.toLowerCase().includes(mfPlaceQ.toLowerCase()));
+    const mfProtoGen = () => {
+      const p = (mfF.date || '').split('-');
+      const lines = [(en ? 'MINUTES – Board meeting ' : 'PROTOKOLL – Styremøte ') + (p.length === 3 ? parseInt(p[2], 10) + '.' + parseInt(p[1], 10) + '.' + p[0] : '') + (en ? ' at ' : ' kl. ') + (mfF.time || ''), (en ? 'Place: ' : 'Sted: ') + (mfF.place || ''), (en ? 'Present: ' : 'Til stede: ') + (mfF.invite || []).join(', '), ''];
+      mfItemsArr.forEach((it, i) => { lines.push((en ? 'Item ' : 'Sak ') + (i + 1) + ' – ' + it.t); lines.push(it.dec ? (en ? 'Decision: ' : 'Vedtak: ') : (en ? 'Notes: ' : 'Notat: ')); lines.push(''); });
+      lines.push(en ? 'Signed:' : 'Signert:'); lines.push('_______________          _______________');
+      return lines.join('\n');
+    };
+    const mfProtoTxt = mfF.protocol != null ? mfF.protocol : mfProtoGen();
+    const mfMemberPool = (() => { const seen = {}; const out = []; invitePool.forEach(p => { if (!seen[p.name]) { seen[p.name] = 1; out.push({ name: p.name, sub: p.role || '' }); } }); this.members(en).forEach(m => { if (!seen[m.name]) { seen[m.name] = 1; out.push({ name: m.name, sub: [m.group, m.role].filter(Boolean).join(' · ') }); } (m.guardians || []).forEach(g => { if (!seen[g.name]) { seen[g.name] = 1; out.push({ name: g.name, sub: (g.relation || '') + (en ? ' of ' : ' til ') + m.name }); } }); }); return out; })();
+    const mfQv = (mfF.q || '').trim().toLowerCase();
+    const mfRes = mfQv ? mfMemberPool.filter(x => x.name.toLowerCase().includes(mfQv) && (mfF.invite || []).indexOf(x.name) === -1).slice(0, 6) : [];
+    // ---- end new board meeting form ----
     const venClubs = data.venues(en);
     const venCur = venClubs.find(c => c.id === sel) || venClubs[0] || null;
     const venStore = KretzVenues ? KretzVenues.load() : {};
@@ -1848,7 +1755,98 @@ export class AdminLogic extends LogicBase {
     const typeNames = { active: en ? 'Active member' : 'Aktivt medlem', support: en ? 'Supporting member' : 'Støttemedlem', coach: en ? 'Coach' : 'Trener', family: en ? 'Family membership' : 'Familiemedlemskap' };
     const typeOfRole = (m) => /trener|coach/i.test(m.role) ? 'coach' : /forelder|parent/i.test(m.role) ? 'support' : 'active';
     const addedAll = (this.state.addedMems || []).filter(m => all || m.club === sel);
-    const tblSrc = memList.map(m => ({ open: () => this.setState({ member: m.id }), id: m.id, name: m.name, email: m.email, type: typeNames[typeOfRole(m)], paid: m.due === 0 })).concat(addedAll.filter(m => !mq || (m.name + ' ' + m.email).toLowerCase().includes(mq)).map(m => ({ id: m.id, name: m.name, email: m.email, type: typeNames[m.type] || m.type, paid: true, isNew: true, open: () => {} })));
+    // ---- design Nov 2026: member register with columns, filters, bulk actions and priority messages ----
+    const memHid = this.state.memHidden || {}, memGrpOv = this.state.memGroupOv || {};
+    const tblSrcRaw0 = memList.map(m => ({ raw: m, open: () => this.setState({ member: m.id }), id: m.id, name: m.name, email: m.email, type: typeNames[typeOfRole(m)], paid: m.due === 0 })).concat(addedAll.filter(m => !mq || (m.name + ' ' + m.email).toLowerCase().includes(mq)).map(m => ({ id: m.id, name: m.name, email: m.email, type: typeNames[m.type] || m.type, paid: true, isNew: true, raw: m, open: () => {} })));
+    const T2 = (a, b) => en ? a : b;
+    const hh = (str) => Array.from(String(str)).reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const sportOf = { vif: T2('Figure skating', 'Kunstløp'), fana: T2('Football', 'Fotball'), varden: T2('Table tennis', 'Bordtennis') };
+    const femaleN = ['Marit', 'Selma', 'Ida', 'Kristin', 'Hanne', 'Silje', 'Kari', 'Nora', 'Sigrid', 'Ingrid', 'Emma', 'Maja', 'Julie', 'Sofie', 'Thea', 'Linn', 'Anne', 'Camilla', 'Mia', 'Ella', 'Lise', 'Eva', 'Hilde', 'Tone', 'Amalie', 'Sara', 'Iben', 'Emilie', 'Oda', 'Frida', 'Tuva', 'Hanna', 'Ida', 'Live', 'Mona', 'Anne', 'Marte', 'Vilde'];
+    const colDefs = [
+      { k: 'name', w: 'minmax(150px,1.3fr)', mn: 150, label: T2('Name', 'Navn'), on: true, base: true },
+      { k: 'email', w: 'minmax(190px,1.6fr)', mn: 190, label: T2('Email', 'E-post'), on: true, base: true },
+      { k: 'type', w: 'minmax(140px,1fr)', mn: 140, label: T2('Membership type', 'Medlemskapstype'), on: true, base: true },
+      { k: 'status', w: '100px', mn: 100, label: 'Status', on: true, base: true },
+      { k: 'nifId', w: 'minmax(110px,.8fr)', mn: 110, label: 'NIF-ID' },
+      { k: 'payContact', w: 'minmax(150px,1.1fr)', mn: 150, label: T2('Payment contact', 'Betalingskontakt') },
+      { k: 'nifSports', w: 'minmax(130px,1fr)', mn: 130, label: T2('NIF sports', 'NIF-grener') },
+      { k: 'ssn', w: 'minmax(130px,.9fr)', mn: 130, label: T2('National ID / D-number', 'Fødselsnummer/d-nummer') },
+      { k: 'groupRole', w: 'minmax(110px,.8fr)', mn: 110, label: T2('Group role', 'Grupperolle') },
+      { k: 'groups', w: 'minmax(110px,.8fr)', mn: 110, label: T2('Groups', 'Grupper') },
+      { k: 'gender', w: 'minmax(90px,.6fr)', mn: 90, label: T2('Gender', 'Kjønn') },
+      { k: 'birth', w: 'minmax(110px,.8fr)', mn: 110, label: T2('Date of birth', 'Fødselsdato') },
+      { k: 'joined', w: 'minmax(120px,.8fr)', mn: 120, label: T2('Joined', 'Innmeldingsdato') },
+      { k: 'phone', w: 'minmax(130px,.9fr)', mn: 130, label: T2('Phone', 'Telefon') },
+      { k: 'activity', w: 'minmax(110px,.8fr)', mn: 110, label: T2('Activity', 'Aktivitet') },
+      { k: 'fee', w: 'minmax(130px,.9fr)', mn: 130, label: T2('Membership fee', 'Medlemsavgift') },
+      { k: 'photo', w: 'minmax(120px,.8fr)', mn: 120, label: T2('Photo consent', 'Fotosamtykke') }
+    ];
+    const colOv = this.state.memCols || {};
+    const colOn = (c) => colOv[c.k] !== undefined ? colOv[c.k] : !!c.on;
+    const cols = colDefs.filter(colOn);
+    const extra = (k, r) => {
+      const m = r.raw || {}, seed = m.seed || hh(m.id || r.id), dash = '–';
+      const sp = sportOf[m.club] || sportOf.vif;
+      if (k === 'nifId') return 'NIF-' + String(100000 + hh((m.id || r.id) + 'nif') % 900000);
+      if (k === 'payContact') return (m.guardians && m.guardians[0]) ? m.guardians[0].name : r.name;
+      if (k === 'nifSports') return sp;
+      if (k === 'ssn') { const b = String(m.born || '').split('.'); return b.length === 3 ? b[0] + b[1] + b[2].slice(2) + ' ' + String(10000 + hh((m.id || r.id) + 'ssn') % 90000) : dash; }
+      if (k === 'groupRole') return m.role || dash;
+      if (k === 'groups') return m.group || dash;
+      if (k === 'gender' && m.gender) return m.gender;
+      if (k === 'joined' && m.joinedStr) return m.joinedStr;
+      if (k === 'gender') { const fn = String(r.name).split(' ')[0]; return (femaleN.indexOf(fn) !== -1 || (femaleN.indexOf(fn) === -1 && !m.id && seed % 2 === 0)) ? T2('Female', 'Kvinne') : T2('Male', 'Mann'); }
+      if (k === 'birth') return m.born || dash;
+      if (k === 'joined') { const y = 2016 + seed % 9, mo = 1 + (seed * 5) % 12, d = 1 + (seed * 7) % 28; return pad2(d) + '.' + pad2(mo) + '.' + y; }
+      if (k === 'phone') return m.phone || dash;
+      if (k === 'activity') return sp;
+      if (k === 'fee') return r.paid ? T2('Paid', 'Betalt') : T2('Unpaid', 'Ubetalt');
+      if (k === 'photo') return seed % 4 === 0 ? T2('No', 'Nei') : T2('Yes', 'Ja');
+      return '';
+    };
+    const tblSrcRaw = tblSrcRaw0.filter(r => !memHid[r.id]).map(r => memGrpOv[r.id] !== undefined ? Object.assign({}, r, { raw: Object.assign({}, r.raw, { group: memGrpOv[r.id] }) }) : r);
+    const E0 = { id: 'empty', label: T2('Field without content', 'Felt uten innhold') };
+    const yearOf = (iso) => { const p = String(iso || '').split('.'); return p.length === 3 ? parseInt(p[2], 10) : 0; };
+    const sportsAll = [sportOf.vif, sportOf.fana, sportOf.varden];
+    const facts = (r) => { const m = r.raw || {}, age = typeof m.age === 'number' ? m.age : null, role = m.role || '', isCoach = /trener|coach/i.test(role), isParent = /forelder|parent/i.test(role);
+      const typeKey = /støtte|support/i.test(r.type) ? 'support' : /familie|family/i.test(r.type) ? 'family' : isCoach ? 'coach' : 'active';
+      const isMember = !isParent;
+      const sport = sportOf[m.club] || sportOf.vif, gender = extra('gender', r), by = yearOf('00.00.' + String(m.born || '').split('.')[2]);
+      return { m: m, age: age, role: role, isMember: isMember, typeKey: typeKey, sport: sport, gender: gender, by: by, hasBorn: !!m.born, seed: m.seed || hh(m.id || r.id) }; };
+    const makeCats = (srcRows) => [
+      { k: 'type', label: T2('Membership type', 'Medlemstype'), opts: [['active', T2('Active', 'Aktiv')], ['inactive', T2('Not active', 'Ikke aktiv')], ['member', T2('Member', 'Medlem')], ['nonmember', T2('Not a member', 'Ikke medlem')], ['child', T2('Member, child', 'Medlem barn')], ['adult', T2('Member, adult', 'Medlem voksen')], ['company', T2('Member, company', 'Medlem bedrift')], ['support', T2('Supporting member', 'Støttemedlem')], ['family', T2('Family membership', 'Familiemedlemskap')], ['coach', T2('Coach', 'Trener')]].map(o => ({ id: o[0], label: o[1] })),
+        get: (r, f) => { const o = []; o.push(r.paid ? 'active' : 'inactive'); o.push(f.isMember ? 'member' : 'nonmember'); if (f.isMember && f.age !== null) o.push(f.age < 18 ? 'child' : 'adult'); if (f.typeKey === 'support') o.push('support'); if (f.typeKey === 'family') o.push('family'); if (f.typeKey === 'coach') o.push('coach'); return o; } },
+      { k: 'groupRole', label: T2('Group roles', 'Grupperoller'), opts: [['player', T2('Player', 'Spiller')], ['coach', T2('Coach', 'Trener')], ['parent', T2('Parent', 'Forelder')], ['leader', T2('Group leader', 'Gruppeleder')]].map(o => ({ id: o[0], label: o[1] })).concat([E0]),
+        get: (r, f) => [/spiller|player/i.test(f.role) ? 'player' : /trener|coach/i.test(f.role) ? 'coach' : /forelder|parent/i.test(f.role) ? 'parent' : (f.role ? 'leader' : 'empty')] },
+      { k: 'groups', label: T2('Groups and departments', 'Grupper og avdelinger'), opts: Array.from(new Set(srcRows.map(r => (r.raw || {}).group).filter(Boolean))).map(g => ({ id: 'g:' + g, label: g })).concat(sportsAll.map(sp => ({ id: 's:' + sp, label: sp + ' (' + T2('department', 'avdeling') + ')' }))).concat([E0]),
+        get: (r, f) => [f.m.group ? 'g:' + f.m.group : 'empty', 's:' + f.sport] },
+      { k: 'gender', label: T2('Gender', 'Kjønn'), opts: [['m', T2('Male', 'Mann')], ['f', T2('Female', 'Kvinne')], ['o', T2('Other', 'Annet')]].map(o => ({ id: o[0], label: o[1] })).concat([E0]), get: (r, f) => [f.gender === T2('Female', 'Kvinne') ? 'f' : 'm'] },
+      { k: 'activity', label: T2('Activity', 'Aktivitet'), opts: sportsAll.map(sp => ({ id: sp, label: sp })).concat([E0]), get: (r, f) => [f.sport] },
+      { k: 'age', label: T2('Children / adults', 'Barn/voksne'), opts: [['child', T2('Children (under 18)', 'Barn (under 18 år)')], ['adult', T2('Adults (18+)', 'Voksne (18 år og over)')], ['empty', E0.label]].map(o => ({ id: o[0], label: o[1] })), get: (r, f) => [f.age === null ? 'empty' : (f.age < 18 ? 'child' : 'adult')] },
+      { k: 'nifSports', label: T2('NIF sports', 'NIF-grener'), opts: sportsAll.map(sp => ({ id: sp, label: sp })).concat([E0]), get: (r, f) => [f.sport] },
+      { k: 'fee', label: T2('Membership fee', 'Medlemsavgift'), opts: [{ id: 'paid', label: T2('Paid', 'Betalt') }, { id: 'unpaid', label: T2('Unpaid', 'Ubetalt') }], get: (r) => [r.paid ? 'paid' : 'unpaid'] },
+      { k: 'ssn', label: T2('National ID / D-number', 'Fødselsnummer/d-nummer'), opts: [{ id: 'fnr', label: T2('National ID', 'Fødselsnummer') }, { id: 'dnr', label: T2('D-number', 'D-nummer') }, E0], get: (r, f) => [f.hasBorn ? 'fnr' : 'empty'] },
+      { k: 'payContact', label: T2('Payment contact', 'Betalingskontakt'), opts: [{ id: 'self', label: T2('Pays for themselves', 'Betaler selv') }, { id: 'guardian', label: T2('Guardian pays', 'Foresatt betaler') }, E0], get: (r, f) => [f.m.guardians && f.m.guardians[0] ? 'guardian' : (r.name ? 'self' : 'empty')] },
+      { k: 'birth', label: T2('Date of birth', 'Fødselsdato'), opts: [['b1', T2('Before 1990', 'Født før 1990')], ['b2', '1990–1999'], ['b3', '2000–2009'], ['b4', T2('2010 or later', '2010 eller senere')]].map(o => ({ id: o[0], label: o[1] })).concat([E0]), get: (r, f) => [!f.by ? 'empty' : f.by < 1990 ? 'b1' : f.by < 2000 ? 'b2' : f.by < 2010 ? 'b3' : 'b4'] },
+      { k: 'joined', label: T2('Joined', 'Innmeldingsdato'), opts: [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024].reverse().map(y => ({ id: 'y' + y, label: String(y) })).concat([E0]), get: (r) => ['y' + yearOf(extra('joined', r))] },
+      { k: 'terms', label: T2("Club's terms", 'Klubbens vilkår'), opts: [{ id: 'ok', label: T2('Accepted', 'Godkjent') }, { id: 'no', label: T2('Not accepted', 'Ikke godkjent') }], get: (r, f) => [f.seed % 5 === 0 ? 'no' : 'ok'] },
+      { k: 'photo', label: T2('Photo consent', 'Fotosamtykke'), opts: [{ id: 'yes', label: T2('Yes', 'Ja') }, { id: 'no', label: T2('No', 'Nei') }, E0], get: (r, f) => [f.seed % 4 === 0 ? 'no' : 'yes'] },
+      { k: 'extraConsent', label: T2('Extra consents', 'Ekstra samtykker'), opts: [{ id: 'travel', label: T2('Travel consent', 'Reisesamtykke') }, { id: 'health', label: T2('Health information', 'Helseopplysninger') }, { id: 'none', label: T2('No extra consents', 'Ingen ekstra samtykker') }], get: (r, f) => { const o = []; if (f.seed % 3 === 0) o.push('travel'); if (f.seed % 4 === 1) o.push('health'); if (!o.length) o.push('none'); return o; } },
+      { k: 'waiver', label: T2('Liability waiver', 'Ansvarsfraskrivelse'), opts: [{ id: 'signed', label: T2('Signed', 'Signert') }, { id: 'unsigned', label: T2('Not signed', 'Ikke signert') }], get: (r, f) => [f.seed % 4 === 1 ? 'unsigned' : 'signed'] }
+    ];
+    const catDefs = makeCats(tblSrcRaw);
+    const rowFacts = new Map(); tblSrcRaw.forEach(r => rowFacts.set(r, facts(r)));
+    const filtSel = this.state.memFilt || {};
+    const tblSrc = tblSrcRaw.filter(r => catDefs.every(cd => { const ch = Object.keys(filtSel[cd.k] || {}).filter(x => filtSel[cd.k][x]); if (!ch.length) return true; const got = cd.get(r, rowFacts.get(r)); return ch.some(x => got.indexOf(x) !== -1); }));
+    const filtCat = catDefs.some(c => c.k === this.state.filtCat) ? this.state.filtCat : catDefs[0].k;
+    const nSel = (k) => Object.keys(filtSel[k] || {}).filter(x => filtSel[k][x]).length;
+    const totalSel = catDefs.reduce((n, c) => n + nSel(c.k), 0);
+    const curCat = catDefs.find(c => c.k === filtCat);
+    const toggleOpt = (k, id) => this.setState(st => { const cur = Object.assign({}, (st.memFilt || {})[k] || {}); if (cur[id]) delete cur[id]; else cur[id] = true; return { memFilt: Object.assign({}, st.memFilt || {}, { [k]: cur }), tblPage: 1, tblAll: false }; });
+    const tblGrid = '44px ' + cols.map(c => c.w).join(' ');
+    const tblMinW = 44 + cols.reduce((n, c) => n + c.mn, 0) + 12 * cols.length + 28;
+    const allMemTotal = this.members(en).filter(keep).length + (this.state.addedMems || []).filter(m => all || m.club === sel).length;
     const tblAll = !!this.state.tblAll;
     const tblPer = [15, 25, 50, 100, 250].indexOf(this.state.tblPer) !== -1 ? this.state.tblPer : 15;
     const tblPageCount = Math.max(1, Math.ceil(tblSrc.length / tblPer));
@@ -1856,6 +1854,24 @@ export class AdminLogic extends LogicBase {
     const tblShown = tblAll ? tblSrc : tblSrc.slice((tblPageN - 1) * tblPer, tblPageN * tblPer);
     const tblSel = this.state.tblSel || {};
     const tblChecked = tblSrc.filter(r => tblSel[r.id]);
+    const pmComms = this.state.pmSrc === 'comms';
+    const pmList = this.state.pmList || [];
+    const pmOff = this.state.pmOff || {};
+    const pmHas = {}; pmList.forEach(x => { pmHas[x.key] = 1; });
+    const pmEntry = (r, src) => ({ key: r.id, name: r.name, email: r.email || '', club: (r.raw && r.raw.club) || '', sub: src || (r.raw && r.raw.group) || r.type || '' });
+    const pmByName = (nm, src) => { const r = tblSrcRaw.find(x => x.name === nm); return r ? pmEntry(r, src) : { key: 'n:' + nm, name: nm, email: '', club: '', sub: src }; };
+    const pmAddMany = (arr) => this.setState(st => { const cur = (st.pmList || []).slice(); const has = {}; cur.forEach(x => { has[x.key] = 1; }); const off = Object.assign({}, st.pmOff || {}); arr.forEach(x => { if (!has[x.key]) { cur.push(x); has[x.key] = 1; } delete off[x.key]; }); return { pmList: cur, pmOff: off }; });
+    const pmDropMany = (keys) => this.setState(st => { const k = {}; keys.forEach(x => { k[x] = 1; }); return { pmList: (st.pmList || []).filter(x => !k[x.key]) }; });
+    const pmRecips = pmComms ? pmList.filter(x => !pmOff[x.key]).map(x => ({ id: x.key, name: x.name, email: x.email, raw: { club: x.club } })) : tblChecked;
+    const pmGrpNames = (() => { const o = []; tblSrcRaw.forEach(r => { const g = r.raw && r.raw.group; if (g && o.indexOf(g) === -1) o.push(g); }); return o.sort(); })();
+    const pmQv = (this.state.pmQ || '').trim().toLowerCase();
+    const pmRes = pmComms && pmQv ? tblSrcRaw.filter(r => !pmHas[r.id] && (r.name + ' ' + (r.email || '')).toLowerCase().includes(pmQv)).slice(0, 6) : [];
+    const pmTab = this.state.pmTab || 'chats';
+    const pmLq = (this.state.pmListQ || '').trim().toLowerCase();
+    const pmListShown = pmLq ? pmList.filter(x => (x.name + ' ' + (x.sub || '')).toLowerCase().includes(pmLq)) : pmList;
+    const pmChipStyle = (on) => 'padding: 6px 12px; border-radius: 999px; cursor: pointer; font-family: var(--font-body); font-size: 12.5px; font-weight: 700; ' + (on ? 'border: 1px solid #e0a100; background: #FFF3C2; color: #6b5300;' : 'border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a;');
+    const pmSet = (entries, label) => { const on = entries.length > 0 && entries.every(x => pmHas[x.key]); return { label: (on ? '✓ ' : '+ ') + label, style: pmChipStyle(on), pick: () => on ? pmDropMany(entries.map(x => x.key)) : pmAddMany(entries) }; };
+    // ---- end member register (logic) ----
     const bulkKey = sel + '|' + memGroup + '|' + this.state.memQ.trim().toLowerCase();
     const openMem = this.members(en).find(m => m.id === this.state.member) || null;
     let openGuardian = null;
@@ -1961,9 +1977,35 @@ export class AdminLogic extends LogicBase {
       demoTransform: this.state.demoPanel ? 'translateX(0)' : 'translateX(105%)',
       demoScrimOpacity: this.state.demoPanel ? '1' : '0',
       demoScrimPointer: this.state.demoPanel ? 'auto' : 'none',
+      // ---- design Nov 2026: member register (view) ----
       tTblTitle: en ? 'Member register' : 'Medlemsregister',
       tblSub: tblSrc.length + (en ? ' members' : ' medlemmer') + ' · ' + (all ? (en ? 'all clubs' : 'alle klubber') : clubOf(sel)),
       tExportUsers: en ? 'Export users' : 'Eksporter brukere',
+      tImportUsers: en ? 'Import users' : 'Importer brukere',
+      impMsg: this.state.impMsg || '', closeImpMsg: () => this.setState({ impMsg: '' }),
+      importMembers: (e) => {
+        const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+        const rd = new FileReader();
+        rd.onload = () => {
+          const txt = String(rd.result || '').replace(/^\ufeff/, '');
+          const lines = txt.split(/\r?\n/).filter(l => l.trim());
+          const sep = (lines[0] || '').split(';').length >= (lines[0] || '').split(',').length ? ';' : ',';
+          const cells = (l) => l.split(sep).map(c => c.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+          const head = cells(lines[0] || '').map(h => h.toLowerCase());
+          const hasHead = head.some(h => /navn|name|e-?post|email/.test(h));
+          const ci = (re, d) => { const k = head.findIndex(h => re.test(h)); return hasHead && k >= 0 ? k : d; };
+          const iN = ci(/navn|name/, 0), iE = ci(/e-?post|email/, 1), iT = ci(/type|medlemskap|membership/, 2);
+          const have = tblSrc.map(r => r.email).concat((this.state.addedMems || []).map(m => m.email)).map(x => String(x).toLowerCase());
+          const typeKey = (t) => /støtte|support/i.test(t) ? 'support' : /trener|coach/i.test(t) ? 'coach' : /familie|family/i.test(t) ? 'family' : 'active';
+          const club = all ? 'vif' : sel; const add = []; let skipped = 0;
+          lines.slice(hasHead ? 1 : 0).forEach((l, i) => { const c = cells(l); const nm = c[iN], em = c[iE]; if (!nm || !em || !/@/.test(em) || have.indexOf(em.toLowerCase()) !== -1) { skipped++; return; } have.push(em.toLowerCase()); add.push({ id: 'imp' + Date.now() + i, club: club, name: nm, email: em, type: typeKey(c[iT] || '') }); });
+          const msg = add.length
+            ? (en ? add.length + ' users imported' + (skipped ? ', ' + skipped + ' skipped (missing data or already registered).' : '.') : add.length + (add.length === 1 ? ' bruker importert' : ' brukere importert') + (skipped ? ', ' + skipped + ' hoppet over (mangler data eller er allerede registrert).' : '.'))
+            : (en ? 'No users were imported – check that the file has name and email columns.' : 'Ingen brukere ble importert – sjekk at filen har kolonner for navn og e-post.');
+          this.setState(st => ({ addedMems: (st.addedMems || []).concat(add), impMsg: msg }));
+        };
+        rd.readAsText(f);
+      },
       tAddMember: en ? 'Add member' : 'Legg til medlem',
       tSelectAll: en ? 'Select all' : 'Velg alle',
       tColName: en ? 'Name' : 'Navn', tColEmail: en ? 'Email' : 'E-post', tColType: en ? 'Membership type' : 'Medlemskapstype', tColStatus: 'Status',
@@ -1972,11 +2014,53 @@ export class AdminLogic extends LogicBase {
       tblRows: tblShown.map(r => ({ key: 'tr' + r.id, name: r.name, email: r.email, type: r.type, checked: !!tblSel[r.id],
         status: r.paid ? (en ? 'Active' : 'Aktiv') : (en ? 'Unpaid' : 'Ubetalt'),
         statusStyle: 'display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; ' + (r.paid ? 'background: rgba(116,205,133,.3); color: #16241a;' : 'background: rgba(148,92,214,.18); color: #4b2a85;'),
-        rowStyle: 'display: grid; grid-template-columns: 44px minmax(150px,1.3fr) minmax(190px,1.6fr) minmax(140px,1fr) 100px; gap: 12px; align-items: center; height: 62px; box-sizing: border-box; overflow: hidden; padding: 0 14px; border-bottom: 1px solid rgba(22,36,26,.08); font-size: 14px; cursor: pointer; transition: background .2s; background: ' + (tblSel[r.id] ? '#eaf7ed' : 'transparent') + ';',
+        rowStyle: 'display: grid; grid-template-columns: ' + tblGrid + '; gap: 12px; align-items: center; height: 62px; box-sizing: border-box; overflow: hidden; padding: 0 14px; border-bottom: 1px solid rgba(22,36,26,.08); font-size: 14px; cursor: pointer; transition: background .2s; background: ' + (tblSel[r.id] ? '#eaf7ed' : 'transparent') + ';',
+        cells: cols.map(c => c.k === 'status' ? { key: 'c' + c.k, isStatus: true, isText: false, val: '' } : { key: 'c' + c.k, isStatus: false, isText: true, strong: c.k === 'name', val: c.k === 'name' ? r.name : (c.k === 'email' ? r.email : (c.k === 'type' ? r.type : extra(c.k, r))) }),
         open: r.open,
         toggle: () => this.setState(st => { const nx = Object.assign({}, st.tblSel || {}); if (nx[r.id]) delete nx[r.id]; else nx[r.id] = true; return { tblSel: nx }; })
       })),
 
+      tblGrid: tblGrid, tblMinW: tblMinW + 'px',
+      ...(() => {
+        const pdone = this.state.pendDone || {}, psel = this.state.pendSel || {}, pq = (this.state.pendQ || '').trim().toLowerCase();
+        const seedP = [['p1', 'vif', 'Nora', 'Lie', T2('Player', 'Spiller'), 'G14', 'Anne Lie'], ['p2', 'vif', 'Jakob', 'Strand', T2('Player', 'Spiller'), 'G16', 'Mona Strand'], ['p3', 'fana', 'Sondre', 'Haug', T2('Player', 'Spiller'), 'G12', 'Lars Haug'], ['p4', 'fana', 'Emilie', 'Vik', T2('Parent', 'Forelder'), 'G16', 'Emilie Vik'], ['p5', 'varden', 'Tarjei', 'Moe', T2('Player', 'Spiller'), T2('Open hall', 'Åpen hall'), 'Tarjei Moe']].map(p => ({ id: p[0], club: p[1], first: p[2], last: p[3], role: p[4], group: p[5], pay: p[6] }));
+        const all0 = seedP.filter(p => !pdone[p.id] && (all || p.club === sel));
+        const list = all0.filter(p => !pq || (p.first + ' ' + p.last + ' ' + p.group).toLowerCase().includes(pq));
+        const approve = (ps) => this.setState(st => ({ pendDone: Object.assign({}, st.pendDone || {}, ps.reduce((o, p) => { o[p.id] = true; return o; }, {})), pendSel: {}, addedMems: (st.addedMems || []).concat(ps.map(p => ({ id: 'ap' + p.id, club: p.club, name: p.first + ' ' + p.last, email: (p.first + '.' + p.last).toLowerCase().replace(/[æ]/g, 'ae').replace(/[ø]/g, 'o').replace(/[å]/g, 'a') + '@example.no', type: 'active' }))) }));
+        const reject = (ps) => this.setState(st => ({ pendDone: Object.assign({}, st.pendDone || {}, ps.reduce((o, p) => { o[p.id] = true; return o; }, {})), pendSel: {} }));
+        const chosen = list.filter(p => psel[p.id]);
+        return {
+          tPendTitle: T2('Pending', 'Ubehandlede'), notPend: !this.state.pendOpen, pendBtnRing: this.state.pendOpen ? '0 0 0 3px #ffffff, 0 0 0 5px #7c4dcf' : 'none', pendCount: String(all0.length), pendOpen: !!this.state.pendOpen, togglePend: () => this.setState({ pendOpen: !this.state.pendOpen }),
+          tPendIntro: T2('Pending members must be approved before they become active in the club, but they will still have access to the groups they belong to in the app.', 'Ubehandlede medlemmer må godkjennes før de blir aktive i klubben, men de vil uansett ha tilgang til gruppene de er medlem av i appen.'),
+          tPendSearch: T2('Search', 'Søk'), tFirst: T2('First name', 'Fornavn'), tLast: T2('Last name', 'Etternavn'), tPGroupRole: T2('Group role', 'Grupperolle'), tPGroups: T2('Groups', 'Grupper'), tPPay: T2('Payment contact', 'Betalingskontakt'),
+          tPendApprove: T2('Approve', 'Godkjenn'), tPendReject: T2('Decline', 'Avslå'), tPendApproveSel: T2('Approve selected', 'Godkjenn valgte'), tPendRejectSel: T2('Decline selected', 'Avslå valgte'), tPendNone: T2('You have no pending members', 'Du har ingen ubehandlede medlemmer'),
+          pendQ: this.state.pendQ || '', onPendQ: (e) => this.setState({ pendQ: e.target.value }), pendEmpty: list.length === 0,
+          pendSelAny: chosen.length > 0, pendApproveSel: () => approve(chosen), pendRejectSel: () => reject(chosen),
+          pendAllChecked: list.length > 0 && chosen.length === list.length,
+          pendToggleAll: () => this.setState(st => { const every = list.length > 0 && list.every(p => (st.pendSel || {})[p.id]); const nx = {}; if (!every) list.forEach(p => { nx[p.id] = true; }); return { pendSel: nx }; }),
+          pendRows: list.map(p => ({ key: 'pr' + p.id, first: p.first, last: p.last, role: p.role, group: p.group, pay: p.pay, checked: !!psel[p.id], bg: psel[p.id] ? '#f3ecfc' : 'transparent',
+            toggle: () => this.setState(st => { const nx = Object.assign({}, st.pendSel || {}); if (nx[p.id]) delete nx[p.id]; else nx[p.id] = true; return { pendSel: nx }; }), approve: () => approve([p]), reject: () => reject([p]) }))
+        };
+      })(),
+      tFilter: T2('Filter', 'Filter'), fOpen: !!this.state.filtOpen, fToggle: () => this.setState({ filtOpen: !this.state.filtOpen }), fClose: () => this.setState({ filtOpen: false }),
+      fBadge: totalSel > 0, fBadgeN: String(totalSel), tFDone: T2('Done', 'Ferdig'), tFClearAll: T2('Clear all', 'Nullstill alle'), tFClearCat: T2('Clear', 'Fjern valg'), tFHint: T2('Filter members by', 'Filtrer medlemmer etter'),
+      fClearAll: () => this.setState({ memFilt: {}, tblPage: 1 }), fClearCat: () => this.setState(st => ({ memFilt: Object.assign({}, st.memFilt || {}, { [filtCat]: {} }), tblPage: 1 })),
+      fCats: catDefs.map(cd => ({ key: 'fc' + cd.k, label: cd.label, n: String(nSel(cd.k)), hasN: nSel(cd.k) > 0, pick: () => this.setState({ filtCat: cd.k }),
+        style: 'display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; text-align: left; padding: 10px 12px; border: 0; border-radius: 12px; cursor: pointer; font-family: var(--font-body); font-size: 14px; color: #16241a; background: ' + (cd.k === filtCat ? '#eaf7ed' : 'transparent') + '; font-weight: ' + (cd.k === filtCat ? '700' : '400') })),
+      fCatTitle: curCat.label,
+      fOpts: curCat.opts.map(o => { const on = !!(filtSel[curCat.k] || {})[o.id]; const cnt = tblSrcRaw.filter(r => curCat.get(r, rowFacts.get(r)).indexOf(o.id) !== -1).length;
+        return { key: 'fo' + curCat.k + o.id, label: o.label, count: String(cnt), on: on, mark: on ? '✓' : '', toggle: () => toggleOpt(curCat.k, o.id),
+          box: 'width: 20px; height: 20px; flex: 0 0 auto; box-sizing: border-box; border-radius: 6px; display: grid; place-items: center; font-size: 13px; line-height: 1; border: 1.5px solid ' + (on ? '#1f7a3a' : 'rgba(22,36,26,.3)') + '; background: ' + (on ? '#1f7a3a' : '#ffffff') + '; color: #ffffff' }; }),
+      fChips: catDefs.reduce((a, cd) => a.concat(Object.keys(filtSel[cd.k] || {}).filter(x => filtSel[cd.k][x]).map(id => ({ key: 'fch' + cd.k + id, label: cd.label + ': ' + (cd.opts.find(o => o.id === id) || { label: id }).label, remove: () => toggleOpt(cd.k, id) }))), []),
+      fHasChips: totalSel > 0, tRemoveL: T2('Remove', 'Fjern'),
+      tblShowing: (() => { const a = tblAll ? tblSrc.length : tblShown.length, tot = allMemTotal; return en ? 'Showing ' + a + ' of ' + tot + ' members' : 'Viser ' + a + ' av ' + tot + ' medlemmer'; })(),
+      tblHead: cols.map(c => ({ key: 'h' + c.k, label: c.label })),
+      tVis: en ? 'Show' : 'Vis', tVisHint: en ? 'Choose columns' : 'Velg kolonner',
+      visOpen: !!this.state.visOpen, toggleVis: () => this.setState({ visOpen: !this.state.visOpen }), closeVis: () => this.setState({ visOpen: false }),
+      visCount: cols.length + '/' + colDefs.length,
+      visCols: colDefs.map(c => { const on = colOn(c); return { key: 'v' + c.k, label: c.label, on: on, mark: on ? '✓' : '', toggle: () => this.setState(st => ({ memCols: Object.assign({}, st.memCols || {}, { [c.k]: !(((st.memCols || {})[c.k] !== undefined) ? (st.memCols || {})[c.k] : !!c.on) }) })),
+        box: 'width: 20px; height: 20px; flex: 0 0 auto; box-sizing: border-box; border-radius: 6px; display: grid; place-items: center; font-size: 13px; line-height: 1; border: 1.5px solid ' + (on ? '#1f7a3a' : 'rgba(22,36,26,.3)') + '; background: ' + (on ? '#1f7a3a' : '#ffffff') + '; color: #ffffff' }; }),
+      visReset: () => this.setState({ memCols: {} }), visAll: () => this.setState({ memCols: colDefs.reduce((o, c) => { o[c.k] = true; return o; }, {}) }), tVisReset: en ? 'Reset' : 'Nullstill', tVisAll: en ? 'Show all' : 'Vis alle',
       tblMulti: tblSrc.length > 0,
       tTblPer: en ? 'Members per page' : 'Medlemmer per side',
       tblPer: String(tblPer),
@@ -2001,8 +2085,72 @@ export class AdminLogic extends LogicBase {
         return out;
       })(),
       tblSelAny: tblChecked.length > 0,
-      tblSelNote: tblChecked.length + (en ? ' selected — export includes only these.' : ' valgt – eksporten tar bare med disse.'),
-      exportMembers: () => {
+      tblSelNote: en ? 'Selected ' + tblChecked.length + (tblChecked.length === 1 ? ' member.' : ' members.') : 'Valgt ' + tblChecked.length + (tblChecked.length === 1 ? ' medlem.' : ' medlemmer.'),
+      tPmBtn: T2('Send priority message', 'Send prioritetsmelding'), tPmHelp: T2('The message is shown to the selected members in the yellow box "Important from the board" on their home page.', 'Meldingen vises for de valgte medlemmene i den gule boksen «Viktig fra styret» på hjemmesiden deres.'),
+      tPmTitle: T2('Title', 'Tittel'), tPmTitlePh: T2('E.g. Dugnad moved to Saturday', 'F.eks. Dugnaden flyttes til lørdag'), tPmText: T2('Message', 'Melding'), tPmSend: T2('Send priority message', 'Send prioritetsmelding'),
+      pmOpen: !!this.state.pmOpen, pmOpenForm: () => { if (tblChecked.length) this.setState({ pmOpen: true, pmSrc: 'members', pmTitle: '', pmText: '' }); }, pmClose: () => this.setState({ pmOpen: false }),
+      cmPmSentShow: !!this.state.cmPmSent, cmPmSent: this.state.cmPmSent || '',
+      pmOpenComms: () => this.setState({ pmOpen: true, pmSrc: 'comms', pmList: [], pmOff: {}, pmListQ: '', pmTab: 'chats', pmQ: '', pmTitle: '', pmText: '' }),
+      tPmNew: T2('New priority message', 'Ny prioritetsmelding'),
+      tPmBanner: T2('Important messages appear in the yellow box "Important from the board" on the members\' home page.', 'Viktige beskjeder vises i den gule boksen «Viktig fra styret» på medlemmenes hjemmeside.'),
+      pmPicker: pmComms, tPmSearch: T2('Search members…', 'Søk etter medlemmer …'), tPmAdd: T2('Add', 'Legg til'), tPmRemove: T2('Remove', 'Fjern'),
+      pmQ: this.state.pmQ || '', onPmQ: (e) => this.setState({ pmQ: e.target.value }),
+      pmGroups: pmGrpNames.map(g => { const ents = tblSrcRaw.filter(r => r.raw && r.raw.group === g).map(r => pmEntry(r, g)); return Object.assign({ key: 'pmg' + g }, pmSet(ents, g + ' · ' + ents.length)); }),
+      pmChatOpts: (this._cmGC || []).map(gc => { const ents = gc.people.map(nm => pmByName(nm, T2('Chat: ', 'Chat: ') + gc.name)); return Object.assign({ key: 'pmch' + gc.id }, pmSet(ents, gc.name + ' · ' + ents.length)); }),
+      pmNoChats: !(this._cmGC || []).length, tPmNoChats: T2('No group chats yet.', 'Ingen gruppechatter ennå.'),
+      pmAll: pmSet(tblSrcRaw.map(r => pmEntry(r)), T2('All members', 'Alle medlemmer') + ' · ' + tblSrcRaw.length),
+      tPmAllHint: T2('Adds everyone – untick the ones who should not get it.', 'Legger til alle – fjern hakene på de som ikke skal få den.'),
+      tPmAddFrom: T2('Add recipients from', 'Legg til mottakere fra'),
+      pmSrcTabs: [['chats', T2('Group chats', 'Gruppechatter')], ['groups', T2('Groups in the club', 'Grupper i klubben')], ['all', T2('All members', 'Alle medlemmer')], ['search', T2('Search', 'Søk')]].map(o => ({ key: 'pmt' + o[0], label: o[1], on: pmTab === o[0] ? 'true' : 'false', pick: () => this.setState({ pmTab: o[0] }),
+        style: 'padding: 7px 13px; border-radius: 999px; border: 0; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 12.5px; ' + (pmTab === o[0] ? 'background: #16241a; color: #f6f8f3;' : 'background: transparent; color: rgba(22,36,26,.65);') })),
+      pmSrcChats: pmTab === 'chats', pmSrcGroups: pmTab === 'groups', pmSrcAll: pmTab === 'all', pmSrcSearch: pmTab === 'search', pmNotPicker: !pmComms,
+      pmNoRes: !!pmQv && pmRes.length === 0, tPmNoRes: T2('No members match.', 'Ingen medlemmer matcher.'),
+      pmListHead: pmList.length ? T2(pmRecips.length + ' of ' + pmList.length + ' will get the message', pmRecips.length + ' av ' + pmList.length + ' får meldingen') : T2('Recipients', 'Mottakere'),
+      pmListAny: pmList.length > 0, pmListEmpty: pmList.length === 0, tPmListEmpty: T2('Nobody added yet. Pick a group chat, a group, all members or search above.', 'Ingen lagt til ennå. Velg en gruppechat, en gruppe, alle medlemmer eller søk over.'),
+      tPmCheckAll: pmLq ? T2('Tick shown', 'Huk av viste') : T2('Tick all', 'Huk av alle'), pmCheckAll: () => this.setState(st => { if (!pmLq) return { pmOff: {} }; const o = Object.assign({}, st.pmOff || {}); pmListShown.forEach(x => { delete o[x.key]; }); return { pmOff: o }; }),
+      tPmClear: T2('Clear list', 'Tøm listen'), pmClearList: () => this.setState({ pmList: [], pmOff: {} }),
+      pmListQ: this.state.pmListQ || '', onPmListQ: (e) => this.setState({ pmListQ: e.target.value }),
+      tPmListSearch: T2('Search the list by name…', 'Søk i listen etter navn …'),
+      pmListNoHit: pmList.length > 0 && pmListShown.length === 0, tPmListNoHit: T2('Nobody in the list matches.', 'Ingen i listen matcher.'),
+      pmListRows: pmListShown.map(x => { const on = !pmOff[x.key]; return { key: 'pml' + x.key, name: x.name, sub: x.sub, on: on,
+        toggle: () => this.setState(st => { const o = Object.assign({}, st.pmOff || {}); if (o[x.key]) delete o[x.key]; else o[x.key] = true; return { pmOff: o }; }),
+        remove: (ev) => { if (ev && ev.preventDefault) ev.preventDefault(); pmDropMany([x.key]); },
+        style: 'display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-top: 1px solid rgba(22,36,26,.06); cursor: pointer; ' + (on ? '' : 'opacity: .5;') }; }),
+      pmHasRes: pmRes.length > 0,
+      pmRes: pmRes.map(r => ({ key: 'pmr' + r.id, name: r.name, sub: (r.raw && r.raw.group) || r.type || '', add: () => { pmAddMany([pmEntry(r)]); this.setState({ pmQ: '' }); } })),
+      pmTitle: this.state.pmTitle || '', pmText: this.state.pmText || '', onPmTitle: (e) => this.setState({ pmTitle: e.target.value }), onPmText: (e) => this.setState({ pmText: e.target.value }),
+      pmRecipHead: pmComms ? T2('Recipients', 'Mottakere') : T2('Recipients (' + pmRecips.length + ')', 'Mottakere (' + pmRecips.length + ')'), pmChips: pmRecips.map(r => ({ key: 'pmc' + r.id, name: r.name })),
+      // Writes "kretz.priority.v1" — read by the member page ("Viktig fra styret", see readPriorityNotices in memberData.js).
+      pmSend: (e) => {
+        e.preventDefault(); const ch = pmRecips.slice(); const title = (this.state.pmTitle || '').trim(), text = (this.state.pmText || '').trim(); if (!ch.length || !title || !text) return;
+        const msg = { id: 'pm' + Date.now(), title: title, text: text, ts: Date.now(), club: (ch[0].raw && ch[0].raw.club) || 'vif', to: ch.map(r => ({ name: r.name, email: r.email || '', club: (r.raw && r.raw.club) || '' })) };
+        try { const k = 'kretz.priority.v1'; const cur = JSON.parse(localStorage.getItem(k) || '[]'); cur.push(msg); localStorage.setItem(k, JSON.stringify(cur.slice(-30))); } catch { /* storage unavailable */ }
+        const n = ch.length; if (pmComms) { this.setState({ pmOpen: false, pmList: [], pmOff: {}, cmPmSent: T2('Priority message sent to ' + n + (n === 1 ? ' member.' : ' members.'), 'Prioritetsmelding sendt til ' + n + (n === 1 ? ' medlem.' : ' medlemmer.')) }); return; } this.setState({ pmOpen: false, tblSel: {}, memMsg: T2('Priority message sent to ' + n + (n === 1 ? ' member.' : ' members.') + ' It appears in "Important from the board" on their home page.', 'Prioritetsmelding sendt til ' + n + (n === 1 ? ' medlem.' : ' medlemmer.') + ' Den vises i «Viktig fra styret» på hjemmesiden deres.') });
+      },
+      tBkClear: T2('Clear selection', 'Fjern valg'), bkClear: () => this.setState({ tblSel: {}, bkMenu: false }),
+      tBkMessage: T2('Send message', 'Send melding'), tBkEdit: T2('Edit', 'Rediger'), tBkAdd: T2('Add to group', 'Legg til i gruppe'), tBkRemove: T2('Remove from group', 'Fjern fra gruppe'), tBkMerge: T2('Merge', 'Slå sammen'), tBkExport: T2('Export', 'Eksporter'), tBkDeactivate: T2('Deactivate', 'Deaktiver'),
+      memMsg: this.state.memMsg || '', closeMemMsg: () => this.setState({ memMsg: '' }),
+      bkMessage: () => {
+        const ch = tblChecked.slice(); if (!ch.length) return;
+        const names = ch.map(r => r.name), club = (ch[0].raw && ch[0].raw.club) || (all ? 'vif' : sel);
+        const title = ch.length === 1 ? names[0] : (ch.length <= 3 ? names.join(', ') : names.slice(0, 2).join(', ') + ' +' + (ch.length - 2));
+        const ids = ch.map(r => r.id).sort().join(',');
+        const ex = (this.state.cmExtra || []).find(t => t.ids === ids && t.club === club);
+        const nid = ex ? ex.id : 'tm' + Date.now();
+        this.setState(st => ({ tab: 'comms', navMenu: '', kpiPanel: false, spCal: false, navOpen: Object.assign({}, st.navOpen || {}, { people: true }), tblSel: {}, memMsg: '',
+          cmExtra: ex ? (st.cmExtra || []) : (st.cmExtra || []).concat([{ id: nid, ids: ids, name: title, club: club, group: ch.length > 1, people: names, msgs: [] }]),
+          cmChat: nid, cmTab: 'chat', cmFilter: 'all', cmListQ: '', cmChatQ: '', cmDraft: '', clubsOpen: false }));
+        setTimeout(() => { const el = document.querySelector('input[placeholder="Skriv en melding"],input[placeholder="Write a message"]'); if (el) el.focus(); }, 500);
+      },
+      bkEditOff: tblChecked.length !== 1, bkEdit: () => { if (tblChecked.length === 1) this.setState({ member: tblChecked[0].id }); },
+      bkMergeOff: tblChecked.length !== 2,
+      bkMerge: () => { if (tblChecked.length !== 2) return; const keepR = tblChecked[0], gone = tblChecked[1]; this.setState(st => ({ memHidden: Object.assign({}, st.memHidden || {}, { [gone.id]: true }), tblSel: {}, memMsg: T2(gone.name + ' was merged into ' + keepR.name + '.', gone.name + ' er slått sammen med ' + keepR.name + '.') })); },
+      bkExport: () => this.exportMembersRef && this.exportMembersRef(),
+      bkDeactivate: () => { const n = tblChecked.length; this.setState(st => ({ memHidden: Object.assign({}, st.memHidden || {}, tblChecked.reduce((o, r) => { o[r.id] = true; return o; }, {})), tblSel: {}, memMsg: T2(n + (n === 1 ? ' member deactivated.' : ' members deactivated.'), n + (n === 1 ? ' medlem er deaktivert.' : ' medlemmer er deaktivert.')) })); },
+      bkGroupMenu: !!this.state.bkMenu, bkToggleAdd: () => this.setState({ bkMenu: !this.state.bkMenu }), bkCloseMenu: () => this.setState({ bkMenu: false }),
+      bkGroups: this.groupsOf(all ? 'vif' : sel, en).map((g, i) => ({ key: 'bkg' + i, name: g, pick: () => { const n = tblChecked.length; this.setState(st => ({ memGroupOv: Object.assign({}, st.memGroupOv || {}, tblChecked.reduce((o, r) => { o[r.id] = g; return o; }, {})), bkMenu: false, memMsg: T2(n + (n === 1 ? ' member' : ' members') + ' added to ' + g + '.', n + (n === 1 ? ' medlem' : ' medlemmer') + ' lagt til i ' + g + '.') })); } })),
+      bkRemoveGroup: () => { const n = tblChecked.length; this.setState(st => ({ memGroupOv: Object.assign({}, st.memGroupOv || {}, tblChecked.reduce((o, r) => { o[r.id] = ''; return o; }, {})), memMsg: T2(n + (n === 1 ? ' member' : ' members') + ' removed from their group.', n + (n === 1 ? ' medlem' : ' medlemmer') + ' er fjernet fra gruppen.') })); },
+      exportMembers: this.exportMembersRef = () => {
         const rows = (tblChecked.length ? tblChecked : tblSrc);
         const q = (v) => '"' + String(v).replace(/"/g, '""') + '"';
         const csv = '\ufeff' + [[en ? 'Name' : 'Navn', en ? 'Email' : 'E-post', en ? 'Membership type' : 'Medlemskapstype', 'Status']].concat(rows.map(r => [r.name, r.email, r.type, r.paid ? (en ? 'Active' : 'Aktiv') : (en ? 'Unpaid' : 'Ubetalt')])).map(l => l.map(q).join(';')).join('\r\n');
@@ -2026,9 +2174,13 @@ export class AdminLogic extends LogicBase {
         const club = all ? 'vif' : sel;
         this.setState(st => ({ addedMems: (st.addedMems || []).concat([{ id: 'new' + Date.now(), club: club, name: nm, email: em, type: st.amType || 'active' }]), addMemOpen: false }));
       },
+      // design Nov 2026: the add-member form moved into adminAddMemVals (kept as fallback here)
+      ...(this.adminAddMemVals ? this.adminAddMemVals({ en, all, sel, clubOf }) : {}),
+      // ---- end member register (view) ----
       stopClick: (e) => e.stopPropagation(),
 
       navTabs: navDefs.map(t => {
+        const NAVIC = { board: 'M3 20h18M5 20V10l7-5 7 5v10M9 20v-5h6v5', finance: 'M4 7h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zM4 7V6a2 2 0 0 1 2-2h11M16.5 13h.01', people: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3.5 19a5.5 5.5 0 0 1 11 0M16 5.5a3 3 0 0 1 0 5.5M17.5 14.5A5.5 5.5 0 0 1 20.5 19', followup: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M9 15l2 2 4-4', comms: 'M4 5h16v11H10l-5 4v-4H4z', docs: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', booking: 'M3 20V9l9-5 9 5v11M8 20v-6h8v6M3 20h18', timetable: 'M4 5h16v14H4zM4 10h16M4 15h16M10 5v14' };
         if (t.menu) {
           const m = menus[t.menu];
           const isOpen = !!(this.state.navOpen || {})[t.menu];
@@ -2038,16 +2190,17 @@ export class AdminLogic extends LogicBase {
             label: m.label,
             isMenu: true,
             isPlain: false,
+            iconD: NAVIC[t.menu],
             open: isOpen,
             chevron: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            pick: () => this.setState(st => ({ navOpen: Object.assign({}, st.navOpen || {}, { [t.menu]: !(st.navOpen || {})[t.menu] }) })),
+            pick: () => this.setState(st => st.sideMini ? ({ sideMini: false, navOpen: Object.assign({}, st.navOpen || {}, { [t.menu]: true }) }) : ({ navOpen: Object.assign({}, st.navOpen || {}, { [t.menu]: !(st.navOpen || {})[t.menu] }) })),
             style: navItem(active), act: active ? 'yes' : 'no',
             items: m.subs.map(sub => ({
               key: 'sub' + sub.id,
               label: sub.label,
               note: sub.note,
               pick: () => this.setState({ tab: sub.id, navMenu: '', kpiPanel: false, spCal: false, bulkSms: 0, bulkSmsAt: '' }),
-              style: 'display: block; width: 100%; box-sizing: border-box; text-align: left; cursor: pointer; padding: 9px 12px; border-radius: 10px; border: 0; font-family: var(--font-body); color: #16241a; transition: background .25s;'
+              style: 'display: block; width: 100%; box-sizing: border-box; text-align: left; cursor: pointer; padding: 6px 10px; border-radius: 8px; border: 0; font-family: var(--font-body); color: #16241a; transition: background .25s;'
                 + (tab === sub.id ? ' background: rgba(116,205,133,.26);' : ' background: transparent;')
             }))
           };
@@ -2057,6 +2210,7 @@ export class AdminLogic extends LogicBase {
           label: t.label,
           isMenu: false,
           isPlain: true,
+          iconD: NAVIC[t.id],
           open: false,
           chevron: '',
           items: [],
@@ -2104,17 +2258,217 @@ export class AdminLogic extends LogicBase {
       tKpiToggle: this.state.kpiPanel ? (en ? 'Close key figures' : 'Lukk nøkkeltall') : (en ? 'Open key figures' : 'Åpne nøkkeltall'),
       kpiArrow: this.state.kpiPanel ? '›' : '‹',
       kpiHandleRight: this.state.kpiPanel ? 'min(max(75vw, min(100vw, 900px)), 100vw - 40px)' : '0px',
-      showSplit: tab !== 'members' && tab !== 'teamfund' && tab !== 'timetable' && tab !== 'sponsors' && tab !== 'roles' && tab !== 'depts' && tab !== 'board' && tab !== 'booking',
+      showSplit: tab !== 'members' && tab !== 'teamfund' && tab !== 'timetable' && tab !== 'sponsors' && tab !== 'roles' && tab !== 'depts' && tab !== 'board' && tab !== 'booking' && tab !== 'nif' && tab !== 'settle',
       showBoard: tab === 'board',
+      // ---- design Nov 2026: Board page (overview / minutes / quarter calendar) ----
+      ...(() => {
+        const T = (a, b) => (en ? a : b);
+        const bt = this.state.bdTab || 'overview';
+        const now = new Date();
+        const q0 = Math.floor(now.getMonth() / 3), qi = (this.state.bdQ || 0);
+        const qAbs = now.getFullYear() * 4 + q0 + qi, qy = Math.floor(qAbs / 4), qq = qAbs % 4;
+        const MN = en ? ['January','February','March','April','May','June','July','August','September','October','November','December'] : ['Januar','Februar','Mars','April','Mai','Juni','Juli','August','September','Oktober','November','Desember'];
+        const mn = (i) => MN[i].slice(0, 3).toLowerCase();
+        const PLAN = [
+          [2026, 11, 26, T('Board meeting – budget 2027', 'Styremøte – budsjett 2027')],
+          [2027, 1, 14, T('Strategy session', 'Strategisamling')],
+          [2027, 2, 11, T('Board meeting – annual report and accounts', 'Styremøte – årsberetning og regnskap')],
+          [2027, 3, 18, T('Annual meeting 2027', 'Årsmøte 2027')],
+          [2027, 4, 15, T('Board meeting – new board, roles', 'Styremøte – nytt styre og roller')],
+          [2027, 6, 10, T('Board meeting – half-year and summer', 'Styremøte – halvår og sommer')],
+          [2027, 8, 19, T('Board meeting – season start', 'Styremøte – sesongstart')],
+          [2027, 10, 7, T('Board evaluation', 'Styreevaluering')]
+        ];
+        const added = !!this.state.bdPlanAdded;
+        const meets = (this.state.meetings || []).length ? this.state.meetings : null;
+        const base = (meets || []).map(m => ({ id: m.id, y: m.y || 2026, m: m.m, d: m.d, title: m.title, upcoming: !!m.upcoming, real: true }));
+        const seed = meets ? [] : [{ id: 'm1', y: 2026, m: 6, d: 10, title: T('Board meeting', 'Styremøte'), upcoming: false, real: true }, { id: 'm2', y: 2026, m: 8, d: 19, title: T('Board meeting', 'Styremøte'), upcoming: false, real: true }, { id: 'm3', y: 2026, m: 10, d: 8, title: T('Board meeting', 'Styremøte'), upcoming: true, real: true }];
+        const planItems = added ? PLAN.map((p, i) => ({ id: 'bp' + i, y: p[0], m: p[1], d: p[2], title: p[3], upcoming: true, plan: true })) : [];
+        const all = base.concat(seed).concat(planItems);
+        const today = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+        const months = [0, 1, 2].map(k => {
+          const mi = qq * 3 + k;
+          const items = all.filter(x => x.y === qy && x.m === mi + 1).sort((a, b) => a.d - b.d).map(x => {
+            const past = (x.y * 10000 + x.m * 100 + x.d) < today;
+            const st = past && !x.plan ? 'signed' : (x.plan ? 'plan' : 'draft');
+            const lab = st === 'signed' ? T('Signed', 'Signert') : st === 'plan' ? T('Planned', 'Planlagt') : T('Draft', 'Utkast');
+            const col = st === 'signed' ? ['#eaf7ed', '#1f7a3a', '#1f7a3a'] : st === 'plan' ? ['#fff6d6', '#6b5300', '#e0a100'] : ['#f1f3ef', '#4C5E50', '#7d8a7f'];
+            return { key: 'bm' + x.id, date: x.d + '. ' + mn(x.m - 1), title: x.title, status: lab,
+              open: () => { if (x.real) this.setState({ bdTab: 'overview', meetingOpenId: x.id }); },
+              style: 'display: block; width: 100%; text-align: left; padding: 12px 12px; border-radius: 14px; border: 1px solid rgba(116,205,133,.35); background: #f4f8f2; cursor: pointer; font-family: var(--font-body); transition: border-color .2s',
+              chipStyle: 'display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: ' + col[0] + '; color: ' + col[1],
+              dotStyle: 'width: 6px; height: 6px; border-radius: 999px; background: ' + col[2] };
+          });
+          return { key: 'bmo' + qy + mi, name: MN[mi], items: items, empty: items.length === 0 };
+        });
+        const isNow = qi === 0;
+        const blv = this.state.bdList || 'meetings';
+        const AG0 = [[T('Approval of notice and agenda', 'Godkjenning av innkalling og saksliste'), 5, false], [T('Approval of minutes from last meeting', 'Godkjenning av protokoll fra forrige møte'), 5, false], [T('Financial report – Q3 2026', 'Økonomirapport – 3. kvartal 2026'), 20, false], [T('Budget 2027', 'Budsjett 2027'), 40, true], [T('Grant applications and funding', 'Søknader om støtte og midler'), 20, false], [T('Any other business', 'Eventuelt'), 10, false]];
+        const AGT = [[T('Membership status', 'Medlemsstatus'), 10], [T('Sponsor agreements', 'Sponsoravtaler'), 15], [T('Hall times and facilities', 'Halltider og anlegg'), 15], [T('Volunteer day planning', 'Dugnadsplan'), 10], [T('Annual meeting preparations', 'Forberedelse til årsmøtet'), 20], [T('Child safety and police certificates', 'Politiattester og trygghet'), 10]];
+        const agList = this.state.agItems || AG0.map((a, i) => ({ id: 'a' + i, t: a[0], m: a[1], dec: a[2] }));
+        const agPub = !!this.state.agPublished;
+        const agTot = agList.reduce((n, a) => n + a.m, 0);
+        const hm = (n) => Math.floor(n / 60) > 0 ? Math.floor(n / 60) + ' t ' + (n % 60 ? (n % 60) + ' min' : '') : n + ' min';
+        const setAg = (fn) => this.setState(s2 => ({ agItems: fn((s2.agItems || agList).slice()), agPublished: false, agSent: '' }));
+        const PEOPLE = [['Marit Sunde', T('Chair', 'Styreleder')], ['Anne Bjørk', T('Treasurer', 'Kasserer')], ['Sigrid A.', T('Board member', 'Styremedlem'), true], ['Jonas Reite', T('Board member', 'Styremedlem')], ['Ida Krogh', T('Deputy', 'Varamedlem')]];
+        const prMeetsAll = meetingList;
+        const prPid = (prMeetsAll.find(m => m.id === this.state.prMeetId) || prMeetsAll.find(m => m.upcoming) || prMeetsAll[prMeetsAll.length - 1] || { id: '' }).id;
+        const prMeet = prMeetsAll.find(m => m.id === prPid) || null;
+        const prGen = (m) => {
+          if (!m) return '';
+          if (m.protocol) return m.protocol;
+          const L = [T('Minutes – ', 'Protokoll – ') + m.title + ' ' + m.d + '.' + m.m + '.2026', T('Time: ', 'Tid: ') + m.time + ' · ' + T('Place: ', 'Sted: ') + m.place, T('Present: ', 'Til stede: ') + (m.invitees || boardNames).join(', '), ''];
+          m.agenda.forEach((x, i) => { L.push(T('Item ', 'Sak ') + (i + 1) + ' – ' + x); L.push(m.upcoming ? T('Notes: ', 'Notat: ') : T('Discussed and noted.', 'Drøftet og tatt til orientering.')); L.push(''); });
+          (m.decisions || []).forEach(x => L.push(T('Decision: ', 'Vedtak: ') + x));
+          if ((m.decisions || []).length) L.push('');
+          L.push(T('Minute taker: Sigrid A.', 'Protokollfører: Sigrid A.'));
+          return L.join('\n');
+        };
+        const prGet = (all, id) => Object.assign({ mode: 'present', sel: { 0: true, 2: true }, sent: false, signed: 0, sendAll: true, editing: false, text: null }, (id === 'm1' || id === 'm2') ? { sent: true, signed: 99 } : {}, all[id] || {});
+        const sigOf = (c) => c.mode === 'secretary' ? [2] : c.mode === 'secLead' ? [2, 0] : c.mode === 'present' ? [0, 1, 2, 3, 4] : Object.keys(c.sel || {}).filter(k => c.sel[k]).map(Number);
+        const prC = prGet(this.state.prBy || {}, prPid);
+        const prMode = prC.mode, prSel = prC.sel;
+        const signers = sigOf(prC);
+        const prSent = !!prC.sent, prDone = Math.min(prC.signed || 0, signers.length);
+        const prLocked = prSent && signers.length > 0 && prDone >= signers.length;
+        const prTxt = prC.text != null ? prC.text : prGen(prMeet);
+        const setPr = (patch) => this.setState(s2 => { const all = Object.assign({}, s2.prBy || {}); const cur = prGet(all, prPid); all[prPid] = Object.assign({}, cur, typeof patch === 'function' ? patch(cur) : patch); return { prBy: all }; });
+        const prPdfLines = (txt, names) => txt.split('\n').slice(1).map(x => /^(Sak|Item) \d/.test(x) ? { h: x } : x).concat([{ h: T('Signatures', 'Signaturer') }]).concat(names.map(n => n + T(' – signed with BankID', ' – signert med BankID')));
+        const prPdfName = (m) => T('Minutes ', 'Protokoll ') + (m ? m.title.toLowerCase() + ' ' + m.d + '.' + m.m + '.2026' : '') + T(' (signed).pdf', ' (signert).pdf');
+        const optStyle = (on) => 'display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 13px 14px; border-radius: 12px; cursor: pointer; font-family: var(--font-body); font-size: 14.5px; color: #16241a; ' + (on ? 'border: 1.5px solid #1f7a3a; background: #f4f8f2; font-weight: 600;' : 'border: 1px solid rgba(22,36,26,.14); background: #ffffff;');
+        const prVals = {
+          tPrKicker: T('Minutes', 'Protokoll'), tPrPickMeet: T('Meeting:', 'Møte:'),
+          prMeets: prMeetsAll.map(m => { const c = prGet(this.state.prBy || {}, m.id); const sg = sigOf(c); const lk = c.sent && sg.length && Math.min(c.signed || 0, sg.length) >= sg.length; const on = m.id === prPid;
+            return { key: 'pm' + m.id, on: on ? 'true' : 'false', label: m.d + '.' + m.m + '. · ' + m.title, pick: () => this.setState({ prMeetId: m.id }),
+              style: 'display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; cursor: pointer; font-family: var(--font-body); font-size: 13.5px; font-weight: 600; ' + (on ? 'border: 1px solid #16241a; background: #16241a; color: #f6f8f3;' : 'border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a;'),
+              dot: 'width: 7px; height: 7px; border-radius: 999px; background: ' + (lk ? '#74cd85' : c.sent ? '#e0a100' : '#b9bfb7') }; }),
+          prStatus: prLocked ? T('Signed · locked', 'Signert · låst') : prSent ? T('Out for signing', 'Til signering') : T('Draft', 'Utkast'),
+          prStatusStyle: 'padding: 4px 11px; border-radius: 999px; font-size: 12px; font-weight: 700; ' + (prLocked ? 'background: #eaf7ed; color: #1f7a3a;' : prSent ? 'background: #fff6d6; color: #6b5300;' : 'background: #f1f3ef; color: #4C5E50;'),
+          prCanEdit: !prLocked, prLocked: prLocked,
+          prEditing: !prLocked && !!prC.editing, prReading: prLocked || !prC.editing,
+          tPrRead: T('Read', 'Les'), tPrEdit: T('Edit', 'Rediger'), tPrDoneEdit: T('Done editing', 'Ferdig å redigere'),
+          prViewMode: () => setPr({ editing: false }), prEditMode: () => { if (!prLocked) setPr({ editing: true }); },
+          prReadStyle: 'padding: 6px 14px; border-radius: 999px; border: 0; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 12.5px; ' + (!prC.editing ? 'background: #ffffff; color: #16241a; box-shadow: 0 2px 6px rgba(22,36,26,.12);' : 'background: transparent; color: rgba(22,36,26,.55);'),
+          prEditStyle: 'padding: 6px 14px; border-radius: 999px; border: 0; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 12.5px; ' + (prC.editing ? 'background: #ffffff; color: #16241a; box-shadow: 0 2px 6px rgba(22,36,26,.12);' : 'background: transparent; color: rgba(22,36,26,.55);'),
+          prText: prTxt, onPrText: (e) => { const v = e.target.value; setPr(c => ({ text: v, signed: c.sent ? 0 : c.signed })); },
+          prEditHint: prSent ? T('The minutes are out for signing – changing them resets the signatures.', 'Protokollen er sendt til signering – endringer nullstiller signaturene.') : T('You can edit until everyone has signed.', 'Du kan redigere helt til alle har signert.'),
+          tPrReset: T('Rebuild from agenda', 'Lag på nytt fra sakslisten'), prReset: () => setPr(c => ({ text: null, signed: c.sent ? 0 : c.signed })),
+          tPrLockedNote: T('Signed by everyone. The minutes can no longer be changed and are saved as a PDF under the meeting files.', 'Signert av alle. Protokollen kan ikke endres lenger og ligger som PDF under styremøtets filer.'),
+          tPrOpenPdf: T('Open PDF', 'Åpne PDF'),
+          prOpenPdf: () => { const f = ((this.state.meetingFiles || {})[prPid] || []).find(x => x.signedPr); if (f && f.url) { window.open(f.url, '_blank', 'noopener'); return; } window.open(this.makePdf(prTxt.split('\n')[0], prPdfLines(prTxt, signers.map(ix => PEOPLE[ix][0]))), '_blank', 'noopener'); },
+          prLines: prTxt.split('\n').map((x, i) => ({ key: 'pz' + i, text: x || ' ',
+            style: i === 0 ? 'font-family: var(--font-heading); font-weight: 800; font-size: 22px; line-height: 1.25; color: #16241a; margin-bottom: 2px' :
+              /^(Sak|Item) \d/.test(x) ? 'margin-top: 6px; font-size: 14.5px; font-weight: 700; color: #16241a' :
+              /^(Vedtak|Decision):/.test(x) ? 'padding: 10px 14px; border-radius: 10px; background: #f4f8f2; border-left: 3px solid #1f7a3a; font-size: 13.5px; line-height: 1.5; color: #16241a' :
+              !x ? 'height: 4px; overflow: hidden; color: transparent; font-size: 1px' :
+              'font-size: 13.5px; line-height: 1.55; color: rgba(22,36,26,.78); white-space: pre-wrap; overflow-wrap: anywhere' })),
+          prSigs: (signers.length ? signers : [0]).slice(0, 6).map((ix, i) => ({ key: 'sg' + ix, name: PEOPLE[ix][0], mark: prSent && i < prDone ? '✓ ' + T('Signed', 'Signert') : '',
+            lineStyle: 'height: 26px; border-bottom: 1px solid rgba(22,36,26,.35); font-size: 12px; font-weight: 700; color: #1f7a3a; display: flex; align-items: flex-end; padding-bottom: 3px' })),
+          tPrSign: T('Sign minutes', 'Signer protokoll'), tPrWho: T('Who should sign the minutes?', 'Hvem skal signere protokollen?'),
+          prOpts: [['secretary', T('Minute taker', 'Protokollfører')], ['secLead', T('Minute taker and chair', 'Protokollfører og møteleder')], ['present', T('Board members present', 'Tilstedeværende styremedlemmer')], ['pick', T('Selected participants', 'Utvalgte deltakere')]].map(o => ({ key: 'po' + o[0], label: o[1], on: prMode === o[0] ? 'true' : 'false',
+            pick: () => { if (!prLocked) setPr({ mode: o[0], sent: false, signed: 0 }); }, style: optStyle(prMode === o[0]) + (prLocked ? ' opacity: .55; cursor: default;' : ''),
+            ring: 'flex: 0 0 auto; width: 18px; height: 18px; border-radius: 999px; box-sizing: border-box; display: grid; place-items: center; border: 2px solid ' + (prMode === o[0] ? '#1f7a3a' : 'rgba(22,36,26,.3)'),
+            dot: 'width: 8px; height: 8px; border-radius: 999px; background: ' + (prMode === o[0] ? '#1f7a3a' : 'transparent') })),
+          prPickOpen: prMode === 'pick',
+          prPeople: PEOPLE.map((pp, i) => ({ key: 'pp' + i, name: pp[0], role: pp[1], on: !!prSel[i], toggle: () => { if (!prLocked) setPr(c => ({ sel: Object.assign({}, c.sel, { [i]: !c.sel[i] }), sent: false, signed: 0 })); } })),
+          prSendAll: prC.sendAll !== false, prToggleSendAll: () => setPr(c => ({ sendAll: c.sendAll === false })),
+          tPrSendAll: T('Send the signed minutes to all participants after signing', 'Send signert protokoll til alle deltakere etter signering'),
+          tPrSendBtn: prLocked ? T('Signed ✓', 'Signert ✓') : prSent ? T('Sent for signing ✓', 'Sendt til signering ✓') : T('Send minutes for signing', 'Send protokoll for å signere'),
+          prSendDisabled: prSent || signers.length === 0,
+          prSend: () => setPr({ sent: true, signed: 0, editing: false }),
+          prSendStyle: 'margin-top: 4px; padding: 14px 18px; border-radius: 12px; border: 0; font-family: var(--font-heading); font-weight: 800; font-size: 14.5px; ' + (prSent ? 'background: #eaf7ed; color: #1f7a3a; cursor: default;' : signers.length ? 'background: #1f7a3a; color: #ffffff; cursor: pointer;' : 'background: rgba(22,36,26,.12); color: rgba(22,36,26,.5); cursor: default;'),
+          prSentShow: prSent,
+          prSentHead: prDone >= signers.length ? T('All have signed.', 'Alle har signert.') : prDone + T(' of ', ' av ') + signers.length + T(' have signed.', ' har signert.'),
+          prSentSub: prDone >= signers.length ? (prC.sendAll !== false ? T('The signed minutes were sent to all participants and saved as a PDF under the meeting files.', 'Signert protokoll er sendt til alle deltakere og lagret som PDF under styremøtets filer.') : T('Saved as a PDF under the meeting files.', 'Lagret som PDF under styremøtets filer.')) : T('Signers got an email with a link.', 'De som skal signere har fått en e-post med lenke.'),
+          prSignedPct: (signers.length ? Math.round(prDone / signers.length * 100) : 0) + '%',
+          tPrSimulate: prDone >= signers.length ? T('Done', 'Ferdig') : T('Simulate a signature', 'Simuler en signatur'),
+          tPrSigners: T('Signers', 'Underskrivere'),
+          prOverall: prDone >= signers.length ? T('Signed', 'Signert') : T('Signing', 'Signering'),
+          prOverallStyle: 'padding: 4px 11px; border-radius: 999px; font-size: 12px; font-weight: 700; ' + (prDone >= signers.length ? 'background: #eaf7ed; color: #1f7a3a;' : 'background: #fff6d6; color: #6b5300;'),
+          prSigners: signers.map((ix, i) => { const done = i < prDone; const nm = PEOPLE[ix][0]; const AV = ['#1f7a3a', '#3f9a58', '#a8842a', '#2f6fb3', '#7d8a7f'];
+            return { key: 'sr' + ix, name: nm, role: PEOPLE[ix][1], ini: nm.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
+              avStyle: 'flex: 0 0 auto; width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #ffffff; background: ' + AV[ix % AV.length],
+              status: done ? 'BankID ✓' : T('Waiting', 'Venter'),
+              pillStyle: 'display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; ' + (done ? 'background: #eaf7ed; color: #1f7a3a; border: 1px solid #a3e2ae;' : 'background: #f1f3ef; color: #4C5E50;'),
+              dotStyle: done ? 'display: none' : 'width: 6px; height: 6px; border-radius: 999px; background: #7d8a7f' }; }),
+          prSimulate: () => this.setState(s2 => {
+            const all = Object.assign({}, s2.prBy || {}); const cur = prGet(all, prPid); const sg = sigOf(cur);
+            if (!cur.sent || Math.min(cur.signed || 0, sg.length) >= sg.length) return {};
+            const n = Math.min((cur.signed || 0) + 1, sg.length);
+            all[prPid] = Object.assign({}, cur, { signed: n, editing: false });
+            const out = { prBy: all };
+            if (n >= sg.length && prMeet) {
+              const txt = cur.text != null ? cur.text : prGen(prMeet);
+              const url = this.makePdf(txt.split('\n')[0], prPdfLines(txt, sg.map(ix => PEOPLE[ix][0])));
+              const mf = Object.assign({}, s2.meetingFiles);
+              const list = (mf[prPid] || seedMeetingFiles(prPid)).filter(x => !x.signedPr);
+              mf[prPid] = [{ id: 'sp' + Date.now(), name: prPdfName(prMeet), size: 120000 + txt.length * 4, url: url, when: en ? 'just now' : 'nå nettopp', signedPr: true }].concat(list);
+              out.meetingFiles = mf;
+            }
+            return out;
+          })
+        };
+        const agVals = {
+          agTitle2: T('Board meeting November 2026', 'Styremøte november 2026'),
+          agMeta: T('Thu 26 Nov · 19:00–21:00 · Club house · Board (5/5)', 'tor 26. nov · 19:00–21:00 · Klubbhuset · Styret (5/5)'),
+          agStatus: agPub ? T('Published', 'Publisert') : T('Draft', 'Utkast'),
+          agStatusStyle: 'display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700; ' + (agPub ? 'background: #eaf7ed; color: #1f7a3a;' : 'background: #f1f3ef; color: #4C5E50;'),
+          agStatusDot: 'width: 6px; height: 6px; border-radius: 999px; background: ' + (agPub ? '#1f7a3a' : '#7d8a7f'),
+          tAgItems: T('Items on the agenda', 'Punkter på agendaen'), agTotal: hm(agTot) + T(' in total', ' totalt'),
+          tAgFromTpl: T('+ Add from templates', '+ Legg til fra maler'), agTplOpen: !!this.state.agTpl, agToggleTpl: () => this.setState(s2 => ({ agTpl: !s2.agTpl })),
+          agTemplates: AGT.map((x, i) => ({ key: 'agt' + i, title: x[0], mins: x[1] + ' min', add: () => setAg(l => { const at = l.length && /Eventuelt|Any other/.test(l[l.length - 1].t) ? l.length - 1 : l.length; l.splice(at, 0, { id: 'n' + Date.now(), t: x[0], m: x[1], dec: false }); return l; }) })),
+          tAgDecision: T('Decision item', 'Vedtakssak'), tAgDecHint: T('Mark as decision item', 'Merk som vedtakssak'), tAgRemove: T('Remove item', 'Fjern punkt'),
+          agItems: agList.map((a, i) => ({ key: 'agi' + a.id, num: String(i + 1), title: a.t, mins: a.m + ' min',
+            decStyle: 'display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-family: var(--font-body); font-size: 12px; font-weight: 700; cursor: pointer; ' + (a.dec ? 'border: 1px solid #a3e2ae; background: #eaf7ed; color: #1f7a3a;' : 'border: 1px dashed rgba(22,36,26,.22); background: transparent; color: rgba(22,36,26,.45);'),
+            toggleDec: () => setAg(l => l.map(x => x.id === a.id ? Object.assign({}, x, { dec: !x.dec }) : x)),
+            remove: () => setAg(l => l.filter(x => x.id !== a.id)) })),
+          agFiles: [{ key: 'af1', name: T('Budget 2027.xlsx', 'Budsjett 2027.xlsx') }, { key: 'af2', name: T('Financial report Q3.pdf', 'Økonomirapport 3. kvartal.pdf') }],
+          agPublished: agPub, agSentShow: !!this.state.agSent, agSentText: this.state.agSent || '',
+          tAgPublish: agPub ? T('Notice sent ✓', 'Innkalling sendt ✓') : T('Publish and send notice', 'Publiser og send innkalling'),
+          agPublish: () => this.setState({ agPublished: true, agSent: T('Sent to 5 board members by email and in the app.', 'Sendt til 5 styremedlemmer på e-post og i appen.') }),
+          agPublishStyle: 'padding: 13px 22px; border-radius: 12px; border: 0; font-family: var(--font-heading); font-weight: 800; font-size: 14px; ' + (agPub ? 'background: #eaf7ed; color: #1f7a3a; cursor: default;' : 'background: #1f7a3a; color: #ffffff; cursor: pointer;')
+        };
+        return {
+          bdTabs: [['overview', T('Overview', 'Oversikt')], ['minutes', T('Minutes', 'Protokoll')], ['cal', T('Calendar', 'Kalender')]].map(o => ({ key: 'bt' + o[0], label: o[1], on: bt === o[0], pick: () => this.setState({ bdTab: o[0] }),
+            style: 'padding: 14px 18px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-body); font-size: 16px; margin-bottom: -1px; color: ' + (bt === o[0] ? '#1f7a3a' : 'rgba(22,36,26,.55)') + '; border-bottom: 3px solid ' + (bt === o[0] ? '#74cd85' : 'transparent') })),
+          bdShowOverview: bt === 'overview',
+          bdListMeetings: blv !== 'members', bdListMembers: blv === 'members',
+          bdListTabs: [['meetings', T('Board meetings', 'Styremøter')], ['members', T('Board members', 'Styremedlemmer')]].map(o => ({ key: 'bl' + o[0], label: o[1], on: blv === o[0] ? 'true' : 'false', count: '',
+            pick: () => this.setState({ bdList: o[0] }),
+            style: 'display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 999px; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 15px; ' + (blv === o[0] ? 'border: 1px solid #16241a; background: #16241a; color: #f6f8f3;' : 'border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a;'),
+            countStyle: 'display: none' })), bdShowCal: bt === 'cal', bdShowAgenda: false, bdShowMinutes: bt === 'minutes',
+          ...agVals, ...prVals,
+          tBdCal: T('Calendar', 'Kalender'),
+          bdQLabel: (isNow ? T('This quarter · ', 'Dette kvartalet · ') : '') + mn(qq * 3) + '–' + mn(qq * 3 + 2) + ' ' + qy,
+          tBdPrevQ: T('Previous quarter', 'Forrige kvartal'), tBdNextQ: T('Next quarter', 'Neste kvartal'), tBdThisQ: T('This quarter', 'Dette kvartalet'),
+          bdQPrev: () => this.setState(s2 => ({ bdQ: (s2.bdQ || 0) - 1 })), bdQNext: () => this.setState(s2 => ({ bdQ: (s2.bdQ || 0) + 1 })), bdQNow: () => this.setState({ bdQ: 0 }),
+          bdQNowStyle: 'height: 36px; padding: 0 16px; border-radius: 10px; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 13px; ' + (isNow ? 'border: 1px solid #1f7a3a; background: #1f7a3a; color: #ffffff;' : 'border: 1px solid rgba(22,36,26,.16); background: #ffffff; color: #16241a;'),
+          bdMonths: months, tBdNoMeet: T('No meetings', 'Ingen møter'),
+          tBdPlanTitle: T('Suggested annual plan', 'Forslag til årsplan'),
+          tBdPlanSub: T('A typical year for a sports club board, built around the annual meeting.', 'Et typisk styreår for et idrettslag, bygget rundt årsmøtet.'),
+          bdPlan: PLAN.map((p, i) => ({ key: 'bpl' + i, title: p[3], when: p[2] + '. ' + mn(p[1] - 1) + (p[0] !== now.getFullYear() ? ' ' + String(p[0]).slice(2) : '') })),
+          bdPlanAdded: added,
+          tBdAddPlan: added ? T('Added to the calendar ✓', 'Lagt til i kalenderen ✓') : T('Add all meetings', 'Legg til alle møter'),
+          bdAddPlan: () => this.setState({ bdPlanAdded: true }),
+          bdAddStyle: 'margin-top: 8px; padding: 13px 18px; border-radius: 12px; border: 0; font-family: var(--font-heading); font-weight: 800; font-size: 14px; ' + (added ? 'background: #eaf7ed; color: #1f7a3a; cursor: default;' : 'background: #1f7a3a; color: #ffffff; cursor: pointer;')
+        };
+      })(),
+      // ---- end Board page ----
       showRoles: tab === 'roles',
       showDepts: tab === 'depts',
-      tDeptHeading: en ? 'Departments and groups' : 'Avdelinger og grupper',
+      // design Nov 2026: club info, NIF and settlement pages (helper methods live in the logic class)
+      ...(this.adminClubInfoVals ? this.adminClubInfoVals({ en, all, sel, clubOf }) : {}),
+      showNif: tab === 'nif',
+      showSettle: tab === 'settle',
+      ...(this.adminSettleVals ? this.adminSettleVals({ en, all, sel, clubOf }) : {}),
+      ...(this.adminNifVals ? this.adminNifVals({ en, all, sel, clubOf, makeCats, facts }) : {}),
+      tDeptHeading: en ? 'Groups' : 'Grupper',
       tDeptIntro: en ? 'Departments organise groups in a hierarchy. When you create a new group and add members, the group is automatically visible to members in the Kretz app.' : 'Avdelinger brukes til å organisere grupper i et hierarki. Når du oppretter en ny gruppe og legger til medlemmer, blir gruppen automatisk synlig for medlemmene i Kretz-appen.',
       tAddDept: en ? 'Create department' : 'Opprett avdeling',
       tImportGroup: en ? 'Import group' : 'Importer gruppe',
-      tAddGroup: en ? 'Create group' : 'Opprett gruppe',
+      tAddGroup: en ? 'Create subgroup' : 'Opprett undergruppe',
       tColCount: en ? 'Count' : 'Antall',
-      tMore: en ? 'More' : 'Mer', tAddHere: en ? 'Create group here' : 'Opprett gruppe her', tRemove: en ? 'Remove' : 'Fjern',
+      tMore: en ? 'More' : 'Mer', tAddHere: en ? 'Create subgroup here' : 'Opprett undergruppe her', tRemove: en ? 'Remove' : 'Fjern',
       tSave: en ? 'Save' : 'Lagre',
       deptRows: deptRows,
       deptQ: this.state.deptQ || '',
@@ -2160,7 +2514,7 @@ export class AdminLogic extends LogicBase {
       gmContactOpts: (() => { const seen = {}; return this.members(en).filter(m => { if (seen[m.name]) return false; seen[m.name] = 1; return true; }).map(m => ({ key: 'gc' + m.id, name: m.name })); })(),
       gmActivityOpts: (en ? ['Football', 'Handball', 'Table tennis', 'Other'] : ['Fotball', 'Håndball', 'Bordtennis', 'Annet']).map(n => ({ key: 'ga' + n, name: n })),
       gmAgeOpts: (en ? ['Children / young people', 'Adults', 'All ages'] : ['Barn / ungdom', 'Voksne', 'Alle aldre']).map(n => ({ key: 'gg' + n, name: n })),
-      deptModalTitle: this.state.deptModal === 'group' ? (en ? 'Create group' : 'Opprett gruppe') : (en ? 'Create department' : 'Opprett avdeling'),
+      deptModalTitle: this.state.deptModal === 'group' ? (en ? 'Create subgroup' : 'Opprett undergruppe') : (en ? 'Create department' : 'Opprett avdeling'),
       dmPlaceholder: this.state.deptModal === 'group' ? (en ? 'Group name' : 'Gruppenavn') : (en ? 'Department name' : 'Navn på avdeling'),
       dmName: this.state.dmName || '', dmParent: this.state.dmParent || '',
       onDmName: (e) => this.setState({ dmName: e.target.value }),
@@ -2541,7 +2895,7 @@ export class AdminLogic extends LogicBase {
         title: m.title, meta: m.time + ' · ' + m.place + ' · ' + m.agenda.length + (m.agenda.length === 1 ? (en ? ' item' : ' sak') : (en ? ' items' : ' saker')),
         upcoming: m.upcoming, hasMinutes: !m.upcoming,
         open: () => this.setState({ meetingOpenId: m.id }),
-        openMinutesOnly: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); openMinutesOf(m); },
+        openMinutesOnly: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.setState({ tab: 'board', bdTab: 'minutes', prMeetId: m.id, meetingOpenId: '' }); },
         openMinutes: () => window.open(this.makePdf((en ? 'Minutes — ' : 'Referat — ') + m.title + ' ' + m.d + '.' + m.m + '.2026',
           [(en ? 'Place: ' : 'Sted: ') + m.place + '   ' + (en ? 'Time: ' : 'Tid: ') + m.time, (en ? 'Present: ' : 'Til stede: ') + boardNames.join(', '), { h: en ? 'Items' : 'Saker' }]
             .concat(m.agenda.map((t, i) => (i + 1) + '. ' + t + (en ? ' — discussed and noted.' : ' — drøftet og tatt til orientering.')))
@@ -2550,6 +2904,11 @@ export class AdminLogic extends LogicBase {
       })),
       mdOpen: !!mdM,
       mdClose: () => this.setState({ meetingOpenId: '' }),
+      // design Nov 2026: jump from a meeting to its minutes (Board > Minutes)
+      tMdToProto: en ? 'See minutes' : 'Se protokoll',
+      mdToProto: () => { if (mdM) this.setState({ tab: 'board', bdTab: 'minutes', prMeetId: mdM.id, meetingOpenId: '' }); },
+      mdProtoState: mdM ? (((this.state.prBy || {})[mdM.id] || {}).sent || mdM.id === 'm1' || mdM.id === 'm2' ? ((mdM.id === 'm1' || mdM.id === 'm2') && !(this.state.prBy || {})[mdM.id] ? (en ? 'Signed' : 'Signert') : (((this.state.meetingFiles || {})[mdM.id] || []).some(x => x.signedPr) ? (en ? 'Signed' : 'Signert') : (en ? 'Signing' : 'Signering'))) : (en ? 'Draft' : 'Utkast')) : '',
+      mdProtoPill: 'padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.2); font-size: 11px; font-weight: 700',
       mdCloseBg: (e) => { if (e.target === e.currentTarget) this.setState({ meetingOpenId: '' }); },
       mdKicker: mdM ? (mdM.upcoming ? (en ? 'Planned board meeting' : 'Planlagt styremøte') : (en ? 'Held board meeting' : 'Avholdt styremøte')) : '',
       mdTitle: mdM ? mdM.title + ' ' + mdM.d + '.' + mdM.m + '.2026' : '',
@@ -2599,7 +2958,7 @@ export class AdminLogic extends LogicBase {
         };
       }),
       meetingFormOpen: !!this.state.meetingForm,
-      openMeetingForm: () => this.setState({ meetingForm: { date: '2026-11-05', time: '19:00', place: en ? 'Club house' : 'Klubbhuset', agenda: '', invite: boardList.map(a => a.name) } }),
+      openMeetingForm: () => this.setState({ meetingForm: { date: '2026-11-26', time: '19:00', place: en ? 'Club house' : 'Klubbhuset', agenda: '', invite: boardList.map(a => a.name), items: MF0.map((a, i) => ({ id: 'i' + i, t: a[0], m: a[1], dec: a[2] })), q: '', newItem: '', protocol: null, protoOn: true } }),
       closeMeetingForm: () => this.setState({ meetingForm: null }),
       tNewMeetingTitle: en ? 'New board meeting' : 'Nytt styremøte',
       tMfDate: en ? 'Date' : 'Dato', tMfTime: en ? 'Time' : 'Tid', tMfPlace: en ? 'Place' : 'Sted',
@@ -2612,7 +2971,8 @@ export class AdminLogic extends LogicBase {
       tQuickActNote: en ? 'Training, match or event with sign-up' : 'Trening, kamp eller arrangement med påmelding',
       tQuickPost: en ? 'New post' : 'Nytt innlegg',
       tQuickPostNote: en ? 'Share news with a club or group' : 'Del nyheter med en klubb eller gruppe',
-      tInvoiceMerged: en ? 'Invoicing members' : 'Fakturering av medlemmer',
+      // design Nov 2026: the later key in the design object wins ('Add invoice'); new payment modal title
+      tInvoiceMerged: en ? 'Add invoice' : 'Legg til faktura', tInvoiceModal: en ? 'New payment' : 'Ny betaling',
       tPayables: en ? 'Invoices the club must pay' : 'Fakturaer klubben skal betale',
       tAddPayable: en ? 'Add invoice (PDF)' : 'Legg til faktura (PDF)',
       tPayDue: en ? 'Unpaid' : 'Ubetalt',
@@ -2664,6 +3024,42 @@ export class AdminLogic extends LogicBase {
         };
       }),
       mfInviteCount: (((this.state.meetingForm || {}).invite || []).length) + (en ? ' invited' : ' invitert'),
+      // ---- design Nov 2026: new board meeting form ----
+      tMfPlacePh: en ? 'Type or pick a place' : 'Skriv eller velg et sted', tMfPlaceAll: en ? 'Show all places' : 'Vis alle steder',
+      mfPlaceOpen: !!mfF.placeOpen, mfPlaceOpenFn: () => mfSet({ placeOpen: true, placeFilter: false }), mfPlaceToggle: () => mfSet(f => ({ placeOpen: !f.placeOpen, placeFilter: false })),
+      mfPlaceList: mfPlaceShown.map(x => ({ key: 'mpl' + x, label: x, pick: () => mfSet({ place: x, placeOpen: false }),
+        style: 'display: block; width: 100%; text-align: left; padding: 9px 12px; border-radius: 10px; border: 0; cursor: pointer; font-family: var(--font-body); font-size: 14px; color: #16241a; ' + (x === mfF.place ? 'background: #eaf7ed; font-weight: 700;' : 'background: transparent;') })),
+      mfPlaceCanAdd: !!mfPlaceQ && mfPlaces.indexOf(mfPlaceQ) === -1,
+      mfPlaceAddLabel: (en ? '+ Add "' : '+ Legg til «') + mfPlaceQ + (en ? '" as a place' : '» som sted'),
+      mfPlaceAdd: () => { const v = mfPlaceQ; if (!v) return; this.setState(st => ({ mfPlacesExtra: (st.mfPlacesExtra || []).concat([v]), meetingForm: Object.assign({}, st.meetingForm, { place: v, placeOpen: false }) })); },
+      tMfItems: en ? 'Items on the agenda' : 'Punkter på agendaen',
+      mfItemsTotal: mfItemsArr.reduce((n, a) => n + a.m, 0) + ' min',
+      mfTplOpen: !!mfF.tplOpen, mfToggleTpl: () => mfSet(f => ({ tplOpen: !f.tplOpen })),
+      mfTemplates: MFT.map((x, i) => ({ key: 'mft' + i, title: x[0], mins: x[1] + ' min', add: () => mfSet(f => { const l = (f.items || []).slice(); const at = l.length && /Eventuelt|Any other/.test(l[l.length - 1].t) ? l.length - 1 : l.length; l.splice(at, 0, { id: 'n' + Date.now(), t: x[0], m: x[1], dec: x[2] }); return { items: l }; }) })),
+      mfItems: mfItemsArr.map((a, i) => ({ key: 'mfi' + a.id, num: String(i + 1), title: a.t, mins: a.m + ' min',
+        decStyle: 'display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; font-family: var(--font-body); font-size: 11.5px; font-weight: 700; cursor: pointer; ' + (a.dec ? 'border: 1px solid #a3e2ae; background: #eaf7ed; color: #1f7a3a;' : 'border: 1px dashed rgba(22,36,26,.22); background: transparent; color: rgba(22,36,26,.45);'),
+        toggleDec: () => mfSet(f => ({ items: (f.items || []).map(x => x.id === a.id ? Object.assign({}, x, { dec: !x.dec }) : x) })),
+        remove: () => mfSet(f => ({ items: (f.items || []).filter(x => x.id !== a.id) })) })),
+      mfNewItem: mfF.newItem || '', onMfNewItem: (e) => { const v = e.target.value; mfSet({ newItem: v }); },
+      tMfNewItemPh: en ? 'Add your own item…' : 'Legg til eget punkt …', tMfAddItem: en ? 'Add' : 'Legg til',
+      mfAddItem: () => mfSet(f => { const v = (f.newItem || '').trim(); if (!v) return {}; const l = (f.items || []).slice(); const at = l.length && /Eventuelt|Any other/.test(l[l.length - 1].t) ? l.length - 1 : l.length; l.splice(at, 0, { id: 'n' + Date.now(), t: v, m: 15, dec: false }); return { items: l, newItem: '' }; }),
+      mfNewItemKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); mfSet(f => { const v = (f.newItem || '').trim(); if (!v) return {}; const l = (f.items || []).slice(); const at = l.length && /Eventuelt|Any other/.test(l[l.length - 1].t) ? l.length - 1 : l.length; l.splice(at, 0, { id: 'n' + Date.now(), t: v, m: 15, dec: false }); return { items: l, newItem: '' }; }); } },
+      mfQ: mfF.q || '', onMfQ: (e) => { const v = e.target.value; mfSet({ q: v }); },
+      tMfSearchPh: en ? 'Search all members…' : 'Søk blant alle medlemmer …', tMfInviteOne: en ? 'Invite' : 'Inviter', tMfNoResults: en ? 'No members found.' : 'Fant ingen medlemmer.',
+      mfHasResults: mfRes.length > 0, mfNoResults: !!mfQv && mfRes.length === 0,
+      mfResults: mfRes.map(r => ({ key: 'mr' + r.name, name: r.name, sub: r.sub, ini: r.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(), add: () => mfSet(f => ({ invite: (f.invite || []).concat([r.name]), q: '' })) })),
+      mfProtoName: (en ? 'Minutes – board meeting' : 'Protokoll – styremøte') + ((mfF.date || '').split('-').length === 3 ? ' ' + parseInt(mfF.date.split('-')[2], 10) + '.' + parseInt(mfF.date.split('-')[1], 10) + '.' : ''),
+      mfProtoMeta: (mfF.protocol != null ? (en ? 'Edited' : 'Redigert') : (en ? 'Draft from the agenda' : 'Utkast fra sakslisten')) + ' · ' + (mfF.protoOn === false ? (en ? 'not attached' : 'ikke lagt ved') : (en ? 'attached' : 'lagt ved')),
+      mfProtoOpen: !!mfF.protoOpen, mfProtoToggle: () => mfSet(f => ({ protoOpen: !f.protoOpen })),
+      tMfProtoEdit: mfF.protoOpen ? (en ? 'Close' : 'Lukk') : (en ? 'Edit' : 'Endre'),
+      mfProtoText: mfProtoTxt, onMfProto: (e) => { const v = e.target.value; mfSet({ protocol: v }); },
+      tMfProtoHint: en ? 'Changes are saved with the meeting.' : 'Endringene lagres sammen med møtet.',
+      tMfProtoReset: en ? 'Rebuild from agenda' : 'Lag på nytt fra sakslisten', mfProtoReset: () => mfSet({ protocol: null }),
+      tMfProtoIncl: en ? 'Attach minutes' : 'Legg ved protokoll',
+      mfProtoToggleOn: () => mfSet(f => ({ protoOn: f.protoOn === false })),
+      mfProtoInclMark: mfF.protoOn === false ? '+' : '✓',
+      mfProtoInclStyle: 'width: 30px; height: 30px; border-radius: 999px; cursor: pointer; font-weight: 800; ' + (mfF.protoOn === false ? 'border: 1px dashed rgba(22,36,26,.3); background: #ffffff; color: #16241a;' : 'border: 0; background: #1f7a3a; color: #ffffff;'),
+      // ---- end new board meeting form ----
       mfSentShow: false,
       mfSentMailto: '#',
       tMfMailToo: '',
@@ -2674,14 +3070,14 @@ export class AdminLogic extends LogicBase {
       mfDate: (this.state.meetingForm || {}).date || '', mfTime: (this.state.meetingForm || {}).time || '', mfPlace: (this.state.meetingForm || {}).place || '', mfAgenda: (this.state.meetingForm || {}).agenda || '',
       onMfDate: (e) => { const v = e.target.value; this.setState(st => ({ meetingForm: Object.assign({}, st.meetingForm, { date: v }) })); },
       onMfTime: (e) => { const v = e.target.value; this.setState(st => ({ meetingForm: Object.assign({}, st.meetingForm, { time: v }) })); },
-      onMfPlace: (e) => { const v = e.target.value; this.setState(st => ({ meetingForm: Object.assign({}, st.meetingForm, { place: v }) })); },
+      onMfPlace: (e) => { const v = e.target.value; this.setState(st => ({ meetingForm: Object.assign({}, st.meetingForm, { place: v, placeOpen: true, placeFilter: true }) })); },
       onMfAgenda: (e) => { const v = e.target.value; this.setState(st => ({ meetingForm: Object.assign({}, st.meetingForm, { agenda: v }) })); },
       saveMeeting: (e) => {
         e.preventDefault();
         const f = this.state.meetingForm;
         if (!f) return;
         const p = f.date.split('-');
-        const items = f.agenda.split('\n').map(x => x.trim()).filter(Boolean);
+        const items = (f.items && f.items.length) ? f.items.map(x => x.t) : (f.agenda || '').split('\n').map(x => x.trim()).filter(Boolean);
         const agenda = items.length ? items : [en ? 'Any other business' : 'Eventuelt'];
         const newId = 'm' + Date.now();
         const attached = (f.files || []).slice();
@@ -2692,7 +3088,7 @@ export class AdminLogic extends LogicBase {
         const attLine = (f.files || []).length ? '\n' + (en ? 'Attachments in Kretz: ' : 'Vedlegg i Kretz: ') + (f.files || []).map(x => x.name).join(', ') + '\n' : '';
         const body = (en ? 'Hi,\n\nYou are invited to a board meeting ' : 'Hei,\n\nDu innkalles til styremøte ') + d + '.' + mo + '. ' + (en ? 'at ' : 'kl. ') + f.time + ', ' + f.place + '.\n\n' + (en ? 'Agenda:\n' : 'Saksliste:\n') + agenda.map((t, i) => (i + 1) + '. ' + t).join('\n') + '\n\n' + attLine + (en ? 'Please answer in Kretz.\n' : 'Svar i Kretz.\n');
         this.setState(st => ({
-          meetings: (st.meetings || seedMeetings()).concat([{ id: newId, m: mo, d: d, time: f.time, place: f.place, title: en ? 'Board meeting' : 'Styremøte', agenda: agenda, upcoming: true, invitees: inv }]),
+          meetings: (st.meetings || seedMeetings()).concat([{ id: newId, m: mo, d: d, time: f.time, place: f.place, title: en ? 'Board meeting' : 'Styremøte', agenda: agenda, upcoming: true, invitees: inv, protocol: f.protoOn !== false ? (f.protocol != null ? f.protocol : mfProtoGen()) : null }]),
           meetingForm: null,
           meetingFiles: attached.length ? Object.assign({}, st.meetingFiles, { [newId]: attached }) : st.meetingFiles,
           meetSent: { text: (en ? 'Board meeting created — ' : 'Styremøtet er opprettet — ') + inv.length + (en ? ' people got an invitation in Kretz.' : ' personer har fått invitasjon i Kretz.'), mailto: 'mailto:' + inv.map(emailOf).join(',') + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body) }
@@ -2858,7 +3254,7 @@ export class AdminLogic extends LogicBase {
       tMenuInactive: en ? 'Set as inactive' : 'Sett som inaktiv',
       tMenuReactivate: en ? 'Make active again' : 'Gjør aktiv igjen',
       confirmInactiveOpen: this.state.confirmInactive !== -1,
-      ciTitle: en ? 'Set sponsor as inactive?' : 'Sette sponsoren som inaktiv?',
+      spInactiveTitle: en ? 'Set sponsor as inactive?' : 'Sette sponsoren som inaktiv?',
       ciText: (() => {
         const sp = (rowSets.sponsors || [])[this.state.confirmInactive] || this.state.extraSponsors.find(e => e.si === this.state.confirmInactive);
         const nm = sp ? sp.title : '';
@@ -2942,6 +3338,22 @@ export class AdminLogic extends LogicBase {
       tGrantWho: en ? 'Relevant for' : 'Relevant for',
       tGrantGo: en ? 'Go to application' : 'Gå til søknaden',
       showTT: tab === 'timetable',
+      // ---- [admin1] Nov 2026 design: week-only timetable changes ----
+      tTTScope: en ? 'Change applies to' : 'Endringen gjelder',
+      ttScopes: [['season', en ? 'Whole season' : 'Hele sesongen'], ['week', en ? 'One week' : 'Én uke']].map(o => ({ key: 'tsc' + o[0], label: o[1], pressed: (o[0] === 'week') === ttIsWeek ? 'true' : 'false',
+        pick: () => this.setState({ ttScope: o[0], ttEdit: null }),
+        style: 'padding: 8px 16px; border-radius: 999px; border: 0; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 13px; ' + ((o[0] === 'week') === ttIsWeek ? 'background: #16241a; color: #f6f8f3;' : 'background: transparent; color: #16241a;') })),
+      ttIsWeek: ttIsWeek, ttWkHasOv: ttIsWeek && ttWkHasOv,
+      ttWkLabel: (() => { const f = (d) => d.getDate() + '.' + (d.getMonth() + 1) + '.'; const s = new Date(ttMon.getFullYear(), ttMon.getMonth(), ttMon.getDate() + 6); return (en ? 'Week ' : 'Uke ') + ttWkYN[1] + ' · ' + f(ttMon) + '–' + f(s); })(),
+      tTTPrevWk: en ? 'Previous week' : 'Forrige uke', tTTNextWk: en ? 'Next week' : 'Neste uke',
+      ttWkPrev: () => this.setState(st => ({ ttWk: (st.ttWk || 0) - 1, ttEdit: null })),
+      ttWkNext: () => this.setState(st => ({ ttWk: (st.ttWk || 0) + 1, ttEdit: null })),
+      ttWkBadge: ttWkHasOv ? (en ? 'Changed for this week only' : 'Endret kun denne uken') : (en ? 'Follows the season plan' : 'Følger sesongplanen'),
+      ttWkBadgeStyle: 'padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 700; ' + (ttWkHasOv ? 'background: #fff6d6; color: #6b5300;' : 'background: #eaf7ed; color: #1f7a3a;'),
+      tTTWkRevert: en ? 'Reset week to season plan' : 'Tilbakestill uken',
+      ttWkRevert: () => { const data = this.ttData(); const c = data[ttClubId]; if (c && c.wk) delete c.wk[ttWkKey]; this.ttCommit(data, (en ? 'Week ' : 'Uke ') + ttWkYN[1] + (en ? ' follows the season plan again — not saved yet.' : ' følger sesongplanen igjen — ikke lagret ennå.')); },
+      ttScopeHelp: ttIsWeek ? (en ? 'Changes here only affect the selected week.' : 'Endringer her gjelder bare valgt uke. De andre ukene er uendret.') : (en ? 'Changes here apply to every week this season.' : 'Endringer her gjelder alle uker i sesongen.'),
+      // ---- end [admin1] ----
       ttHasTabs: true,
       ttTabs: clubs.map(c => ({
         key: 'tt' + c.id, label: c.name, active: c.id === ttClubId,
@@ -2951,7 +3363,7 @@ export class AdminLogic extends LogicBase {
       ttClubName: clubOf(ttClubId),
       ttLegend: ttGroups.map(g => ({ key: 'tl' + g.id, name: en ? (g.en || g.no) : (g.no || g.en), style: 'padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 700; background: ' + g.color + '; color: #16241a' })),
       ttCount: ttSessions.length + (en ? ' sessions per week' : ' økter per uke'),
-      ttDays: ttDayNames.map((n, i) => ({ key: 'td' + i, name: n })),
+      ttDays: ttDayNames.map((n, i) => { const d = new Date(ttMon.getFullYear(), ttMon.getMonth(), ttMon.getDate() + i); return { key: 'td' + i, name: ttIsWeek ? n + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + '.' : n }; }),
       ttHours: ttAx.hours,
       ttBodyH: ttAx.total + 'px',
       ttCols: ttCols,
@@ -2979,7 +3391,7 @@ export class AdminLogic extends LogicBase {
         setTimeout(() => { this._ttSkipClick = false; }, 60);
         const data = this.ttData();
         const c = data[ttClubId];
-        const row = c && c.s[dg.idx];
+        const row = c && this.ttRowsOf(c)[dg.idx];
         const na = dg.na !== undefined ? dg.na : dg.a;
         const nd = dg.day !== undefined ? dg.day : dg.d;
         this.setState({ ttDrag: null });
@@ -2987,7 +3399,7 @@ export class AdminLogic extends LogicBase {
         row[0] = nd; row[1] = ttFmt(na); row[2] = ttFmt(na + (dg.b - dg.a));
         const gObj = ttGroups.find(q => q.id === row[3]);
         const gname = gObj ? (en ? (gObj.en || gObj.no) : (gObj.no || gObj.en)) : row[3];
-        this.ttCommit(data, (en ? 'Moved ' : 'Flyttet ') + gname + (en ? ' to ' : ' til ') + ttDayNames[nd].toLowerCase() + ' ' + row[1] + '–' + row[2] + (en ? ' — not saved yet.' : ' — ikke lagret ennå.'));
+        this.ttCommit(data, (en ? 'Moved ' : 'Flyttet ') + gname + (en ? ' to ' : ' til ') + ttDayNames[nd].toLowerCase() + ' ' + row[1] + '–' + row[2] + ttWkTag + (en ? ' — not saved yet.' : ' — ikke lagret ennå.'));
       },
       ttCancelDrag: () => { this._ttDrag = null; this.setState({ ttDrag: null }); },
       tTTNew: en ? '+ New session' : '+ Ny økt',
@@ -3070,8 +3482,8 @@ export class AdminLogic extends LogicBase {
         if (!ed || ed.idx < 0) return;
         const data = this.ttData();
         const c = data[ttClubId];
-        if (c) c.s.splice(ed.idx, 1);
-        this.ttCommit(data, (en ? 'Session deleted — not saved yet.' : 'Økten er slettet — ikke lagret ennå.'));
+        if (c) this.ttRowsOf(c).splice(ed.idx, 1);
+        this.ttCommit(data, (en ? 'Session deleted' : 'Økten er slettet') + ttWkTag + (en ? ' — not saved yet.' : ' — ikke lagret ennå.'));
       },
       ttSaveEdit: (e) => {
         e.preventDefault();
@@ -3082,8 +3494,9 @@ export class AdminLogic extends LogicBase {
         const data = this.ttData();
         const c = data[ttClubId] || (data[ttClubId] = { groups: [], s: [] });
         const row = [ed.d, ed.a, ed.b, ed.g, (ed.p || '').trim() || ttDefaultPlace];
-        if (ed.idx >= 0) c.s[ed.idx] = row; else c.s.push(row);
-        this.ttCommit(data, (en ? 'Session updated — not saved yet.' : 'Økten er oppdatert — ikke lagret ennå.'));
+        const rows = this.ttRowsOf(c);
+        if (ed.idx >= 0) rows[ed.idx] = row; else rows.push(row);
+        this.ttCommit(data, (en ? 'Session updated' : 'Økten er oppdatert') + ttWkTag + (en ? ' — not saved yet.' : ' — ikke lagret ennå.'));
       },
       tfPeriods: tfPeriodDefs.map(p => ({
         key: 'tp' + p.id,
@@ -3227,7 +3640,7 @@ export class AdminLogic extends LogicBase {
         { key: 's4', label: en ? 'Unpaid' : 'Ubetalt', value: String(dueCount), note: en ? 'invoices past due' : 'fakturaer forfalt' }
       ],
 
-      listTitle: tab === 'teamfund' ? (en ? 'Team fund' : 'Lagkasse') : tab === 'invoicing' ? (en ? 'Member invoicing' : 'Medlem fakturering') : tab === 'finance' ? (en ? 'Key figures' : 'Nøkkeltall') : tab === 'daily' ? 'Events' : (tab === 'activities' ? (en ? 'Coming activities' : 'Kommende aktiviteter') : ((tabs.find(t => t.id === tab) || {}).label || '')),
+      listTitle: tab === 'teamfund' ? (en ? 'Team fund' : 'Lagkasse') : tab === 'invoicing' ? (en ? 'Payment requests' : 'Betalingsforespørsler') : tab === 'finance' ? (en ? 'Key figures' : 'Nøkkeltall') : tab === 'daily' ? 'Events' : (tab === 'activities' ? (en ? 'Coming activities' : 'Kommende aktiviteter') : ((tabs.find(t => t.id === tab) || {}).label || '')),
       composeLabel: en ? '+ New activity' : '+ Ny aktivitet',
       showCompose: tab === 'activities' || tab === 'daily',
       showCardTitle: tab === 'activities' || tab === 'daily',
@@ -3238,6 +3651,7 @@ export class AdminLogic extends LogicBase {
       showPostHeadBtn: tab === 'activities',
       showActivities: tab === 'activities' || tab === 'daily',
       splitTop: (tab === 'daily' || tab === 'invoicing' || (tab === 'supplier' || tab === 'budget' || tab === 'integr' || tab === 'comms' || tab === 'planning' || tab === 'docs' || tab === 'volunteer')) ? '4px' : '18px',
+      mainCardStyle: (tab === 'invoicing' || tab === 'supplier') ? 'padding: 0' : 'border-radius: 34px; background: #ffffff; border: 1px solid rgba(22,36,26,.12); padding: 28px',
       showMainCard: tab !== 'activities' && tab !== 'supplier' && tab !== 'budget' && tab !== 'integr' && tab !== 'comms' && tab !== 'planning' && tab !== 'docs' && tab !== 'volunteer',
       splitAlign: tab === 'activities' ? 'stretch' : 'start',
       leftRows: tab === 'activities' ? '1fr' : 'auto',
@@ -3266,7 +3680,7 @@ export class AdminLogic extends LogicBase {
       showFinance: tab === 'finance',
       showSideDefault: false,
       showDailySide: false,
-      splitCols: (tab === 'daily' || tab === 'invoicing' || (tab === 'supplier' || tab === 'budget' || tab === 'integr' || tab === 'comms' || tab === 'planning' || tab === 'docs' || tab === 'volunteer')) ? 'minmax(0, 1fr)' : 'minmax(0, 1.5fr) minmax(0, 1fr)',
+      splitCols: (tab === 'daily' || tab === 'invoicing' || (tab === 'supplier' || tab === 'budget' || tab === 'integr' || tab === 'comms' || tab === 'planning' || tab === 'docs' || tab === 'volunteer' || tab === 'nif' || tab === 'settle')) ? 'minmax(0, 1fr)' : 'minmax(0, 1.5fr) minmax(0, 1fr)',
       showBandFilters: tab !== 'invoicing' && tab !== 'timetable' && tab !== 'depts' && tab !== 'profile',
       showMsgBox: false,
       showDemo: tab === 'members',
@@ -3292,17 +3706,19 @@ export class AdminLogic extends LogicBase {
       actDone: this.state.actDone,
       quickActivity: (e) => {
         e.preventDefault();
-        const d = this.state.formDate.split('-');
+        const list = actOccurrences();
+        const base = Date.now();
+        const repLabel = actKind === 'repeat' ? (actFreq === 'day' ? (en ? 'Daily' : 'Daglig') : actFreq === 'week' ? (en ? 'Weekly' : 'Ukentlig') : actFreq === 'month' ? (en ? 'Monthly' : 'Månedlig') : (en ? 'Yearly' : 'Årlig')) : (actKind === 'multi' ? (en ? 'Set dates' : 'Faste datoer') : '');
         this.setState(st => ({
-          newActs: st.newActs.concat([{
-            id: 'na' + Date.now(), club: st.formClub,
-            m: parseInt(d[1], 10) || 9, day: parseInt(d[2], 10) || 20,
+          newActs: st.newActs.concat((list.length ? list : [new Date(2026, 8, 20)]).map((o, i) => ({
+            id: 'na' + base + '-' + i, club: st.formClub,
+            m: o.getMonth() + 1, day: o.getDate(),
             time: st.formTime, title: st.formTitle, place: st.formPlace,
             leader: st.formLeader, cap: parseInt(st.formCap, 10) || 20, signed: 0,
             members: expandTo(st.formTo, st.formClub),
-            answers: {}, to: labelTo(st.formTo, st.formClub), deadline: fmtDate(st.formDeadline), internal: st.formInternal
-          }]),
-          actDone: true, formTitle: '', formPlace: '', formLeader: ''
+            answers: {}, to: labelTo(st.formTo, st.formClub), deadline: fmtDate(st.formDeadline), internal: st.formInternal, files: (st.formFiles || []).slice(), repeat: repLabel
+          }))),
+          composeDone: true, actDone: true, actsOpen: true, formTitle: '', formText: '', formPlace: '', formLeader: '', formFiles: [], formKind: 'once', formDates: [], formPickDate: ''
         }));
       },
       tNewPostBox: en ? 'Write a post' : 'Skriv et innlegg',
@@ -3541,8 +3957,14 @@ export class AdminLogic extends LogicBase {
       bandBtnBg: '#ffffff',
       bandDecor: '0',
       showGreeting: tab === 'activities',
-      showSectionTitle: tab !== 'activities' && tab !== 'daily' && tab !== 'depts' && tab !== 'roles' && tab !== 'booking' && tab !== 'timetable' && tab !== 'board' && tab !== 'sponsors' && tab !== 'members' && tab !== 'teamfund' && tab !== 'invoicing' && tab !== 'supplier' && tab !== 'budget' && tab !== 'integr' && tab !== 'comms' && tab !== 'planning' && tab !== 'docs' && tab !== 'volunteer' && tab !== 'profile',
-      topRowStyle: (tab === 'roles' || tab === 'board' || tab === 'sponsors' || tab === 'members' || tab === 'teamfund' || tab === 'invoicing' || (tab === 'supplier' || tab === 'budget' || tab === 'integr' || tab === 'comms' || tab === 'planning' || tab === 'docs' || tab === 'volunteer') || tab === 'booking' || tab === 'daily') ? 'display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: flex-end; height: 0; margin-top: ' + (tab === 'booking' ? '-71px' : '-51px') + '; position: relative; z-index: 5' : 'display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between',
+      showSectionTitle: tab !== 'activities' && tab !== 'daily' && tab !== 'depts' && tab !== 'roles' && tab !== 'booking' && tab !== 'timetable' && tab !== 'board' && tab !== 'sponsors' && tab !== 'members' && tab !== 'teamfund' && tab !== 'invoicing' && tab !== 'supplier' && tab !== 'budget' && tab !== 'integr' && tab !== 'comms' && tab !== 'planning' && tab !== 'docs' && tab !== 'volunteer' && tab !== 'nif' && tab !== 'settle' && tab !== 'profile',
+      topRowStyle: (tab === 'roles' || tab === 'board' || tab === 'sponsors' || tab === 'members' || tab === 'teamfund' || tab === 'invoicing' || (tab === 'supplier' || tab === 'budget' || tab === 'integr' || tab === 'comms' || tab === 'planning' || tab === 'docs' || tab === 'volunteer' || tab === 'nif' || tab === 'settle') || tab === 'booking' || tab === 'daily') ? 'display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: flex-end; height: 0; margin-top: ' + (tab === 'booking' ? '-71px' : '-51px') + '; position: relative; z-index: 5' : 'display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between',
+      // design Nov 2026: collapsible sidebar
+      dashAttr: tab === 'activities' ? 'true' : 'false', // [admin1] Nov 2026 design: compact home dashboard
+      sideMiniAttr: this.state.sideMini ? 'true' : 'false', sideOpenAttr: this.state.sideMini ? 'false' : 'true',
+      toggleSide: () => this.setState(st => ({ sideMini: !st.sideMini })),
+      tSideToggle: this.state.sideMini ? (en ? 'Expand menu' : 'Vis meny') : (en ? 'Collapse menu' : 'Skjul meny'),
+      sideChevD: this.state.sideMini ? 'M13 10l2 2-2 2' : 'M15 10l-2 2 2 2',
       showBack: tab !== 'activities',
       goHome: () => this.setState({ tab: 'activities' }),
       crumbMb: tab === 'booking' ? '38px' : '18px',
@@ -3644,7 +4066,7 @@ export class AdminLogic extends LogicBase {
       noMembers: memList.length === 0,
       tNoMembers: en ? 'No members match that search.' : 'Ingen medlemmer passer søket.',
       memQ: this.state.memQ,
-      onMemQ: (e) => this.setState({ memQ: e.target.value, bulkSms: 0, bulkSmsAt: '' }),
+      onMemQ: (e) => this.setState({ memQ: e.target.value, bulkSms: 0, bulkSmsAt: '', tblPage: 1 }),
       tSearchMembers: en ? 'Search members…' : 'Søk etter medlemmer …',
       tInvoice: en ? 'Send invoice' : 'Send faktura',
       tInvoiceNote: en ? 'Choose the whole club, one training group, or a single member.' : 'Velg hele klubben, én treningsgruppe eller ett enkelt medlem.',
@@ -3654,12 +4076,12 @@ export class AdminLogic extends LogicBase {
         { key: 'is4', id: 'event', name: en ? 'Event participants' : 'Påmeldte til aktivitet' },
         { key: 'is3', id: 'person', name: en ? 'Single member' : 'Enkeltmedlem' }
       ],
-      showGroupFilter: tab === 'members' && !all && groupOptions.length > 0,
-      tGroupFilter: en ? 'Group / event' : 'Gruppe / aktivitet',
-      groupTabs: [{ id: 'all', name: en ? 'Everyone' : 'Alle', key: 'gfall' }].concat(groupOptions).map(g => ({
+      showGroupFilter: tab === 'members' && groupOptions.length > 0,
+      tGroupFilter: en ? 'Group' : 'Gruppe',
+      groupTabs: [{ id: 'all', name: en ? 'All groups' : 'Alle grupper', key: 'gfall' }].concat(groupOptions).map(g => ({
         key: g.key,
         label: g.name,
-        pick: () => this.setState({ memGroup: g.id, bulkSms: 0, bulkSmsAt: '' }),
+        pick: () => this.setState({ memGroup: g.id, bulkSms: 0, bulkSmsAt: '', tblPage: 1 }),
         style: chip(memGroup === g.id, false)
       })),
       tMsgBox: en ? 'Message members' : 'Send melding',
@@ -3715,7 +4137,7 @@ export class AdminLogic extends LogicBase {
       invRecipients: invCount + (en ? (invCount === 1 ? ' recipient' : ' recipients') : (invCount === 1 ? ' mottaker' : ' mottakere')),
       invSent: this.state.invSent,
       invSentText: en ? ('Invoice sent to ' + invCount + (invCount === 1 ? ' member.' : ' members.')) : ('Faktura sendt til ' + invCount + (invCount === 1 ? ' medlem.' : ' medlemmer.')),
-      ...this.adminInvVals({ en, all, sel, keep, invTargets, invCount, scope, invClub, clubOf, allActs, defaultTarget }),
+      ...this.adminInvVals({ en, all, sel, keep, invTargets, invCount, scope, invClub, clubOf, allActs, defaultTarget, payAll }),
 
       memberOpen: !!openMem,
       closeMember: () => this.setState({ member: '', smsSent: '' }),
@@ -3739,7 +4161,7 @@ export class AdminLogic extends LogicBase {
       tClubAvg: en ? 'Club average' : 'Snitt i klubben',
       tYAxis: en ? 'sessions attended' : 'økter møtt opp på',
       tInvoiceMember: en ? 'Invoice this member' : 'Fakturer dette medlemmet',
-      invoiceThisMember: () => { this.setState({ member: '', tab: 'invoicing', invScope: 'person', invTarget: this.state.member, invSent: false }); window.scrollTo({ top: 0, behavior: 'smooth' }); },
+      invoiceThisMember: () => { if (!openMem) return; this.setState({ tab: 'invoicing', member: '', navMenu: '', invScope: 'person', invTarget: openMem.id, invAddOpen: true, invSent: false }); window.scrollTo({ top: 0, behavior: 'smooth' }); },
       chartGrid: chart.grid,
       chartYTicks: chart.yTicks,
       chartXTicks: chart.xTicks,
@@ -3929,6 +4351,18 @@ export class AdminLogic extends LogicBase {
       tCapPh: en ? 'Max participants' : 'Maks antall',
       tTextPh: en ? 'Write the details members should read…' : 'Skriv det medlemmene skal lese …',
       tHighPriority: en ? 'Mark as high priority' : 'Merk som høy prioritet',
+      // ---- design Nov 2026: activity kinds in the compose modal ----
+      tActType: en ? 'Type of activity' : 'Type aktivitet', tFirstDate: en ? 'Date' : 'Dato', tStartTime: en ? 'Start time' : 'Starttid', tRepeatEvery: en ? 'Repeats' : 'Gjentas', tRepeatUntil: en ? 'Repeat until' : 'Gjenta til', tMoreDates: en ? 'Additional dates' : 'Flere datoer', tAddDate: en ? 'Add date' : 'Legg til dato', tRemoveD: en ? 'Remove' : 'Fjern',
+      actKinds: [['once', en ? 'One date' : 'Én dato'], ['multi', en ? 'Several set dates' : 'Flere faste datoer'], ['repeat', en ? 'Recurring' : 'Gjentakende']].map(k => ({ key: 'ak' + k[0], label: k[1], pick: () => this.setState({ formKind: k[0] }), style: actKindChip(actKind === k[0]) })),
+      actKindNote: actKind === 'once' ? (en ? 'A single activity on the date below.' : 'Én enkelt aktivitet på datoen under.') : (actKind === 'multi' ? (en ? 'Pick the first date, then add each extra date the activity takes place.' : 'Velg første dato, og legg til hver ekstra dato aktiviteten holdes.') : (en ? 'Choose how often it repeats and when it stops. Each time becomes its own activity members can sign up to.' : 'Velg hvor ofte den gjentas og når den slutter. Hver gang blir en egen aktivitet medlemmene kan melde seg på.')),
+      kindRepeat: actKind === 'repeat', kindMulti: actKind === 'multi',
+      actFreqs: [['day', en ? 'Every day' : 'Hver dag'], ['week', en ? 'Every week' : 'Hver uke'], ['month', en ? 'Every month' : 'Hver måned'], ['year', en ? 'Every year' : 'Hvert år']].map(f => ({ key: 'afq' + f[0], label: f[1], pick: () => this.setState({ formFreq: f[0] }), style: actKindChip(actFreq === f[0]) })),
+      formUntil: actUntil, onFormUntil: (e) => this.setState({ formUntil: e.target.value }),
+      repeatCountNote: actKind === 'once' ? '' : (actOcc.length + (actOcc.length === 1 ? (en ? ' occurrence' : ' tidspunkt') : (en ? ' occurrences' : ' tidspunkter')) + (en ? ' will be created in 2026.' : ' blir opprettet i 2026.')),
+      formPickDate: this.state.formPickDate || '', onFormPickDate: (e) => this.setState({ formPickDate: e.target.value }),
+      addExtraDate: () => { const v = this.state.formPickDate; if (!v) return; this.setState(st => ({ formDates: ((st.formDates || []).indexOf(v) === -1 && v !== st.formDate) ? (st.formDates || []).concat([v]).sort() : (st.formDates || []), formPickDate: '' })); },
+      extraDateChips: (this.state.formDates || []).map(v => ({ key: 'xd' + v, label: v.split('-').reverse().join('.'), remove: () => this.setState(st => ({ formDates: (st.formDates || []).filter(x => x !== v) })) })),
+      // ---- end activity kinds ----
       submitCompose: (e) => {
         e.preventDefault();
         const isPost = this.state.composeKind === 'post';
@@ -3943,19 +4377,24 @@ export class AdminLogic extends LogicBase {
           }));
           return;
         }
-        const d = this.state.formDate.split('-');
+        const list = actOccurrences();
+        const base = Date.now();
+        const repLabel = actKind === 'repeat' ? (actFreq === 'day' ? (en ? 'Daily' : 'Daglig') : actFreq === 'week' ? (en ? 'Weekly' : 'Ukentlig') : actFreq === 'month' ? (en ? 'Monthly' : 'Månedlig') : (en ? 'Yearly' : 'Årlig')) : (actKind === 'multi' ? (en ? 'Set dates' : 'Faste datoer') : '');
         this.setState(st => ({
-          newActs: st.newActs.concat([{
-            id: 'na' + Date.now(), club: st.formClub,
-            m: parseInt(d[1], 10) || 9, day: parseInt(d[2], 10) || 20,
+          newActs: st.newActs.concat((list.length ? list : [new Date(2026, 8, 20)]).map((o, i) => ({
+            id: 'na' + base + '-' + i, club: st.formClub,
+            m: o.getMonth() + 1, day: o.getDate(),
             time: st.formTime, title: st.formTitle, place: st.formPlace,
             leader: st.formLeader, cap: parseInt(st.formCap, 10) || 20, signed: 0,
             members: expandTo(st.formTo, st.formClub),
-            answers: {}, to: labelTo(st.formTo, st.formClub), deadline: fmtDate(st.formDeadline), internal: st.formInternal, files: (st.formFiles || []).slice()
-          }]),
-          composeDone: true, actsOpen: true, formTitle: '', formText: '', formPlace: '', formLeader: '', formFiles: []
+            answers: {}, to: labelTo(st.formTo, st.formClub), deadline: fmtDate(st.formDeadline), internal: st.formInternal, files: (st.formFiles || []).slice(), repeat: repLabel
+          }))),
+          composeDone: true, actsOpen: true, formTitle: '', formText: '', formPlace: '', formLeader: '', formFiles: [], formKind: 'once', formDates: [], formPickDate: ''
         }));
       }
     };
   }
 }
+
+// ---- admin2 (design lines 3061–6120): mix in the ported methods ----
+Object.assign(AdminLogic.prototype, midMethods);

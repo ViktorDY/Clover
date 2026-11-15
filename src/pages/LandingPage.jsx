@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Customers from "../components/Customers";
@@ -20,13 +21,23 @@ if (typeof document !== "undefined" && !document.querySelector(`link[href="${CAV
   document.head.appendChild(link);
 }
 
-export default function LandingPage({ onOpenLogin, onOpenSignup, onOpenBooking }) {
+export default function LandingPage({ onOpenLogin, onOpenSignup, onOpenBooking, scrollTo }) {
+  // Links from other pages to a landing section arrive as #/?til=<id>.
+  useEffect(() => {
+    if (!scrollTo) return;
+    const id = window.setTimeout(() => {
+      document.getElementById(scrollTo)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+    return () => window.clearTimeout(id);
+  }, [scrollTo]);
+
   return (
     <div className="overflow-x-clip bg-paper kz-landing font-body text-[15px] leading-[1.55] text-ink">
       <Navbar
         onOpenLogin={onOpenLogin}
         onOpenSignup={onOpenSignup}
         onOpenBooking={onOpenBooking}
+        onLanding
       />
       <Hero onOpenBooking={onOpenBooking} />
       <Customers />
@@ -37,7 +48,7 @@ export default function LandingPage({ onOpenLogin, onOpenSignup, onOpenBooking }
       <AppPromo />
       <Faq />
       <GetStarted />
-      <Footer />
+      <Footer onLanding />
     </div>
   );
 }

@@ -1,0 +1,161 @@
+/*
+  Kretz Funksjoner — rules from the page's <helmet> that are not already in
+  subpage.css. Keyframes and classes carry a kzf- prefix so they cannot clash
+  with the landing page's kz-float / kz-marquee.
+*/
+.kz-fn .kz-arr {
+  display: inline-block;
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.kz-fn .kzf-arrow-btn {
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  transition: outline-color 0.25s, outline-offset 0.25s, transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), background 0.3s;
+}
+.kz-fn .kzf-arrow-btn:hover,
+.kz-fn .kzf-arrow-btn:focus-visible {
+  outline-color: #1f7a3a;
+  outline-offset: 4px;
+  color: #f6f8f3;
+}
+.kz-fn .kzf-arrow-btn:hover .kz-arr,
+.kz-fn .kzf-arrow-btn:focus-visible .kz-arr,
+.kz-fn .kz-card:hover .kz-arr,
+.kz-fn .kz-card:focus-visible .kz-arr {
+  transform: translateX(6px);
+}
+
+@keyframes kzf-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--rot, 0deg));
+  }
+  50% {
+    transform: translateY(-8px) rotate(var(--rot, 0deg));
+  }
+}
+.kz-fn .kzf-float {
+  animation: kzf-float 6s ease-in-out infinite;
+}
+
+@keyframes kzf-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.kz-fn .kzf-marquee {
+  display: flex;
+  width: max-content;
+  animation: kzf-marquee 70s linear infinite;
+}
+.kz-fn .kzf-marquee-wrap {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.kz-fn .kzf-marquee-wrap:hover .kzf-marquee {
+  animation-play-state: paused;
+}
+
+@keyframes kzf-toast {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  12%,
+  88% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.kz-fn .kzf-toast {
+  animation: kzf-toast 3.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes kzf-fill {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+.kz-fn .kzf-tabfill {
+  animation: kzf-fill 6s linear both;
+}
+
+@keyframes kzf-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.kz-fn .kzf-panel-in {
+  animation: kzf-panel-in 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes kzf-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+.kz-fn .kzf-bar {
+  transform-origin: bottom;
+  animation: kzf-grow 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.kz-fn .kzf-tab {
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+.kz-fn .kzf-tab:focus-visible {
+  outline: 2px solid #1f7a3a;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kz-fn .kzf-float,
+  .kz-fn .kzf-marquee,
+  .kz-fn .kzf-toast,
+  .kz-fn .kzf-tabfill,
+  .kz-fn .kzf-panel-in,
+  .kz-fn .kzf-bar {
+    animation: none !important;
+  }
+  .kz-fn .kz-arr,
+  .kz-fn .kzf-arrow-btn {
+    transition: none !important;
+  }
+}
+
+/* This page stacks and hides the mock extras from 900px, not 760px. */
+@media (max-width: 900px) {
+  .kz-fn [data-rsp="stack"],
+  .kz-fn [data-kz-tabs] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .kz-fn [data-kz-hidetab] {
+    display: none !important;
+  }
+  .kz-fn [data-kz-bento] > * {
+    grid-column: auto !important;
+  }
+}
+@media (max-width: 760px) {
+  .kz-fn [data-kz-cta] {
+    padding: 36px 24px !important;
+  }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import SectionLink from "./SectionLink";
 import { useLang } from "../lib/langContext";
+import { designHref } from "../lib/routes";
 import coach from "../assets/design/about-coach.jpg";
 import tripletex from "../assets/design/logo-tripletex.svg";
 import fiken from "../assets/design/logo-fiken.svg";
@@ -59,13 +60,17 @@ function CountUp({ to }) {
   return <span ref={ref}>{value}</span>;
 }
 
-const INTEGRATIONS = [
-  { name: "Tripletex", logo: tripletex },
-  { name: "Fiken", logo: fiken },
-  { name: "Uni Micro", logo: unimicro },
-  { name: "NIF", logo: nif, sub: "Min idrett" },
-  { name: "Vipps", logo: vipps, wordmark: true },
-  { name: "Microsoft 365", logo: ms365 },
+// Logo tiles around the integrations pitch (positions from the design).
+// Brønnøysundregistrene and Altinn have no logo file in the repo yet.
+const TILES = [
+  { name: "Tripletex", logo: tripletex, w: 40, h: 40, pos: { left: "13%", top: "7%" }, delay: "0s", rot: "-3deg" },
+  { name: "Fiken", logo: fiken, w: 40, h: 40, pos: { left: "3%", top: "31%" }, delay: "1.1s", rot: "2deg" },
+  { name: "Uni Micro", logo: unimicro, w: 40, h: 40, pos: { left: "3%", top: "55%" }, delay: ".5s", rot: "-2deg" },
+  { name: "Brønnøysundregistrene", short: "BRG", pos: { left: "13%", top: "78%" }, delay: "1.6s", rot: "3deg" },
+  { name: "Vipps", logo: vipps, w: 56, h: 28, pos: { right: "13%", top: "7%" }, delay: ".8s", rot: "3deg" },
+  { name: "NIF", logo: nif, w: 40, h: 40, pos: { right: "3%", top: "31%" }, delay: "1.4s", rot: "-2deg" },
+  { name: "Microsoft 365", logo: ms365, w: 40, h: 40, pos: { right: "3%", top: "55%" }, delay: ".3s", rot: "2deg" },
+  { name: "Altinn", short: "ALT", pos: { right: "13%", top: "78%" }, delay: "1.9s", rot: "-3deg" },
 ];
 
 const statNumber =
@@ -164,67 +169,86 @@ export default function Features() {
         </div>
       </div>
 
-      {/* Integrations */}
+      {/* Integrations: centred pitch with the partner logos floating around it */}
       <div
         data-reveal
-        className="mx-auto mt-12 grid max-w-[1200px] grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] items-center gap-[clamp(28px,4vw,56px)] rounded-[40px] bg-[#E3ECDF] p-[clamp(28px,4.5vw,56px)] max-[760px]:grid-cols-[minmax(0,1fr)] min-[1680px]:max-w-[1440px]"
+        data-kz-int
+        className="relative mx-auto mt-12 box-border flex min-h-[520px] max-w-[1200px] flex-col justify-center overflow-hidden rounded-[40px] bg-[#E3ECDF] px-[clamp(28px,4.5vw,56px)] py-[72px] min-[1680px]:max-w-[1440px]"
       >
-        <div>
-          <div className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#4C5E50]">
-            {t("Integrasjoner", "Integrations")}
-          </div>
-          <h2 className="mb-0 mt-3 font-heading text-[clamp(28px,3.6vw,46px)] font-extrabold leading-[1.04] tracking-[-0.035em]! text-ink">
-            {t("Fungerer med verktøyene dere allerede bruker", "Works with the tools you already use")}
+        <svg
+          data-kz-int-lines
+          aria-hidden="true"
+          viewBox="0 0 1200 520"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-0 h-full w-full"
+        >
+          <path d="M150 260 H1050" fill="none" stroke="rgba(31,122,58,.28)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+          <path
+            d="M330 110 V200 Q330 258 388 258 H812 Q870 258 870 200 V110"
+            fill="none"
+            stroke="rgba(31,122,58,.22)"
+            strokeWidth="1.5"
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            d="M330 410 V320 Q330 262 388 262 H812 Q870 262 870 320 V410"
+            fill="none"
+            stroke="rgba(31,122,58,.22)"
+            strokeWidth="1.5"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+        <div className="relative z-[1] mx-auto max-w-[540px] text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(116,205,133,0.45)] bg-white/75 px-5 py-2.5 text-[15px] font-semibold text-ink">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 3l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8-4.3-4.1 5.9-.8L12 3z"
+                fill="none"
+                stroke="#16241A"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span>{t("Integrasjoner", "Integrations")}</span>
+          </span>
+          <h2 className="relative top-[-10px] mb-0 mt-2.5 font-heading text-[clamp(30px,3.8vw,48px)] font-extrabold leading-[1.06] tracking-[-0.035em]! text-ink">
+            {t("Sømløse integrasjoner – rett i Kretz", "Seamless integrations – right in Kretz")}
           </h2>
-          <p className="mb-0 mt-4 max-w-[30em] text-[16px] leading-[1.6] text-[#4C5E50]">
+          <p className="mx-auto mb-0 mt-[22px] max-w-[30em] text-[16.5px] leading-[1.75] text-[#3b4d3f]">
             {t(
-              "Kretz integrerer med populære systemer, slik at dere får alt samlet på ett sted.",
-              "Kretz integrates with popular systems, so you get everything in one place.",
+              "Koble Kretz til systemene du allerede bruker – som Tripletex, Vipps, Brønnøysundregistrene og Altinn. Mindre dobbeltarbeid, mer effektiv flyt.",
+              "Connect Kretz to the systems you already use – like Tripletex, Vipps, the Brønnøysund Register Centre and Altinn. Less double work, a smoother flow.",
             )}
           </p>
-        </div>
-        <div className="relative mb-[92px]">
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
-            {INTEGRATIONS.map((item) => (
-              <div
-                key={item.name}
-                className="box-border flex min-h-[72px] items-center gap-3 rounded-[20px] border border-[#D6E2D2] bg-white px-5 py-[18px] transition-[translate,box-shadow] duration-300 ease-[cubic-bezier(.2,.7,.2,1)] hover:-translate-y-[3px] hover:shadow-[0_14px_30px_rgba(22,36,26,0.1)]"
-              >
-                {item.wordmark ? (
-                  <img src={item.logo} alt={item.name} className="h-7 w-16 shrink-0 object-contain" />
-                ) : (
-                  <>
-                    <img src={item.logo} alt="" className="h-7 w-7 shrink-0 object-contain" />
-                    <span>
-                      <span className="block text-[15px] font-bold text-ink">{item.name}</span>
-                      {item.sub && <span className="block text-[12px] text-[#4C5E50]">{item.sub}</span>}
-                    </span>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-          <div
-            aria-hidden="true"
-            className="kz-hand pointer-events-none absolute bottom-[-92px] right-2 -rotate-8 text-center text-[20px] leading-[1.1] text-ink"
+          <a
+            href={designHref("Kretz Integrasjoner.dc.html")}
+            className="mt-[18px] inline-flex items-center gap-1.5 text-[15px] font-semibold text-moss transition-colors hover:text-ink"
           >
-            {t("Automatisk", "Automatic")}
-            <br />
-            {t("og oppdatert", "and up to date")}
-            <svg
-              width="46"
-              height="34"
-              viewBox="0 0 46 34"
-              fill="none"
-              stroke="#16241A"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              className="mx-auto mt-0.5 block rotate-10"
+            {t("Se alle integrasjoner ↗", "See all integrations ↗")}
+          </a>
+        </div>
+        <div data-kz-int-tiles className="pointer-events-none absolute inset-0">
+          {TILES.map((tile) => (
+            <div
+              key={tile.name}
+              className="kz-int-tile pointer-events-auto absolute grid h-[84px] w-[84px] place-items-center rounded-3xl border border-[rgba(116,205,133,0.4)] bg-white shadow-[0_0_0_6px_rgba(255,255,255,0.35),0_16px_36px_rgba(31,122,58,0.14)]"
+              title={tile.name}
+              style={{ ...tile.pos, animationDelay: tile.delay, "--rot": tile.rot }}
             >
-              <path d="M40 2c-6 16-20 26-36 28" />
-              <path d="M10 25l-6 5 7 2" />
-            </svg>
-          </div>
+              {tile.logo ? (
+                <img src={tile.logo} alt={tile.name} style={{ width: tile.w, height: tile.h, objectFit: "contain" }} />
+              ) : (
+                // Logo file not in the repo yet: neutral stand-in of the same size.
+                <span
+                  role="img"
+                  aria-label={tile.name}
+                  className="grid h-11 w-11 place-items-center rounded-xl bg-[#E3ECDF] font-heading text-[13px] font-extrabold text-[#3b4d3f]"
+                >
+                  {tile.short}
+                </span>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </section>

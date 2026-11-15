@@ -17,7 +17,7 @@ npm run preview  # serve the production build
 npm run lint     # eslint
 ```
 
-## The three views
+## The views
 
 Routing is hash-based so the site works on GitHub Pages without server
 rewrites. No router dependency.
@@ -27,6 +27,20 @@ rewrites. No router dependency.
 | `#/`        | Landing          | Hero, how-it-works, feature explorer, customer stories, about, app, FAQ, CTA |
 | `#/booking` | Hall booking     | Pick a date, time and table/court, then pay by Vipps or card                  |
 | `#/medlem`  | Member dashboard | Activities, payments, notifications, messages with file folders, club posts   |
+| `#/admin`   | Admin portal     | Club administration (demo data); opened by the demo login as Administrator    |
+| `#/vilkar`  | Terms            | Terms of use                                                                  |
+
+### Feature and info pages
+
+Linked from the navbar's **Funksjoner** dropdown, the mobile menu and the
+footer. Each is lazy-loaded from `src/pages/info/`; shared sections live in
+`src/components/info/`. `src/lib/routes.js` maps the design's `.dc.html` file
+names to these routes (`designHref()`), and `#/?til=<id>` opens the landing
+page scrolled to a section.
+
+`#/funksjoner`, `#/medlemsregister`, `#/aktiviteter`, `#/hallbooking`,
+`#/okonomi`, `#/roller`, `#/arlig-rapportering`, `#/dokumentsenter`,
+`#/integrasjoner`, `#/for-hvem`, `#/nytt`
 
 `#/booking` accepts `?klubb=<slug>` (`bordtennis`, `tennis`, `vif`, `fana`,
 `biljard`) and `?from=member`, which sends the back button to the dashboard

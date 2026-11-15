@@ -1,0 +1,9 @@
+/*
+  Kretz Nytt — everything else comes from subpage.css (the design's helmet
+  for this page is the shared subpage set). Only a visible focus ring for
+  the source filter is added here.
+*/
+.kz-nytt .kzn-filter:focus-visible {
+  outline: 2px solid #1f7a3a;
+  outline-offset: 3px;
+}

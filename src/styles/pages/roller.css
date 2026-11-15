@@ -1,0 +1,8 @@
+/* Roller og tilgang — page-specific rules. */
+.kz-sub .kz-role-btn {
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+.kz-sub .kz-role-btn:focus-visible {
+  outline: 2px solid #1f7a3a;
+  outline-offset: 2px;
+}

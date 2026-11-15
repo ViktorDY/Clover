@@ -1,5 +1,5 @@
 import KretzMark from "./KretzMark";
-import SectionLink from "./SectionLink";
+import SiteLink from "./SiteLink";
 import { useLang } from "../lib/langContext";
 
 /*
@@ -51,7 +51,7 @@ export default function Platform() {
         aria-hidden="true"
         className="pointer-events-none absolute bottom-[-260px] left-[-200px] -z-10 h-[620px] w-[620px] rounded-full bg-[radial-gradient(circle,rgba(116,205,133,0.42),rgba(116,205,133,0)_70%)] blur-[40px]"
       />
-      <div className="mx-auto grid max-w-[1200px] grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] items-center gap-10 max-[900px]:grid-cols-[minmax(0,1fr)] max-[900px]:gap-7">
+      <div className="mx-auto grid max-w-[1200px] grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] items-center gap-12 max-[900px]:grid-cols-[minmax(0,1fr)] max-[900px]:gap-7">
         <div data-reveal>
           <div className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#4C5E50]">
             {t("Alt klubben trenger – på ett sted", "Everything the club needs – in one place")}
@@ -65,20 +65,25 @@ export default function Platform() {
               "Kretz brings members, finances, activities and communication together in one user-friendly platform – built for Norwegian sports clubs.",
             )}
           </p>
-          <SectionLink
-            to="funksjoner"
+          <SiteLink
+            to="Kretz Funksjoner.dc.html"
             className="kz-arrow-btn mt-[30px] inline-flex items-center gap-2.5 rounded-full bg-[#8BCB8B] px-[26px] py-[15px] font-heading text-[15px] font-extrabold text-ink hover:-translate-y-0.5 hover:bg-grass-soft"
           >
             {t("Utforsk funksjonene", "Explore the features")}{" "}
             <span className="kz-arr" aria-hidden="true">
               →
             </span>
-          </SectionLink>
+          </SiteLink>
         </div>
 
-        <div data-reveal className="relative min-h-[440px]">
-          {/* Admin dashboard */}
-          <div className="relative grid grid-cols-[124px_minmax(0,1fr)] overflow-hidden rounded-[22px] border border-[#D6E2D2] bg-white shadow-[0_30px_70px_rgba(22,36,26,0.16)]">
+        <div data-reveal className="relative grid min-h-[520px] items-center pl-16">
+          {/*
+            Admin dashboard. The design now shows a screenshot here
+            (assets/admin-shot-dashboard.png), which is not in the repo yet, so
+            the HTML mock of the same dashboard stands in for it. Above 900px it
+            is 142% wide and bleeds off the right edge, like the screenshot.
+          */}
+          <div className="kz-plat-shot relative grid grid-cols-[124px_minmax(0,1fr)] overflow-hidden rounded-[22px] border border-[#D6E2D2] bg-white shadow-[0_30px_70px_rgba(22,36,26,0.16)]">
             <div className="border-r border-[#E3ECE0] bg-[#F4F7F1] px-3.5 py-4">
               <div className="flex items-center gap-2 font-heading text-[14px] font-extrabold text-ink">
                 <KretzMark size={18} />
@@ -181,8 +186,8 @@ export default function Platform() {
             </div>
           </div>
 
-          {/* Member app, tilted over the corner */}
-          <div className="absolute bottom-[-48px] left-[-36px] w-[180px] -rotate-6 rounded-[30px] bg-ink p-2.5 shadow-[0_28px_60px_rgba(22,36,26,0.32)]">
+          {/* Member app, tilted over the corner (design: assets/app-shot-home.png) */}
+          <div className="kz-plat-phone absolute bottom-[-40px] left-[-28px] w-[210px] -rotate-6 rounded-[30px] bg-ink p-2.5 shadow-[0_28px_60px_rgba(22,36,26,0.32)]">
             <div className="min-h-[300px] rounded-[22px] bg-[#F4F7F1] px-3.5 pb-3.5 pt-4">
               <div className="font-heading text-[13px] font-extrabold text-ink">Kretz</div>
               <div className="mt-3.5 font-heading text-[18px] font-extrabold text-ink">{t("Hei!", "Hi!")}</div>

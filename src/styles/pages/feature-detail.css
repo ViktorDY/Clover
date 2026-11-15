@@ -1,0 +1,67 @@
+/*
+  Feature detail pages (Medlemsregister, Aktiviteter, Hallbooking, Økonomi)
+  — rules from their shared <helmet> that subpage.css does not already
+  carry. Scoped to .kz-fd (the root of components/info/FeatureDetail.jsx);
+  the [data-kz-cta] rule is scoped to .kz-sub so FeatureCta works on any
+  info page.
+*/
+
+/* Primary arrow button: outline ring + arrow nudge on hover/focus. */
+.kz-sub .kz-arrow-btn {
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  transition: outline-color 0.25s, outline-offset 0.25s, transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), background 0.3s;
+}
+.kz-sub .kz-arrow-btn:hover,
+.kz-sub .kz-arrow-btn:focus-visible {
+  outline-color: #1f7a3a;
+  outline-offset: 4px;
+  color: #f6f8f3;
+}
+.kz-sub .kz-arrow-btn:hover .kz-arr,
+.kz-sub .kz-arrow-btn:focus-visible .kz-arr,
+.kz-fd .kz-card:hover .kz-arr,
+.kz-fd .kz-card:focus-visible .kz-arr {
+  transform: translateX(6px);
+}
+.kz-fd .kz-card:hover {
+  color: #16241a;
+}
+
+/* Mockup buttons: design sets button { font-size: max(16px, 1em) } but every
+   mockup button has its own size inline, so nothing to add here. */
+
+@media (max-width: 1024px) {
+  .kz-fd [data-rsp-cols="3"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 900px) {
+  .kz-fd [data-rsp="stack"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .kz-fd [data-kz-hidetab] {
+    display: none !important;
+  }
+}
+@media (max-width: 760px) {
+  .kz-fd [data-rsp-cols="2"],
+  .kz-fd [data-rsp-cols="3"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .kz-sub [data-kz-cta] {
+    padding: 36px 24px !important;
+  }
+  .kz-fd [data-kz-band] {
+    border-radius: 30px !important;
+    padding: 40px 20px !important;
+    margin-left: 8px !important;
+    margin-right: 8px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kz-sub .kz-arrow-btn {
+    transition: none !important;
+  }
+}

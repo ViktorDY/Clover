@@ -388,6 +388,33 @@ export function members(en) {
         },
       ],
     },
+    // Nov design: Emma Sunde (daughter of Marit Sunde)
+    {
+      id: "m10",
+      club: "vif",
+      name: "Emma Sunde",
+      group: en ? "U14" : "G14",
+      role: en ? "Player" : "Spiller",
+      due: 0,
+      att: 19,
+      avg: 18,
+      seed: 6,
+      born: "12.05.2012",
+      age: 14,
+      phone: "+47 412 34 567",
+      email: "emma.sunde@example.no",
+      address: "Sagveien 12, 0459 Oslo",
+      guardians: [
+        {
+          id: "g10",
+          name: "Marit Sunde",
+          relation: en ? "Mother" : "Mor",
+          born: "14.03.1985",
+          phone: "+47 402 11 987",
+          email: "marit.sunde@example.no",
+        },
+      ],
+    },
     {
       id: "m4",
       club: "fana",

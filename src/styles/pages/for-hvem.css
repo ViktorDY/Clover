@@ -1,0 +1,62 @@
+/*
+  Kretz For hvem — rules from the page's <helmet> that are not already in
+  subpage.css: the "Kretz hjelper … med" overlay on the role cards, the
+  sideways arrow nudge, and the 900px breakpoint this page uses.
+*/
+.kz-fh .kz-card:hover .kz-arr,
+.kz-fh .kz-card:focus-visible .kz-arr {
+  transform: translateX(6px);
+}
+
+.kz-fh .kzh-help {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition:
+    opacity 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
+    visibility 0s 0.35s;
+}
+.kz-fh .kzh-role:hover .kzh-help,
+.kz-fh .kzh-role:focus-visible .kzh-help {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
+    visibility 0s;
+}
+.kz-fh .kzh-role:hover,
+.kz-fh .kzh-role:focus-visible {
+  color: #16241a;
+}
+
+/* Stand-in for the two product screenshots the design has in the CTA. */
+.kz-fh .kzh-shot {
+  background:
+    linear-gradient(180deg, #ffffff 0 34px, transparent 34px),
+    radial-gradient(rgba(31, 122, 58, 0.14) 1px, transparent 1.2px) 0 0 / 14px 14px,
+    #f4f8f2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kz-fh .kzh-help {
+    transition: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .kz-fh [data-rsp="stack"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .kz-fh [data-kz-hidetab] {
+    display: none !important;
+  }
+}
+@media (max-width: 760px) {
+  .kz-fh [data-kz-cta] {
+    padding: 36px 24px !important;
+    min-height: 0 !important;
+  }
+}

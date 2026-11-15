@@ -37,3 +37,16 @@
 .kza-hz:hover { background: #5a2fa3 !important; }
 .kza-h10:hover { background: rgba(124,77,207,.12) !important; }
 .kza-h11:hover { background: #a3e2ae !important; transform: translateY(-2px) !important; }
+
+/* [admin1] Hover / focus states for the Nov 2026 design (kza-x*). Generated. */
+.kza-a1x1:hover { background: rgba(116,205,133,.25) !important; }
+.kza-a1x2:hover { background: #e4f1e6 !important; }
+.kza-a1x3:hover { opacity: .88 !important; }
+.kza-a1x4:focus { border-color: #74cd85 !important; box-shadow: 0 0 0 3px rgba(116,205,133,.25) !important; }
+.kza-a1x5:hover { background: #ffe27a !important; box-shadow: 0 6px 16px rgba(255,210,63,.45) !important; }
+.kza-a1x6:hover { background: #a63a36 !important; }
+.kza-a1x7:focus { border-color: #FFD23F !important; box-shadow: 0 0 0 3px rgba(255,210,63,.35) !important; }
+.kza-a1x8:hover { background: #fff8dc !important; }
+.kza-a1x9:focus { border-color: #FFD23F !important; box-shadow: 0 0 0 3px rgba(255,210,63,.3) !important; }
+.kza-a1x10:hover { background: #ffe27a !important; }
+.kza-a1x11:hover { background: #f1f8ee !important; }

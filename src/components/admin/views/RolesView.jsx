@@ -32,7 +32,7 @@ export default function RolesView({ v }) {
         >
           <div style={{ flex: "1 1 200px", minWidth: "0" }}>
             <h2
-              style={{ fontFamily: "var(--font-heading)", fontWeight: "800", fontSize: "20px", margin: "0" }}
+              style={{ fontFamily: "var(--font-heading)", fontWeight: "800", fontSize: "30px", letterSpacing: "-.02em", color: "#16241a", margin: "0" }}
             >
               {v.tRolesHeading}
             </h2>

@@ -1,10 +1,35 @@
 import { sx, list } from "../adminRuntime";
+import Hv from "../../Hv";
 import ChatPanel from "./ChatPanel";
 
 // Kommunikasjon: conversations.
 // Renders the view object `v` from src/lib/adminLogic.js.
 export default function CommsView({ v }) {
   return (
+    <>
+    {/* Nov design: priority-message banner above the chat list */}
+    <div style={sx("display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 16px; padding: 14px 18px; border-radius: 20px; background: #FFF3C2; border: 1.5px solid #FFD23F")}>
+      <span aria-hidden="true" style={sx("width: 38px; height: 38px; flex: 0 0 auto; border-radius: 999px; background: #FFD23F; display: grid; place-items: center")}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16241a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+        </svg>
+      </span>
+      <span style={sx("flex: 1; min-width: 220px")}>
+        <b style={sx("display: block; font-family: var(--font-heading); font-weight: 800; font-size: 16px")}>{v.tPmBtn}</b>
+        <span style={sx("display: block; font-size: 13px; color: rgba(22,36,26,.72)")}>{v.tPmBanner}</span>
+        {v.cmPmSentShow ? <span style={sx("display: block; margin-top: 4px; font-size: 13px; font-weight: 700; color: #1f7a3a")}>✓ {v.cmPmSent}</span> : null}
+      </span>
+      <Hv
+        as="button"
+        type="button"
+        onClick={v.pmOpenComms}
+        style="padding: 11px 20px; border-radius: 999px; border: 0; background: #FFD23F; color: #16241a; font-family: var(--font-heading); font-weight: 800; font-size: 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(224,161,0,.25)"
+        hover="background: #ffe27a"
+      >
+        {v.tPmNew}
+      </Hv>
+    </div>
     <div
       style={sx(
         `display: grid; grid-template-columns: ${v.cmCols ?? ""}; gap: 16px; align-items: start; overflow: hidden; transition: grid-template-columns .5s cubic-bezier(.2,.7,.2,1)`,
@@ -140,5 +165,6 @@ export default function CommsView({ v }) {
       </div>
       {v.cmChatOpen ? <ChatPanel v={v} /> : null}
     </div>
+    </>
   );
 }

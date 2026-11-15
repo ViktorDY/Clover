@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { BOOKABLE_CLUBS } from "../lib/clubs";
+import { BOOKABLE_CLUBS, useVenueStore, venueHoursFor, venueIsClosed } from "../lib/clubs";
 import { useLang } from "../lib/langContext";
 
 // Mounted only while open, so the search box starts empty every time.
 export default function BookingPickerModal({ onClose, onPick }) {
   const { t, lang } = useLang();
   const [query, setQuery] = useState("");
+  const store = useVenueStore();
 
   useEffect(() => {
     const onKey = (e) => {
@@ -19,6 +20,23 @@ export default function BookingPickerModal({ onClose, onPick }) {
   const matches = BOOKABLE_CLUBS.filter(
     (club) => !needle || `${club.name} ${club.meta[lang]}`.toLowerCase().includes(needle),
   );
+
+  // Today's opening hours and hourly price from the shared venue store.
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+    today.getDate(),
+  ).padStart(2, "0")}`;
+  const todayWeekday = (today.getDay() + 6) % 7;
+  const liveMeta = (club) => {
+    const rules = store[club.slug];
+    if (!rules) return club.meta[lang];
+    const hours = venueHoursFor(rules, todayWeekday);
+    const open =
+      venueIsClosed(rules, todayIso) || !hours
+        ? t("stengt i dag", "closed today")
+        : `${t("åpent", "open")} ${hours[0]}–${hours[1]}`;
+    return `${club.meta[lang]} · ${open} · kr ${rules.price}/${t("t", "h")}`;
+  };
 
   return (
     <div
@@ -79,7 +97,7 @@ export default function BookingPickerModal({ onClose, onPick }) {
                   <span className="block font-heading text-[17px] font-extrabold tracking-[-0.015em] text-ink">
                     {club.name}
                   </span>
-                  <span className="mt-0.5 block text-sm text-ink/62">{club.meta[lang]}</span>
+                  <span className="mt-0.5 block text-sm text-ink/62">{liveMeta(club)}</span>
                 </span>
               </button>
             ))}

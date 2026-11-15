@@ -255,3 +255,58 @@
 [data-kza-root] [style*="display: grid"]:not([style*="grid-template-columns"]) {
   grid-template-columns: minmax(0, 1fr);
 }
+
+/* ---- [admin1] Nov 2026 design: compact dashboard, mini sidebar ---------- */
+
+/* Home dashboard (tab "activities") on desktop: a tighter band and a layout
+   where the calendar and main card share the column and scroll inside. */
+@media (min-width: 981px) {
+  [data-kza-root][data-dash="true"] [data-kza-band] { padding-top: 22px !important; padding-bottom: 12px !important; }
+  [data-kza-root][data-dash="true"] [data-kza-band] h1 { font-size: clamp(28px, 3vw, 38px) !important; }
+  [data-kza-root][data-dash="true"] [data-kza-band] h1 + p { margin-top: 4px !important; font-size: 15px !important; }
+  [data-kza-root][data-dash="true"] [data-kza-main] { padding-top: 12px !important; padding-bottom: 16px !important; }
+  [data-kza-root][data-dash="true"] [data-dash-sum] { margin-bottom: 12px !important; border-radius: 20px !important; }
+  [data-kza-root][data-dash="true"] [data-dash-sum] > div { padding: 12px 20px !important; }
+  [data-kza-root][data-dash="true"] [data-dash-sum] > div > div:nth-child(2) { font-size: 22px !important; margin-top: 3px !important; }
+  [data-kza-root][data-dash="true"] [data-dash-sum] > div > div:nth-child(3) { margin-top: 5px !important; }
+  [data-kza-root][data-dash="true"] [data-kza-split] { margin-top: 0 !important; align-items: stretch !important; gap: 14px !important; }
+  [data-kza-root][data-dash="true"] [data-dash-left] { display: flex !important; flex-direction: column; gap: 14px !important; min-height: 0; height: 100%; }
+  [data-kza-root][data-dash="true"] [data-dash-cal] { flex: 1 1 auto; min-height: 0; height: auto !important; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 16px 20px !important; border-radius: 24px !important; }
+  [data-kza-root][data-dash="true"] [data-dash-cal] [style^="height: 34px"],
+  [data-kza-root][data-dash="true"] [data-dash-cal] [style$="height: 34px"] { height: 30px !important; }
+  [data-kza-root][data-dash="true"] [data-dash-main] { flex: 0 1 auto; min-height: 0; max-height: 55%; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 16px 22px !important; border-radius: 24px !important; }
+  [data-kza-root][data-dash="true"] [data-dash-main] h2 { font-size: 21px !important; }
+  [data-kza-root][data-dash="true"] [data-dash-right] { min-height: 0; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; gap: 12px !important; }
+}
+
+/* Collapsed ("mini") sidebar: icons only. */
+@media (min-width: 1101px) {
+  [data-kza-root][data-mini="true"] { padding-left: 78px !important; }
+  [data-kza-root][data-mini="true"] [data-kza-side] { width: 78px !important; }
+  [data-kza-root][data-mini="true"] .kza-lbl { display: none !important; }
+  [data-kza-root][data-mini="true"] .kza-logo { display: none !important; }
+  [data-kza-root][data-mini="true"] .kza-logo-row { justify-content: center; flex-direction: column; gap: 14px; }
+  [data-kza-root][data-mini="true"] [data-kza-head] { padding-left: 12px !important; padding-right: 12px !important; }
+  [data-kza-root][data-mini="true"] [data-kza-nav] button { justify-content: center; padding-left: 0 !important; padding-right: 0 !important; }
+  [data-kza-root][data-mini="true"] .kza-ic { margin-right: 0 !important; }
+  [data-kza-root][data-mini="true"] [data-kza-foot] > button { justify-content: center; padding-left: 0 !important; padding-right: 0 !important; }
+}
+@media (max-width: 1100px) {
+  .kza-collapse { display: none !important; }
+  [data-kza-root] [data-kza-side] { transition: none !important; }
+  [data-kza-foot] [role="menu"] {
+    bottom: auto !important;
+    top: calc(100% + 6px) !important;
+    left: auto !important;
+    right: 0 !important;
+    width: min(280px, calc(100vw - 24px));
+  }
+}
+@media (max-width: 760px) {
+  [data-kza-root] [role="dialog"],
+  [data-kza-root] form[style*="max-width"] {
+    max-width: calc(100vw - 24px) !important;
+  }
+}
+[data-kza-svhead] > * { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[data-kza-svhead] button { text-transform: inherit; letter-spacing: inherit; font: inherit; }

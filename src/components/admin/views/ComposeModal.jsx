@@ -3,6 +3,10 @@ import ImageSlot from "../ImageSlot";
 
 // New activity / new post dialog.
 // Renders the view object `v` from src/lib/adminLogic.js.
+const KICK = "font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgba(22,36,26,.75)";
+const FLD = "display: grid; gap: 6px; font-size: 12px; color: rgba(22,36,26,.7)";
+const BOX = "display: grid; border-radius: 18px; background: #f4f8f2; border: 1px solid rgba(22,36,26,.1); padding: 14px";
+
 export default function ComposeModal({ v }) {
   return (
     <div
@@ -119,25 +123,79 @@ export default function ComposeModal({ v }) {
               >
                 <ImageSlot id={v.eventSlotId} shape="rounded" radius="20" placeholder={v.tDropPhoto} />
               </div>
-              <div
-                data-rsp="stack"
-                style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "12px" }}
-              >
-                <input
-                  type="date"
-                  required
-                  value={v.formDate ?? ""}
-                  onChange={v.onFormDate}
-                  style={sx(v.inputStyle)}
-                />
-                <input
-                  type="time"
-                  required
-                  value={v.formTime ?? ""}
-                  onChange={v.onFormTime}
-                  style={sx(v.inputStyle)}
-                />
+              {/* Nov design: one date, several set dates or recurring */}
+              <div>
+                <div style={sx(KICK + "; margin-bottom: 8px")}>{v.tActType}</div>
+                <div style={sx("display: flex; flex-wrap: wrap; gap: 8px")}>
+                  {list(v.actKinds).map((k, i0) => (
+                    <button key={k.key ?? i0} type="button" onClick={k.pick} style={sx(k.style)}>
+                      {k.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={sx("font-size: 13px; color: rgba(22,36,26,.72); margin-top: 8px")}>{v.actKindNote}</div>
               </div>
+              <div data-rsp="stack" style={sx("display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px")}>
+                <label style={sx(FLD)}>
+                  {v.tFirstDate}
+                  <input type="date" required value={v.formDate ?? ""} onChange={v.onFormDate} style={sx(v.inputStyle)} />
+                </label>
+                <label style={sx(FLD)}>
+                  {v.tStartTime}
+                  <input type="time" required value={v.formTime ?? ""} onChange={v.onFormTime} style={sx(v.inputStyle)} />
+                </label>
+              </div>
+              {v.kindRepeat ? (
+                <div style={sx(BOX + "; gap: 12px")}>
+                  <div>
+                    <div style={sx(KICK + "; margin-bottom: 8px")}>{v.tRepeatEvery}</div>
+                    <div style={sx("display: flex; flex-wrap: wrap; gap: 8px")}>
+                      {list(v.actFreqs).map((f, i0) => (
+                        <button key={f.key ?? i0} type="button" onClick={f.pick} style={sx(f.style)}>
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <label style={sx(FLD)}>
+                    {v.tRepeatUntil}
+                    <input type="date" required value={v.formUntil ?? ""} onChange={v.onFormUntil} style={sx(v.inputStyle)} />
+                  </label>
+                  <div style={sx("font-size: 13.5px; color: #1f7a3a; font-weight: 600")}>{v.repeatCountNote}</div>
+                </div>
+              ) : null}
+              {v.kindMulti ? (
+                <div style={sx(BOX + "; gap: 10px")}>
+                  <div style={sx(KICK)}>{v.tMoreDates}</div>
+                  <div style={sx("display: flex; gap: 8px")}>
+                    <input type="date" value={v.formPickDate ?? ""} onChange={v.onFormPickDate} aria-label={v.tMoreDates} style={sx(v.inputStyle)} />
+                    <button
+                      type="button"
+                      onClick={v.addExtraDate}
+                      className="kza-hf"
+                      style={sx("flex: 0 0 auto; padding: 0 18px; border-radius: 12px; border: 0; background: #16241a; color: #f6f8f3; font-family: var(--font-heading); font-weight: 800; font-size: 13.5px; cursor: pointer")}
+                    >
+                      {v.tAddDate}
+                    </button>
+                  </div>
+                  <div style={sx("display: flex; flex-wrap: wrap; gap: 6px")}>
+                    {list(v.extraDateChips).map((c, i0) => (
+                      <span key={c.key ?? i0} style={sx("display: inline-flex; align-items: center; gap: 6px; padding: 5px 6px 5px 12px; border-radius: 999px; background: #16241a; color: #f6f8f3; font-size: 12.5px")}>
+                        {c.label}
+                        <button
+                          type="button"
+                          onClick={c.remove}
+                          aria-label={v.tRemoveD}
+                          style={sx("width: 20px; height: 20px; border-radius: 999px; border: 0; background: rgba(246,248,243,.2); color: #f6f8f3; cursor: pointer; font-size: 11px; line-height: 1")}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div style={sx("font-size: 13.5px; color: #1f7a3a; font-weight: 600")}>{v.repeatCountNote}</div>
+                </div>
+              ) : null}
               <input
                 type="text"
                 required

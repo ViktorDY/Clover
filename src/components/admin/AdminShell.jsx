@@ -2,6 +2,11 @@ import { sx, list } from "./adminRuntime";
 import TeamFundView from "./views/TeamFundView";
 import SponsorsView from "./views/SponsorsView";
 import DeptsView from "./views/DeptsView";
+import SettleView from "./views/SettleView";
+import NifView from "./views/NifView";
+import ClubInfoModal from "./views/ClubInfoModal";
+import PriorityMsgModal from "./views/PriorityMsgModal";
+import AddMemberModal from "./views/AddMemberModal";
 import GroupModal from "./views/GroupModal";
 import RolesView from "./views/RolesView";
 import VenueAdminView from "./views/VenueAdminView";
@@ -27,6 +32,8 @@ export default function AdminShell({ v }) {
   return (
     <div
       data-kza-root=""
+      data-dash={v.dashAttr}
+      data-mini={v.sideMiniAttr}
       style={{
         position: "relative",
         isolation: "isolate",
@@ -35,6 +42,7 @@ export default function AdminShell({ v }) {
         background: "#ffffff",
         minHeight: "100vh",
         paddingLeft: "240px",
+        transition: "padding-left .3s cubic-bezier(.2,.7,.2,1)",
       }}
     >
       <div
@@ -55,12 +63,14 @@ export default function AdminShell({ v }) {
       <AdminSidebar v={v} />
       <AdminBand v={v} />
       <main
+        data-kza-main=""
         data-rsp-wide=""
         data-rsp-pad=""
         style={{ maxWidth: "1160px", margin: "0 auto", padding: "22px 24px 72px" }}
       >
         {v.showSummary ? (
           <div
+            data-dash-sum=""
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
@@ -201,7 +211,7 @@ export default function AdminShell({ v }) {
                   margin: "14px 0 6px",
                 }}
               >
-                {v.ciTitle}
+                {v.spInactiveTitle}
               </h3>
               <p style={{ margin: "0", fontSize: "14.5px", lineHeight: "1.6", color: "rgba(22,36,26,.8)" }}>
                 {v.ciText}
@@ -589,6 +599,10 @@ export default function AdminShell({ v }) {
             </article>
           </div>
         ) : null}
+        {/* [admin1] Nov 2026 design: settlement reports, NIF submission, club info dialog */}
+        {v.showSettle ? <SettleView v={v} /> : null}
+        {v.showNif ? <NifView v={v} /> : null}
+        {v.ciOpen ? <ClubInfoModal v={v} /> : null}
         {v.showDepts ? <DeptsView v={v} /> : null}
         {v.deptModalIsGroup ? <GroupModal v={v} /> : null}
         {v.deptModalIsDept ? (
@@ -691,109 +705,8 @@ export default function AdminShell({ v }) {
         {v.showProfile ? <ProfileView v={v} /> : null}
         {v.apDetail ? <ProfileDetail v={v} /> : null}
         {v.showMembers ? <MembersView v={v} /> : null}
-        {v.addMemOpen ? (
-          <div
-            data-rsp-modal=""
-            onClick={v.closeAddMember}
-            style={{
-              position: "fixed",
-              inset: "0",
-              zIndex: "97",
-              display: "grid",
-              placeItems: "center",
-              padding: "24px",
-              background: "rgba(22,36,26,.5)",
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <form
-              onClick={v.stopClick}
-              onSubmit={v.saveMember}
-              style={{
-                position: "relative",
-                width: "100%",
-                maxWidth: "440px",
-                boxSizing: "border-box",
-                borderRadius: "28px",
-                background: "#ffffff",
-                border: "1px solid rgba(22,36,26,.12)",
-                boxShadow: "0 32px 80px rgba(22,36,26,.32)",
-                padding: "26px",
-                display: "grid",
-                gap: "12px",
-              }}
-            >
-              <button
-                type="button"
-                onClick={v.closeAddMember}
-                aria-label={v.tClose}
-                style={{
-                  position: "absolute",
-                  top: "16px",
-                  right: "16px",
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "999px",
-                  border: "1px solid rgba(22,36,26,.14)",
-                  background: "#ffffff",
-                  fontSize: "16px",
-                  cursor: "pointer",
-                }}
-              >
-                ×
-              </button>
-              <h3
-                style={{
-                  fontFamily: "var(--font-heading)",
-                  fontWeight: "800",
-                  fontSize: "22px",
-                  margin: "0 40px 4px 0",
-                }}
-              >
-                {v.tAddMember}
-              </h3>
-              <input
-                type="text"
-                required
-                value={v.amName ?? ""}
-                onChange={v.onAmName}
-                placeholder={v.tColName}
-                style={sx(v.inputStyle)}
-              />
-              <input
-                type="email"
-                required
-                value={v.amEmail ?? ""}
-                onChange={v.onAmEmail}
-                placeholder={v.tColEmail}
-                style={sx(v.inputStyle)}
-              />
-              <select value={v.amType ?? ""} onChange={v.onAmType} style={sx(v.inputStyle)}>
-                {list(v.amTypes).map((o, i0) => (
-                  <option key={o.key ?? i0} value={o.id ?? ""}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                style={{
-                  padding: "14px 20px",
-                  borderRadius: "999px",
-                  border: "0",
-                  background: "#1f7a3a",
-                  color: "#ffffff",
-                  fontFamily: "var(--font-heading)",
-                  fontWeight: "800",
-                  fontSize: "15px",
-                  cursor: "pointer",
-                }}
-              >
-                {v.tAddMember}
-              </button>
-            </form>
-          </div>
-        ) : null}
+        {v.pmOpen ? <PriorityMsgModal v={v} /> : null}
+        {v.addMemOpen ? <AddMemberModal v={v} /> : null}
         {v.showBoard ? <BoardView v={v} /> : null}
         {v.mdOpen ? <MeetingDetailModal v={v} /> : null}
         {v.meetingFormOpen ? <MeetingFormModal v={v} /> : null}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import MemberSidebar from "../components/member/MemberSidebar";
 import ClubMenu from "../components/member/ClubMenu";
 import HomeView from "../components/member/HomeView";
@@ -33,6 +33,7 @@ import {
   leaderFor,
   nok,
   payContact,
+  readPriorityNotices,
   seedThreads,
 } from "../lib/memberData";
 import "../styles/member.css";
@@ -126,6 +127,25 @@ export default function MemberPage({ onExit, onLogOut = onExit, onBook }) {
   const [vlResults, setVlResults] = useState({});
   const [vlActive, setVlActive] = useState(null);
 
+  // Priority messages from the administrator: re-read when another tab
+  // writes them or the window gets focus again.
+  const [prioTick, setPrioTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setPrioTick((n) => n + 1);
+    window.addEventListener("storage", bump);
+    window.addEventListener("focus", bump);
+    return () => {
+      window.removeEventListener("storage", bump);
+      window.removeEventListener("focus", bump);
+    };
+  }, []);
+  const priorityNotices = useMemo(
+    () => readPriorityNotices(profile.fullName),
+    // prioTick forces a fresh read from localStorage.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [profile.fullName, prioTick],
+  );
+
   /* ---- Filters ------------------------------------------------------------ */
 
   const showAll = club === "all";
@@ -157,7 +177,7 @@ export default function MemberPage({ onExit, onLogOut = onExit, onBook }) {
   const notices = NOTICES.filter(keep).filter((n) => !noticeGone.includes(n.id));
   const isNoticeUnread = (n) => !!n.unread && !noticeRead.includes(n.id);
   const unreadNotices = notices.filter(isNoticeUnread).length;
-  const boardNotice = BOARD_NOTICES.filter(keep)[0] || null;
+  const boardNotice = [...priorityNotices, ...BOARD_NOTICES].filter(keep)[0] || null;
 
   const allPosts = [...myPosts, ...POSTS].filter(keep);
   const isPostRead = (p) => !!p.mine || !!postRead[p.id];

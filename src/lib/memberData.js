@@ -225,12 +225,50 @@ export function payContact(payment) {
   };
 }
 
-// The yellow "Viktig fra styret" card on the home page shows the first match.
+// The yellow "Viktig fra styret" card on the home page shows the first match
+// (after any priority message from the administrator, see below).
 export const BOARD_NOTICES = [
   { club: "vif", title: { no: "Dugnaden flyttes til lørdag 20. sept", en: "Dugnad moved to Saturday 20 Sept" }, text: { no: "Vi trenger to voksne til til kiosken — meld deg på under Aktiviteter.", en: "We need two more adults for the kiosk — sign up under Activities." }, when: { no: "Styret · i dag", en: "Board · today" } },
   { club: "varden", title: { no: "Kontingent forfaller 30. sept", en: "Membership fees due 30 Sept" }, text: { no: "Betal i appen med Vipps for å unngå purregebyr.", en: "Pay in the app with Vipps to avoid a reminder fee." }, when: { no: "Styret · i går", en: "Board · yesterday" } },
   { club: "fana", title: { no: "Nye treningstider fra oktober", en: "New training times from October" }, text: { no: "Ukeplanen er oppdatert — sjekk gruppa di.", en: "The week plan is updated — check your group." }, when: { no: "Styret · for 2 dager siden", en: "Board · 2 days ago" } },
 ];
+
+/*
+  Priority messages the administrator sends to named members (Admin →
+  "prioritert melding"). They live in localStorage under kretz.priority.v1 as
+  [{ club, title, text, ts, to: [{ name }] }]. A message is for this member
+  when one recipient shares their last name; the newest comes first and goes
+  to the top of the yellow "Viktig fra styret" card.
+*/
+export const PRIORITY_KEY = "kretz.priority.v1";
+
+export function readPriorityNotices(fullName) {
+  const last = (String(fullName || "").trim().split(/\s+/).pop() || "").toLowerCase();
+  if (!last) return [];
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(PRIORITY_KEY) || "[]");
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter(
+        (p) =>
+          p &&
+          Array.isArray(p.to) &&
+          p.to.some((r) => String((r && r.name) || "").toLowerCase().split(/\s+/).pop() === last),
+      )
+      .sort((a, b) => (b.ts || 0) - (a.ts || 0))
+      .map((p, i) => ({
+        id: `prio-${p.ts || i}`,
+        club: p.club,
+        title: String(p.title || ""),
+        text: String(p.text || ""),
+        when: { no: "Styret · prioritet", en: "Board · priority" },
+        prio: true,
+      }));
+  } catch {
+    // Unreadable or missing store: no priority messages.
+    return [];
+  }
+}
 
 /*
   Notifications. `go` says where tapping one takes you: the week plan, the

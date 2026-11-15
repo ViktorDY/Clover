@@ -14,6 +14,21 @@ import { arrivedFromAuthLink, supabase } from "./lib/supabase";
 // The admin portal is large; only download it when someone opens it.
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 
+// Feature and info pages linked from the navbar. Each is its own chunk.
+const INFO_PAGES = {
+  "/funksjoner": lazy(() => import("./pages/info/FunksjonerPage")),
+  "/medlemsregister": lazy(() => import("./pages/info/MedlemsregisterPage")),
+  "/aktiviteter": lazy(() => import("./pages/info/AktiviteterPage")),
+  "/hallbooking": lazy(() => import("./pages/info/HallbookingPage")),
+  "/okonomi": lazy(() => import("./pages/info/OkonomiPage")),
+  "/roller": lazy(() => import("./pages/info/RollerPage")),
+  "/arlig-rapportering": lazy(() => import("./pages/info/ArligRapporteringPage")),
+  "/dokumentsenter": lazy(() => import("./pages/info/DokumentsenterPage")),
+  "/integrasjoner": lazy(() => import("./pages/info/IntegrasjonerPage")),
+  "/for-hvem": lazy(() => import("./pages/info/ForHvemPage")),
+  "/nytt": lazy(() => import("./pages/info/NyttPage")),
+};
+
 export default function App() {
   return (
     <LangProvider>
@@ -93,13 +108,23 @@ function Routes() {
     );
   }
 
+  const InfoPage = INFO_PAGES[path];
+  const pageProps = {
+    onOpenLogin: () => setLoginOpen(true),
+    onOpenSignup: () => setSignupOpen(true),
+    onOpenBooking: () => setPickerOpen(true),
+    navigate,
+  };
+
   return (
     <>
-      <LandingPage
-        onOpenLogin={() => setLoginOpen(true)}
-        onOpenSignup={() => setSignupOpen(true)}
-        onOpenBooking={() => setPickerOpen(true)}
-      />
+      {InfoPage ? (
+        <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+          <InfoPage {...pageProps} params={params} />
+        </Suspense>
+      ) : (
+        <LandingPage {...pageProps} scrollTo={params.til} />
+      )}
 
       {isSignupOpen && (
         <SignupModal

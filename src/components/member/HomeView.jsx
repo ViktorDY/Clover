@@ -85,7 +85,7 @@ export default function HomeView({
   const tagFor = (a) => {
     const answer = rsvp[a.id];
     if (a.locked) return { label: t("åpner senere", "opens later"), cls: "bg-ink/7 text-ink/55" };
-    if (answer === "in") return { label: t("du kommer", "you are coming"), cls: "bg-grass/32 text-ink" };
+    if (answer === "in") return null; // The green date box says it instead.
     if (answer === "out") return { label: t("kan ikke", "declined"), cls: "bg-ink/10 text-ink/60" };
     if (a.kind === "dugnad") return { label: t("dugnad", "volunteer"), cls: "bg-amber/30 text-amber-ink" };
     return null; // Unanswered: the green edge says it instead.

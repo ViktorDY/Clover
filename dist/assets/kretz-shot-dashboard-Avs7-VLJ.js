@@ -1,0 +1,1 @@
+var e=`/Clover/assets/kretz-shot-styret-Dxi57eEe.png`,t=`/Clover/assets/kretz-shot-dashboard-CjaHTI5Y.png`;export{e as n,t};

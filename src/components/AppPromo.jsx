@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import KretzMark from "./KretzMark";
 import { useLang } from "../lib/langContext";
 import fieldPhoto from "../assets/design/slot-app-hero-photo.webp";
+import appEventShot from "../assets/design/app-shot-event.png";
 
 const stroke = {
   fill: "none",
@@ -11,27 +11,6 @@ const stroke = {
   strokeLinejoin: "round",
   "aria-hidden": true,
 };
-
-const CalendarGlyph = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" {...stroke}>
-    <rect x="3" y="4" width="18" height="18" rx="2" />
-    <path d="M16 2v4M8 2v4M3 10h18" />
-  </svg>
-);
-const PeopleGlyph = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-const CoinsGlyph = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
-    <ellipse cx="12" cy="5" rx="9" ry="3" />
-    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-    <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
-  </svg>
-);
 
 function CheckDot() {
   return (
@@ -111,18 +90,6 @@ export default function AppPromo() {
 
   const storeBtn =
     "inline-flex items-center gap-2.5 rounded-[14px] bg-[#0B0F0C] py-2.5 pl-3.5 pr-5 text-white no-underline transition-[translate] duration-300 ease-[cubic-bezier(.2,.7,.2,1)] hover:-translate-y-[3px] hover:text-white";
-
-  const signups = [
-    { title: t("Trening – G12", "Training – G12"), when: t("I dag 18:00", "Today 18:00"), done: true },
-    { title: t("Kamp – J10", "Match – J10"), when: t("Ons 18:00", "Wed 18:00"), done: false },
-  ];
-
-  const tiles = [
-    { label: t("Meldinger", "Messages"), icon: <PeopleGlyph /> },
-    { label: t("Kontingent", "Fees"), icon: <CoinsGlyph /> },
-    { label: t("Dugnader", "Volunteer days"), icon: <CalendarGlyph size={22} /> },
-    { label: t("Lag og medlemmer", "Teams and members"), icon: <PeopleGlyph /> },
-  ];
 
   const perks = [
     t("Alltid oppdatert", "Always up to date"),
@@ -219,76 +186,11 @@ export default function AppPromo() {
               className="kz-app-phone kz-float absolute bottom-[-44px] left-[6%] w-[clamp(215px,38%,240px)] rounded-[36px] bg-[#0B0F0C] p-2 shadow-[0_30px_70px_rgba(0,0,0,0.4)]"
               style={{ "--rot": "-3deg", transform: "rotate(-3deg)" }}
             >
-              <div className="relative overflow-hidden rounded-[30px] bg-paper px-3 pb-3 pt-4">
-                <div className="mx-auto mb-3 mt-[-6px] h-5 w-[70px] rounded-full bg-[#0B0F0C]" />
-                <div className="flex items-center gap-2">
-                  <KretzMark size={22} />
-                  <span className="font-heading text-[13px] font-extrabold">Kretz</span>
-                  <span className="ml-auto text-ink">
-                    <svg width="18" height="18" viewBox="0 0 24 24" {...stroke}>
-                      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-                      <path d="M13.7 21a2 2 0 0 1-3.4 0" />
-                    </svg>
-                  </span>
-                </div>
-                <div className="mt-3 font-heading text-[16px] font-extrabold">{t("Påmelding", "Sign-up")}</div>
-                {signups.map((s, i) => (
-                  <div
-                    key={s.title}
-                    className={`flex items-center gap-[7px] rounded-xl border border-[#E3ECE0] bg-white p-2 ${i === 0 ? "mt-2" : "mt-1.5"}`}
-                  >
-                    <CalendarGlyph />
-                    <span className="min-w-0 flex-1">
-                      <span className="block overflow-hidden text-ellipsis whitespace-nowrap text-[10.5px] font-bold">{s.title}</span>
-                      <span className="block overflow-hidden text-ellipsis whitespace-nowrap text-[9px] text-[#4C5E50]">{s.when}</span>
-                    </span>
-                    <span
-                      className={`shrink-0 whitespace-nowrap rounded-full px-[7px] py-1 text-[9px] font-bold ${
-                        s.done ? "bg-[#D9F0D6] text-[#1F6B2E]" : "bg-[#EEF2EC] text-[#4C5E50]"
-                      }`}
-                    >
-                      {s.done ? t("Påmeldt", "Signed up") : t("Påmeld", "Sign up")}
-                    </span>
-                  </div>
-                ))}
-                <div className="mt-2.5 grid grid-cols-2 gap-1.5">
-                  {tiles.map((tile) => (
-                    <div
-                      key={tile.label}
-                      className="grid justify-items-center gap-1.5 rounded-[14px] border border-[#E3ECE0] bg-white px-2 py-3 text-ink"
-                    >
-                      {tile.icon}
-                      <span className="text-center text-[10.5px] font-semibold">{tile.label}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 flex justify-around border-t border-[#E3ECE0] pt-2.5 text-[9px] text-[#4C5E50]">
-                  <span className="grid justify-items-center gap-0.5 font-bold text-[#1F6B2E]">
-                    <svg width="18" height="18" viewBox="0 0 24 24" {...stroke}>
-                      <path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z" />
-                    </svg>
-                    {t("Hjem", "Home")}
-                  </span>
-                  <span className="grid justify-items-center gap-0.5">
-                    <CalendarGlyph />
-                    {t("Aktiviteter", "Activities")}
-                  </span>
-                  <span className="grid justify-items-center gap-0.5">
-                    <svg width="18" height="18" viewBox="0 0 24 24" {...stroke}>
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                    {t("Meldinger", "Messages")}
-                  </span>
-                  <span className="grid justify-items-center gap-0.5">
-                    <svg width="18" height="18" viewBox="0 0 24 24" {...stroke}>
-                      <circle cx="5" cy="12" r="1.5" />
-                      <circle cx="12" cy="12" r="1.5" />
-                      <circle cx="19" cy="12" r="1.5" />
-                    </svg>
-                    {t("Mer", "More")}
-                  </span>
-                </div>
-              </div>
+              <img
+                src={appEventShot}
+                alt={t("Kretz-appen: Seriekamp J14 med påmelding og svar", "The Kretz app: league match J14 with sign-up and replies")}
+                className="block h-auto w-full rounded-[30px]"
+              />
             </div>
 
             <div className="kz-hand absolute right-9 top-[22px] -rotate-6 text-center text-[24px] leading-[1.1] text-[#1F6B2E] max-[980px]:hidden">

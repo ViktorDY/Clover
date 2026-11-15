@@ -29,6 +29,14 @@ const INFO_PAGES = {
   "/nytt": lazy(() => import("./pages/info/NyttPage")),
 };
 
+// Info pages load lazily, so their [data-reveal] sections are not in the DOM
+// when Routes arms the scroll reveal. This sits inside the same Suspense
+// boundary, so it mounts (and re-arms the reveal) once the page has rendered.
+function RevealOnMount({ routeKey }) {
+  useReveal(routeKey);
+  return null;
+}
+
 export default function App() {
   return (
     <LangProvider>
@@ -121,6 +129,7 @@ function Routes() {
       {InfoPage ? (
         <Suspense fallback={<div className="min-h-screen bg-paper" />}>
           <InfoPage {...pageProps} params={params} />
+          <RevealOnMount routeKey={path} />
         </Suspense>
       ) : (
         <LandingPage {...pageProps} scrollTo={params.til} />

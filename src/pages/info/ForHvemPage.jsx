@@ -4,6 +4,8 @@ import Hv from "../../components/Hv";
 import { designHref } from "../../lib/routes";
 import { useLang } from "../../lib/langContext";
 import { sx } from "../../lib/sx";
+import shotStyret from "../../assets/design/kretz-shot-styret.png";
+import shotDashboard from "../../assets/design/kretz-shot-dashboard.png";
 import "../../styles/subpage.css";
 import "../../styles/pages/for-hvem.css";
 
@@ -521,30 +523,22 @@ export default function ForHvemPage({ onOpenLogin, onOpenSignup, onOpenBooking }
               </Hv>
             </div>
           </div>
-          {/*
-            The design shows two product screenshots here
-            (assets/kretz-shot-styret.png, assets/kretz-shot-dashboard.png).
-            They are not in the repo yet, so neutral placeholders of the same
-            size and position stand in for them.
-          */}
           <div data-kz-hidetab style={{ position: "relative", minHeight: 480 }}>
-            <div
-              role="img"
-              aria-label={t("Kretz: styret med neste styremøte, styremøter og vedtak", "Kretz: the board with the next meeting, meetings and decisions")}
-              className="kzh-shot"
+            <img
+              src={shotStyret}
+              alt={t("Kretz: styret med neste styremøte, styremøter og vedtak", "Kretz: the board with the next meeting, meetings and decisions")}
               style={sx(
-                "position: absolute; left: 0; bottom: -40px; width: 108%; aspect-ratio: 16 / 10; border-radius: 16px 16px 0 0; box-shadow: 0 24px 60px rgba(22,36,26,.22); border: 1px solid rgba(22,36,26,.08)",
+                "position: absolute; left: 0; bottom: -40px; width: 108%; max-width: none; height: auto; border-radius: 16px 16px 0 0; box-shadow: 0 24px 60px rgba(22,36,26,.22); border: 1px solid rgba(22,36,26,.08)",
               )}
             />
-            <div
-              role="img"
-              aria-label={t(
+            <img
+              src={shotDashboard}
+              alt={t(
                 "Kretz: oversikt for administrator med nøkkeltall og planlegger",
                 "Kretz: administrator overview with key figures and planner",
               )}
-              className="kzh-shot"
               style={sx(
-                "position: absolute; left: 24%; bottom: -16px; width: 140%; aspect-ratio: 16 / 10; border-radius: 16px 0 0 0; box-shadow: 0 30px 70px rgba(22,36,26,.28); border: 1px solid rgba(22,36,26,.08)",
+                "position: absolute; left: 24%; bottom: -16px; width: 140%; max-width: none; height: auto; border-radius: 16px 0 0 0; box-shadow: 0 30px 70px rgba(22,36,26,.28); border: 1px solid rgba(22,36,26,.08)",
               )}
             />
           </div>

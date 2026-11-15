@@ -13,15 +13,16 @@ import logoUniMicro from "../../assets/design/logo-unimicro.svg";
 import logoVipps from "../../assets/design/logo-vipps.svg";
 import logoNif from "../../assets/design/logo-nif.svg";
 import logoMs365 from "../../assets/design/logo-ms365.svg";
+import { sx } from "../../lib/sx";
+import logoBrreg from "../../assets/design/logo-brreg.png";
+import logoAltinn from "../../assets/design/logo-altinn.png";
+import shotStyret from "../../assets/design/kretz-shot-styret.png";
+import shotDashboard from "../../assets/design/kretz-shot-dashboard.png";
 import "../../styles/subpage.css";
 import "../../styles/pages/integrasjoner.css";
 
 /*
   Port of "Kretz Integrasjoner.dc.html".
-
-  logo-brreg.png, logo-altinn.png, kretz-shot-styret.png and
-  kretz-shot-dashboard.png from the design are not in the repo yet; neutral
-  placeholders of the same size stand in for them (see LogoImg / ShotSlot).
 */
 
 const H2 = {
@@ -40,8 +41,8 @@ const INTS = [
   ["Vipps", logoVipps, 56, 28, "pay", "Medlemmene betaler kontingent, halleie og cup-påmelding med Vipps.", "Members pay fees, hall rental and tournament sign-ups with Vipps."],
   ["NIF · Min idrett", logoNif, 40, 40, "sport", "Medlemstall og samordnet rapportering i takt med idrettens egne systemer.", "Membership numbers and coordinated reporting in step with the sports federation's own systems."],
   ["Microsoft 365", logoMs365, 40, 40, "office", "Kalender og e-post i sync med aktiviteter, kamper og styremøter.", "Calendar and email in sync with activities, matches and board meetings."],
-  ["Brønnøysundregistrene", null, 40, 40, "public", "Hent klubbens opplysninger og meld inn nytt styre etter årsmøtet.", "Fetch the club's details and register the new board after the annual meeting."],
-  ["Altinn", null, 40, 40, "public", "Send og hent oppgaver for klubben, som a-melding og AR-oppgave.", "Send and fetch returns for the club, such as the a-melding and annual return."],
+  ["Brønnøysundregistrene", logoBrreg, 40, 40, "public", "Hent klubbens opplysninger og meld inn nytt styre etter årsmøtet.", "Fetch the club's details and register the new board after the annual meeting."],
+  ["Altinn", logoAltinn, 40, 40, "public", "Send og hent oppgaver for klubben, som a-melding og AR-oppgave.", "Send and fetch returns for the club, such as the a-melding and annual return."],
 ];
 
 const CATS = [
@@ -86,71 +87,18 @@ const QUOTES = [
   ],
 ];
 
-/* A logo, or a neutral placeholder of the same box when the asset is missing. */
-function LogoImg({ src, name, w, h, alt }) {
-  if (src) return <img src={src} alt={alt} style={{ width: w, height: h, objectFit: "contain" }} />;
-  const initials = name === "Altinn" ? "A" : "BR";
-  return (
-    <span
-      role={alt ? "img" : undefined}
-      aria-label={alt || undefined}
-      aria-hidden={alt ? undefined : true}
-      title={name}
-      style={{
-        width: w,
-        height: h,
-        borderRadius: 10,
-        background: "#e6ece4",
-        color: "#4C5E50",
-        display: "grid",
-        placeItems: "center",
-        fontFamily: "var(--font-heading)",
-        fontWeight: 800,
-        fontSize: 13,
-        letterSpacing: ".02em",
-      }}
-    >
-      {initials}
-    </span>
-  );
+function LogoImg({ src, w, h, alt }) {
+  return <img src={src} alt={alt} style={{ width: w, height: h, objectFit: "contain" }} />;
 }
 
 function LogoTile({ it, decorative }) {
   return (
     <div className="kz-int-tile">
-      <LogoImg src={it[1]} name={it[0]} w={it[2]} h={it[3]} alt={decorative ? "" : it[0]} />
+      <LogoImg src={it[1]} w={it[2]} h={it[3]} alt={decorative ? "" : it[0]} />
     </div>
   );
 }
 
-/* Placeholder for the product screenshots used in the closing CTA. */
-function ShotSlot({ label, style }) {
-  return (
-    <div role="img" aria-label={label} className="kz-int-shot" style={style}>
-      <div style={{ display: "flex", gap: 6, padding: "12px 14px", borderBottom: "1px solid rgba(22,36,26,.08)" }}>
-        {[0, 1, 2].map((i) => (
-          <span key={i} style={{ width: 8, height: 8, borderRadius: 999, background: "#d5ddd2" }} />
-        ))}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "22% minmax(0,1fr)", gap: 14, padding: 16 }}>
-        <div style={{ display: "grid", gap: 8, alignContent: "start" }}>
-          {[90, 70, 80, 60, 75].map((w, i) => (
-            <span key={i} style={{ height: 8, width: `${w}%`, borderRadius: 999, background: "#e6ece4" }} />
-          ))}
-        </div>
-        <div style={{ display: "grid", gap: 10 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 10 }}>
-            {[0, 1, 2].map((i) => (
-              <span key={i} style={{ height: 54, borderRadius: 12, background: i === 0 ? "#e3f3e7" : "#f1f4ef" }} />
-            ))}
-          </div>
-          <span style={{ height: 120, borderRadius: 12, background: "#f1f4ef" }} />
-          <span style={{ height: 60, borderRadius: 12, background: "#f1f4ef" }} />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function IntegrasjonerPage({ onOpenLogin, onOpenSignup, onOpenBooking }) {
   const { t, isEn, lang } = useLang();
@@ -410,7 +358,7 @@ export default function IntegrasjonerPage({ onOpenLogin, onOpenSignup, onOpenBoo
                       placeItems: "center",
                     }}
                   >
-                    <LogoImg src={it[1]} name={it[0]} w={it[2]} h={it[3]} alt="" />
+                    <LogoImg src={it[1]} w={it[2]} h={it[3]} alt="" />
                   </span>
                   <span
                     style={{
@@ -575,19 +523,25 @@ export default function IntegrasjonerPage({ onOpenLogin, onOpenSignup, onOpenBoo
             </div>
           </div>
           <div data-kz-hidetab style={{ position: "relative", minHeight: 480 }}>
-            <ShotSlot
-              label={t(
+            <img
+              src={shotStyret}
+              alt={t(
                 "Kretz: styret med neste styremøte, styremøter og vedtak",
                 "Kretz: the board with the next board meeting, meetings and resolutions",
               )}
-              style={{ left: 0, bottom: -40, width: "108%", aspectRatio: "16 / 10", borderRadius: "16px 16px 0 0", boxShadow: "0 24px 60px rgba(22,36,26,.22)" }}
+              style={sx(
+                "position: absolute; left: 0; bottom: -40px; width: 108%; max-width: none; height: auto; border-radius: 16px 16px 0 0; box-shadow: 0 24px 60px rgba(22,36,26,.22); border: 1px solid rgba(22,36,26,.08)",
+              )}
             />
-            <ShotSlot
-              label={t(
+            <img
+              src={shotDashboard}
+              alt={t(
                 "Kretz: oversikt for administrator med nøkkeltall og planlegger",
                 "Kretz: administrator overview with key figures and planner",
               )}
-              style={{ left: "24%", bottom: -16, width: "140%", aspectRatio: "16 / 10", borderRadius: "16px 0 0 0", boxShadow: "0 30px 70px rgba(22,36,26,.28)" }}
+              style={sx(
+                "position: absolute; left: 24%; bottom: -16px; width: 140%; max-width: none; height: auto; border-radius: 16px 0 0 0; box-shadow: 0 30px 70px rgba(22,36,26,.28); border: 1px solid rgba(22,36,26,.08)",
+              )}
             />
           </div>
         </div>

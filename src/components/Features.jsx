@@ -9,6 +9,8 @@ import unimicro from "../assets/design/logo-unimicro.svg";
 import nif from "../assets/design/logo-nif.svg";
 import vipps from "../assets/design/logo-vipps.svg";
 import ms365 from "../assets/design/logo-ms365.svg";
+import brreg from "../assets/design/logo-brreg.png";
+import altinn from "../assets/design/logo-altinn.png";
 
 // Counts from 0 to `to` (ease-out, 1.4 s) the first time it scrolls into view.
 function CountUp({ to }) {
@@ -61,16 +63,15 @@ function CountUp({ to }) {
 }
 
 // Logo tiles around the integrations pitch (positions from the design).
-// Brønnøysundregistrene and Altinn have no logo file in the repo yet.
 const TILES = [
   { name: "Tripletex", logo: tripletex, w: 40, h: 40, pos: { left: "13%", top: "7%" }, delay: "0s", rot: "-3deg" },
   { name: "Fiken", logo: fiken, w: 40, h: 40, pos: { left: "3%", top: "31%" }, delay: "1.1s", rot: "2deg" },
   { name: "Uni Micro", logo: unimicro, w: 40, h: 40, pos: { left: "3%", top: "55%" }, delay: ".5s", rot: "-2deg" },
-  { name: "Brønnøysundregistrene", short: "BRG", pos: { left: "13%", top: "78%" }, delay: "1.6s", rot: "3deg" },
+  { name: "Brønnøysundregistrene", logo: brreg, w: 44, h: 44, pos: { left: "13%", top: "78%" }, delay: "1.6s", rot: "3deg" },
   { name: "Vipps", logo: vipps, w: 56, h: 28, pos: { right: "13%", top: "7%" }, delay: ".8s", rot: "3deg" },
   { name: "NIF", logo: nif, w: 40, h: 40, pos: { right: "3%", top: "31%" }, delay: "1.4s", rot: "-2deg" },
   { name: "Microsoft 365", logo: ms365, w: 40, h: 40, pos: { right: "3%", top: "55%" }, delay: ".3s", rot: "2deg" },
-  { name: "Altinn", short: "ALT", pos: { right: "13%", top: "78%" }, delay: "1.9s", rot: "-3deg" },
+  { name: "Altinn", logo: altinn, w: 44, h: 44, pos: { right: "13%", top: "78%" }, delay: "1.9s", rot: "-3deg" },
 ];
 
 const statNumber =

@@ -684,7 +684,7 @@ export class AdminLogic extends LogicBase {
       { id: 'board', label: en ? 'Board' : 'Styret' },
       { menu: 'followup' },
       { id: 'comms', label: en ? 'Communication' : 'Kommunikasjon' },
-      { id: 'docs', label: en ? 'Documents' : 'Dokumenter' },
+      // [design 17 Nov] Dokumenter is no longer in the menu; it is a tab under Styret.
       { id: 'booking', label: 'Booking' },
       { id: 'timetable', label: en ? 'Week plan' : 'Ukeplan' }
     ];

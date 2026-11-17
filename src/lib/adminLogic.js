@@ -4137,7 +4137,8 @@ export class AdminLogic extends LogicBase {
       showClubPicker: false, // [design 17 Nov]
       showBandFilters: tab !== 'invoicing' && tab !== 'timetable' && tab !== 'depts' && tab !== 'profile',
       showMsgBox: false,
-      showDemo: tab === 'members',
+      // The old slide-out "Alder og kjønn" panel is gone; age and gender is a tab in the register now.
+      showDemo: false,
       tDemo: en ? 'Age and gender' : 'Alder og kjønn',
       demoSub: en ? totalMembers + ' members · ' + (all ? 'all clubs' : clubOf(sel)) : totalMembers + ' medlemmer · ' + (all ? 'alle klubber' : clubOf(sel)),
       tGirls: en ? 'Girls / women' : 'Jenter / kvinner',

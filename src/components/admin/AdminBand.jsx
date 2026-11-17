@@ -37,7 +37,7 @@ export default function AdminBand({ v }) {
         data-rsp-pad=""
         style={{ maxWidth: "1160px", margin: "0 auto", padding: "46px 24px 26px" }}
       >
-        {v.showBack ? (
+        {(v.showBandCrumb ?? v.showBack) ? (
           <nav
             aria-label={v.tCrumbLabel}
             style={sx(
@@ -240,38 +240,41 @@ export default function AdminBand({ v }) {
                   {v.tVenReset}
                 </button>
               ) : null}
-              <button
-                type="button"
-                aria-haspopup="true"
-                aria-expanded={v.clubsOpen}
-                onClick={v.toggleClubs}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  padding: "12px 20px",
-                  borderRadius: "999px",
-                  border: "1px solid rgba(22,36,26,.22)",
-                  background: "#ffffff",
-                  color: "#16241a",
-                  fontFamily: "var(--font-heading)",
-                  fontWeight: "800",
-                  fontSize: "14px",
-                  cursor: "pointer",
-                  transition: "background .25s",
-                }}
-                className="kza-h3"
-              >
-                {v.tClubsBtn}
-                <span
-                  aria-hidden="true"
-                  style={sx(
-                    `font-size: 12px; display: inline-block; transition: transform .25s; transform: ${v.clubsArrow ?? ""}`,
-                  )}
+              {/* [design 17 Nov] The design hides the band's clubs button (showClubPicker is false). */}
+              {v.showClubPicker ? (
+                <button
+                  type="button"
+                  aria-haspopup="true"
+                  aria-expanded={v.clubsOpen}
+                  onClick={v.toggleClubs}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "12px 20px",
+                    borderRadius: "999px",
+                    border: "1px solid rgba(22,36,26,.22)",
+                    background: "#ffffff",
+                    color: "#16241a",
+                    fontFamily: "var(--font-heading)",
+                    fontWeight: "800",
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    transition: "background .25s",
+                  }}
+                  className="kza-h3"
                 >
-                  ▾
-                </span>
-              </button>
+                  {v.tClubsBtn}
+                  <span
+                    aria-hidden="true"
+                    style={sx(
+                      `font-size: 12px; display: inline-block; transition: transform .25s; transform: ${v.clubsArrow ?? ""}`,
+                    )}
+                  >
+                    ▾
+                  </span>
+                </button>
+              ) : null}
               {v.clubsOpen ? (
                 <>
                   <div onClick={v.closeClubs} style={{ position: "fixed", inset: "0", zIndex: "30" }} />

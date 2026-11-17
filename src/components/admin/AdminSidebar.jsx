@@ -20,9 +20,13 @@ export default function AdminSidebar({ v }) {
       <div data-kza-head="" style={sx("min-height: 100%; box-sizing: border-box; padding: 22px 16px 16px; display: flex; flex-direction: column; align-items: stretch; gap: 6px")}>
         <div className="kza-logo-row" style={sx("display: flex; align-items: center; justify-content: space-between; gap: 8px")}>
           <button type="button" className="kza-logo" onClick={v.goHome} style={sx("display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: transparent; color: #16241a; font-family: var(--font-heading); font-weight: 800; font-size: 20px; cursor: pointer; text-align: left")}>
-            <img src={markAlpha} alt="Kretz" style={sx("width: 26px; height: 26px")} />
-            <span className="kza-lbl">
-              Kretz
+            <img src={markAlpha} alt="Kretz" style={sx("width: 34px; height: 34px")} />
+            {/* [design 17 Nov] "Admin" badge sits under the wordmark */}
+            <span className="kza-lbl" style={sx("display: inline-flex; flex-direction: column; align-items: center; gap: 3px; line-height: 1")}>
+              <span>Kretz</span>
+              <span style={sx("padding: 3px 8px; border-radius: 999px; background: #1d3a24; color: #a3e2ae; font-family: var(--font-heading); font-weight: 800; font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; line-height: 1.2")}>
+                {v.tAdmin}
+              </span>
             </span>
           </button>
           <button type="button" onClick={v.toggleSide} aria-label={v.tSideToggle} title={v.tSideToggle} aria-expanded={v.sideOpenAttr} style={sx("flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(22,36,26,.14); background: #ffffff; color: #16241a; display: grid; place-items: center; cursor: pointer; padding: 0; transition: background .2s")} className="kza-collapse kza-a1x1">
@@ -33,9 +37,6 @@ export default function AdminSidebar({ v }) {
             </svg>
           </button>
         </div>
-        <span className="kza-lbl" style={sx("align-self: flex-start; margin-top: 4px; padding: 6px 12px; border-radius: 999px; background: #1d3a24; color: #a3e2ae; font-family: var(--font-heading); font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase")}>
-          {v.tAdmin}
-        </span>
         <div data-kza-gap="" style={sx("height: 18px")} />
         <div data-rsp-navlinks="" data-kza-nav="" id="kza-nav" onClick={closeOnPick} style={sx("display: flex; flex-direction: column; align-items: stretch; gap: 2px")}>
           {list(v.navTabs).map((n, i1) => (

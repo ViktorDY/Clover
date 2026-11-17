@@ -1,4 +1,6 @@
+import Hv from "../../Hv";
 import { sx, list } from "../adminRuntime";
+import { FilterCells, TablePager } from "./TableParts";
 import InvoiceAddPanel from "./InvoiceAddPanel";
 import InvoiceDetail from "./InvoiceDetail";
 
@@ -8,15 +10,38 @@ import InvoiceDetail from "./InvoiceDetail";
 export default function InvoicingView({ v }) {
   return (
     <>
-      <div style={sx("border-radius: 26px; background: #ffffff; border: 1px solid rgba(22,36,26,.12); padding: 24px 24px 8px; margin-top: 0")}>
-      <div style={sx("display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 20px; justify-content: space-between")}>
-        <div>
-          <h2 style={sx("font-family: var(--font-heading); font-weight: 800; font-size: 30px; margin: 0; letter-spacing: -.02em")}>
-            {v.tInvoices}
-          </h2>
-          <div style={sx("font-size: 13.5px; color: #1f7a3a; font-weight: 600; margin-top: 4px")}>
-            {v.invCountLabel}
-          </div>
+      {/* [design 17 Nov] compact card: tabs with a ⋯ menu (new request, bulk SMS, export),
+          per-column search row, 40px rows, footer with selection actions and paging. */}
+      <div data-inv-card="" style={sx("border-radius: 26px; background: #ffffff; border: 1px solid rgba(22,36,26,.12); padding: 22px; margin-top: 0")}>
+      <div style={sx("display: flex; align-items: center; gap: 10px")}>
+        <div role="tablist" style={sx("flex: 1; min-width: 0; display: flex; gap: 4px; border-bottom: 1px solid rgba(22,36,26,.1)")}>
+          {list(v.invTabs).map((t, i1) => (
+              <button key={t.key ?? i1} type="button" role="tab" aria-selected={t.on} onClick={t.pick} style={sx(t.style)}>
+                {t.label}
+              </button>
+          ))}
+        </div>
+        <div style={sx("position: relative; flex: none")}>
+          <Hv as="button" type="button" onClick={v.toggleInvMore} aria-haspopup="true" aria-expanded={!!v.invMoreOpen} aria-label={v.tInvMore} title={v.tInvMore} style="width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; border: 1px solid rgba(22,36,26,.16); background: #ffffff; color: #16241a; cursor: pointer; padding: 0; font-size: 18px; line-height: 1" hover="background: #eaf4e7">
+            ⋯
+          </Hv>
+          {v.invMoreOpen ? (
+            <>
+              <div onClick={v.closeInvPops} style={sx("position: fixed; inset: 0; z-index: 30")} />
+              <div style={sx("position: absolute; right: 0; top: calc(100% + 6px); z-index: 31; width: min(300px, 92vw); box-sizing: border-box; border-radius: 16px; background: #ffffff; border: 1px solid rgba(22,36,26,.14); box-shadow: 0 18px 40px rgba(22,36,26,.2); padding: 6px; display: grid; gap: 2px")}>
+                <Hv as="button" type="button" onClick={v.openInvAdd} style="display: block; width: 100%; text-align: left; padding: 10px 12px; border-radius: 10px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-body); font-size: 14px; color: #16241a" hover="background: #eaf4e7">
+                  + {v.tInvAdd}
+                </Hv>
+                <Hv as="button" type="button" onClick={v.sendBulkSms} style="text-align: left; padding: 10px 12px; border-radius: 10px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-body); color: #16241a" hover="background: #eaf4e7">
+                  <span style={sx("display: block; font-size: 14px; color: #16241a")}>{v.tBulkSms}</span>
+                  <span style={sx("display: block; font-size: 12.5px; color: rgba(22,36,26,.7); margin-top: 3px")}>{v.bulkSmsNote}</span>
+                </Hv>
+                <Hv as="button" type="button" onClick={v.exportInvoices} style="text-align: left; padding: 10px 12px; border-radius: 10px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-body); font-size: 14px; color: #16241a" hover="background: #eaf7ed">
+                  {v.tInvExport}
+                </Hv>
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
       {v.invSent ? (
@@ -24,170 +49,54 @@ export default function InvoicingView({ v }) {
           {v.invSentText}
         </div>
       ) : null}
-      <div role="tablist" style={sx("display: flex; flex-wrap: wrap; gap: 0 36px; margin: 18px -24px 0; padding: 0 24px; border-top: 1px solid rgba(22,36,26,.1)")}>
-        {list(v.invTabs).map((t, i1) => (
-            <button key={t.key ?? i1} type="button" role="tab" aria-selected={t.on} onClick={t.pick} style={sx(t.style)}>
-              {t.label}
-            </button>
-        ))}
-      </div>
-      {v.invSelBar ? (
-        <div style={sx("display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 0 -24px; padding: 10px 24px; background: #eaf7ed; border-top: 1px solid rgba(116,205,133,.5)")}>
-          <span style={sx("font-size: 14px; font-weight: 600")}>
-            {v.invSelText}
-          </span>
-          <button type="button" onClick={v.invArchiveSel} style={sx("padding: 8px 18px; border-radius: 999px; border: 0; background: #16241a; color: #f6f8f3; font-family: var(--font-heading); font-weight: 800; font-size: 13px; cursor: pointer")} className="kza-hf">
-            {v.invArchiveLabel}
-          </button>
-          <button type="button" onClick={v.invClearSel} style={sx("padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(22,36,26,.2); background: #ffffff; color: #16241a; font-family: var(--font-heading); font-weight: 800; font-size: 13px; cursor: pointer")}>
-            {v.tCancelL}
-          </button>
-        </div>
-      ) : null}
-      <div data-kza-invbar="" style={sx("position: relative; margin: 14px 0 16px; display: flex; flex-wrap: nowrap; align-items: center; gap: 10px")}>
-        <div style={sx("position: relative")}>
-          <button type="button" onClick={v.toggleInvMore} aria-expanded={v.invMoreOpen} style={sx("display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 999px; border: 0; background: #7c4dcf; color: #ffffff; font-family: var(--font-heading); font-weight: 800; font-size: 13.5px; cursor: pointer; transition: background .3s")} className="kza-hz">
-            <span aria-hidden="true" style={sx("font-size: 16px; line-height: .6")}>
-              ⋮
-            </span>
-            {" "}{v.tInvMore}
-          </button>
-          {v.invMoreOpen ? (
-            <>
-              <div onClick={v.closeInvPops} style={sx("position: fixed; inset: 0; z-index: 30")} />
-              <div style={sx("position: absolute; left: 0; top: calc(100% + 8px); z-index: 31; width: min(340px, 92vw); box-sizing: border-box; border-radius: 20px; background: #ffffff; border: 1px solid rgba(22,36,26,.14); box-shadow: 0 20px 50px rgba(22,36,26,.18); padding: 8px; display: grid; gap: 2px")}>
-              <button type="button" onClick={v.sendBulkSms} style={sx("text-align: left; padding: 12px 14px; border-radius: 14px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-body); color: #16241a")} className="kza-h10">
-                <span style={sx("display: block; font-family: var(--font-heading); font-weight: 800; font-size: 14px; color: #5a2fa3")}>
-                  {v.tBulkSms}
-                </span>
-                <span style={sx("display: block; font-size: 12.5px; color: rgba(22,36,26,.7); margin-top: 3px")}>
-                  {v.bulkSmsNote}
-                </span>
-              </button>
-              <button type="button" onClick={v.exportInvoices} style={sx("text-align: left; padding: 12px 14px; border-radius: 14px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 14px; color: #16241a")} className="kza-h3">
-                {v.tInvExport}
-              </button>
-            </div>
-            </>
-          ) : null}
-        </div>
-        <label style={sx("position: relative; display: block; width: 240px; flex: 0 1 240px; min-width: 150px")}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(22,36,26,.55)" strokeWidth="2" strokeLinecap="round" aria-hidden="true" style={sx("position: absolute; left: 16px; top: 50%; transform: translateY(-50%)")}>
-            <circle cx="11" cy="11" r="7" />
-            <path d="M21 21l-4.3-4.3" />
-          </svg>
-          <input type="search" value={v.invQ ?? ""} onChange={v.onInvQ} placeholder={v.tInvSearch} aria-label={v.tInvSearch} style={sx("width: 100%; box-sizing: border-box; padding: 12px 18px 12px 42px; border-radius: 999px; border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a; font-family: var(--font-body); font-size: 14px; outline: none")} className="kza-fp" />
-        </label>
-        <button type="button" onClick={v.toggleInvFilter} aria-expanded={v.invFilterOpen} style={sx("display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 999px; border: 1px solid rgba(22,36,26,.2); background: #ffffff; color: #16241a; font-family: var(--font-heading); font-weight: 800; font-size: 13.5px; cursor: pointer")} className="kza-h3">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M3 4h18l-7 8.5V20l-4-2v-5.5z" />
-          </svg>
-          {v.tInvFilter}{" "}
-          <span aria-hidden="true" style={sx("font-size: 10px")}>
-            ▾
-          </span>
-        </button>
-        <button type="button" onClick={v.openInvAdd} style={sx("display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 999px; border: 0; background: #16241a; color: #f6f8f3; font-family: var(--font-heading); font-weight: 800; font-size: 13.5px; cursor: pointer; transition: background .3s")} className="kza-hf">
-          <span aria-hidden="true" style={sx("font-size: 16px; line-height: 1")}>
-            +
-          </span>
-          {" "}{v.tInvAdd}
-        </button>
-        {v.invFilterOpen ? (
-          <>
-            <div onClick={v.closeInvPops} style={sx("position: fixed; inset: 0; z-index: 30")} />
-            <div style={sx("position: absolute; right: 0; top: calc(100% + 8px); z-index: 31; width: min(420px, 92vw); box-sizing: border-box; border-radius: 20px; background: #ffffff; border: 1px solid rgba(22,36,26,.14); box-shadow: 0 20px 50px rgba(22,36,26,.18); padding: 18px; display: grid; gap: 14px")}>
-            <div style={sx("display: grid; gap: 8px")}>
-              <span style={sx("font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: rgba(22,36,26,.7)")}>
-                {v.tStatus}
-              </span>
-              <div style={sx("display: flex; flex-wrap: wrap; gap: 8px")}>
-                {list(v.invStatusTabs).map((c, i1) => (
-                    <button key={c.key ?? i1} type="button" onClick={c.pick} style={sx(c.style)}>
-                      {c.label}
-                    </button>
-                ))}
-              </div>
-            </div>
+      <div data-inv-tbl="" style={sx("overflow-x: auto; margin-top: 10px")}>
+        <div data-inv-minw="" style={sx("min-width: 960px")}>
+          <div style={sx(`display: grid; grid-template-columns: ${v.invCols ?? ""}; gap: 12px; align-items: center; padding: 10px 14px; background: #eaf4e7; border-top: 1px solid rgba(22,36,26,.1); border-bottom: 1px solid rgba(22,36,26,.1); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(22,36,26,.72)`)}>
+            <input type="checkbox" checked={!!v.invAllOn} onChange={v.invToggleAll} aria-label={v.tInvSelAll} style={sx("width: 16px; height: 16px; margin: 0; accent-color: #1f7a3a; cursor: pointer")} />
+            <span>ID</span>
+            <span>{v.tColType}</span>
+            <span>{v.tColNumber}</span>
+            <span>{v.tColIssued}</span>
+            <span>{v.tColName}</span>
+            <span>{v.tColAmount}</span>
+            <span>{v.tColStatus}</span>
+            <span style={sx("text-align: right")}>{v.tColDetails}</span>
           </div>
-          </>
-        ) : null}
-      </div>
-      <div style={sx("margin: 0 -24px; overflow-x: auto")}>
-        <div style={sx("min-width: 1020px")}>
-          <div style={sx(`display: grid; grid-template-columns: ${v.invCols ?? ""}; gap: 12px; padding: 14px 24px; background: #eaf4e7; border-top: 1px solid rgba(22,36,26,.1); border-bottom: 1px solid rgba(22,36,26,.1); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: rgba(22,36,26,.7)`)}>
-            <span>
-              <input type="checkbox" checked={!!v.invAllOn} onChange={v.invToggleAll} aria-label={v.tInvSelAll} style={sx("width: 18px; height: 18px; accent-color: #1f7a3a; cursor: pointer; margin: 0")} />
-            </span>
-            <span>
-              ID
-            </span>
-            <span>
-              {v.tColType}
-            </span>
-            <span>
-              {v.tColNumber}
-            </span>
-            <span>
-              {v.tColIssued}
-            </span>
-            <span>
-              {v.tColName}
-            </span>
-            <span>
-              {v.tColAmount}
-            </span>
-            <span>
-              {v.tColStatus}
-            </span>
-            <span>
-              {v.tColDetails}
-            </span>
+          <div style={sx(`display: grid; grid-template-columns: ${v.invCols ?? ""}; gap: 12px; align-items: center; padding: 6px 14px; background: #f6f8f3; border-bottom: 1px solid rgba(22,36,26,.1)`)}>
+            <span />
+            <FilterCells cells={v.invFilterCells} />
+            <span />
           </div>
-          <div style={sx("max-height: max(420px, calc(100vh - 430px)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin")}>
+          <div data-inv-rows="" style={sx("max-height: max(400px, calc(100vh - 380px)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin")}>
             {list(v.invRows).map((r, i1) => (
-                <div key={r.key ?? i1} style={sx(`display: grid; grid-template-columns: ${v.invCols ?? ""}; gap: 12px; align-items: center; padding: 0 24px; height: 54px; border-bottom: 1px solid rgba(22,36,26,.08); font-size: 13.5px; transition: background .2s; cursor: pointer; background: ${r.rowBg ?? ""}`)} onClick={r.openStats} className="kza-a1x11">
+                <div key={r.key ?? i1} style={sx(`display: grid; grid-template-columns: ${v.invCols ?? ""}; gap: 12px; align-items: center; padding: 0 14px; height: 40px; box-sizing: border-box; border-bottom: 1px solid rgba(22,36,26,.07); font-size: 13.5px; transition: background .2s; cursor: pointer; background: ${r.rowBg ?? ""}`)} onClick={r.openStats} className="kza-a1x11">
                   <span onClick={v.stopClick} style={sx("display: grid")}>
-                    <input type="checkbox" checked={!!r.sel} onChange={r.toggleSel} aria-label={r.id} style={sx("width: 18px; height: 18px; accent-color: #1f7a3a; cursor: pointer; margin: 0")} />
+                    <input type="checkbox" checked={!!r.sel} onChange={r.toggleSel} aria-label={r.id} style={sx("width: 16px; height: 16px; accent-color: #1f7a3a; cursor: pointer; margin: 0")} />
                   </span>
-                  <span style={sx("color: rgba(22,36,26,.8)")}>
-                    {r.id}
-                  </span>
-                  <span style={sx("overflow: hidden; text-overflow: ellipsis; white-space: nowrap")}>
-                    {r.type}
-                  </span>
-                  <span style={sx("color: rgba(22,36,26,.8)")}>
-                    {r.number}
-                  </span>
-                  <span style={sx("color: rgba(22,36,26,.8)")}>
-                    {r.date}
-                  </span>
-                  <span style={sx("overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500")}>
-                    {r.name}
-                  </span>
-                  <span style={sx("font-weight: 500")}>
-                    {r.amount}
-                  </span>
+                  <span style={sx("color: rgba(22,36,26,.8)")}>{r.id}</span>
+                  <span style={sx("overflow: hidden; text-overflow: ellipsis; white-space: nowrap")}>{r.type}</span>
+                  <span style={sx("color: rgba(22,36,26,.8)")}>{r.number}</span>
+                  <span style={sx("color: rgba(22,36,26,.8)")}>{r.date}</span>
+                  <span style={sx("overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500")}>{r.name}</span>
+                  <span style={sx("font-weight: 500")}>{r.amount}</span>
                   <span>
-                    <span style={sx(r.statusStyle)}>
-                      {r.statusLabel}
-                    </span>
+                    <span style={sx(r.statusStyle)}>{r.statusLabel}</span>
                   </span>
-                  <span onClick={v.stopClick} style={sx("display: flex; gap: 6px")}>
-                    <button type="button" onClick={r.view} aria-label={v.tView} title={v.tView} style={sx("width: 38px; height: 28px; border-radius: 999px; border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a; display: grid; place-items: center; cursor: pointer; transition: background .2s, color .2s")} className="kza-h3">
+                  <span onClick={v.stopClick} style={sx("display: flex; gap: 4px; justify-content: flex-end")}>
+                    <button type="button" onClick={r.view} aria-label={v.tView} title={v.tView} style={sx("width: 30px; height: 26px; border-radius: 999px; border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a; display: grid; place-items: center; cursor: pointer; transition: background .2s, color .2s")} className="kza-h3">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
                         <circle cx="12" cy="12" r="3" />
                       </svg>
                     </button>
-                    <button type="button" onClick={r.arch} aria-label={v.tArchiveRow} title={v.tArchiveRow} style={sx("width: 38px; height: 28px; border-radius: 999px; border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a; display: grid; place-items: center; cursor: pointer; transition: background .2s, color .2s")} className="kza-h3">
+                    <button type="button" onClick={r.arch} aria-label={v.tArchiveRow} title={v.tArchiveRow} style={sx("width: 30px; height: 26px; border-radius: 999px; border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a; display: grid; place-items: center; cursor: pointer; transition: background .2s, color .2s")} className="kza-h3">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <rect x="2" y="3" width="20" height="5" rx="1" />
                         <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
                         <path d="M10 12h4" />
                       </svg>
                     </button>
-                    <button type="button" onClick={r.del} aria-label={v.tDelete} title={v.tDelete} style={sx("width: 38px; height: 28px; border-radius: 999px; border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a; display: grid; place-items: center; cursor: pointer; transition: background .2s, color .2s")} className="kza-h3">
+                    <button type="button" onClick={r.del} aria-label={v.tDelete} title={v.tDelete} style={sx("width: 30px; height: 26px; border-radius: 999px; border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a; display: grid; place-items: center; cursor: pointer; transition: background .2s, color .2s")} className="kza-h3">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M3 6h18" />
                         <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
@@ -199,12 +108,30 @@ export default function InvoicingView({ v }) {
                 </div>
             ))}
             {v.invEmpty ? (
-              <div style={sx("padding: 22px 24px; font-size: 14px; color: rgba(22,36,26,.72)")}>
+              <div style={sx("padding: 30px 14px; text-align: center; font-size: 14px; color: rgba(22,36,26,.65)")}>
                 {v.tInvEmpty}
               </div>
             ) : null}
           </div>
         </div>
+      </div>
+      <div data-inv-foot="" style={sx("display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 14px; border-top: 1px solid rgba(22,36,26,.1); font-size: 13.5px; color: #16241a")}>
+        <span style={sx("font-weight: 600")}>{v.invSelText}</span>
+        {v.invSelBar ? (
+          <>
+            <Hv as="button" type="button" onClick={v.invArchiveSel} style="padding: 5px 12px; border-radius: 999px; border: 0; background: #16241a; color: #f6f8f3; font-family: var(--font-body); font-weight: 700; font-size: 12.5px; cursor: pointer" hover="background: #1f7a3a">
+              {v.invArchiveLabel}
+            </Hv>
+            <button type="button" onClick={v.invClearSel} style={sx("padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(22,36,26,.22); background: #ffffff; color: #16241a; font-family: var(--font-body); font-weight: 700; font-size: 12.5px; cursor: pointer")}>
+              {v.tCancelL}
+            </button>
+          </>
+        ) : null}
+        <Hv as="button" type="button" onClick={v.openInvAdd} style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 8px; border: 0; background: transparent; color: #16241a; font-family: var(--font-body); font-size: 13.5px; cursor: pointer" hover="background: #eaf4e7">
+          + {v.tNewShort}
+        </Hv>
+        <span style={sx("flex: 1")} />
+        <TablePager v={v} p="inv" total={v.invTotal} onPer={v.onInvPer} label={v.tTblPer} />
       </div>
     </div>
       {v.segPickOpen ? (

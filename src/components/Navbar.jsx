@@ -37,6 +37,8 @@ const FEATURES = [
     to: "Kretz Aktiviteter.dc.html",
     no: ["Aktiviteter og påmelding", "Kalender, oppmøte og dugnad"],
     en: ["Activities and sign-ups", "Calendar, attendance and dugnad"],
+    // The design's mobile menu words a few English labels differently.
+    mEn: "Activities and sign-up",
   },
   {
     to: "Kretz Hallbooking.dc.html",
@@ -47,6 +49,7 @@ const FEATURES = [
     to: "Kretz Okonomi.dc.html",
     no: ["Økonomi og rapport", "Budsjett, regnskapseksport og støtte"],
     en: ["Finance and reporting", "Budget, accounting export and grants"],
+    mEn: "Finance and reports",
   },
   {
     to: "Kretz Roller.dc.html",
@@ -198,7 +201,7 @@ export default function Navbar({ onOpenLogin, onOpenSignup, onOpenBooking, onLan
             <div className="kz-mnav-grid">
               {FEATURES.map((f) => (
                 <SiteLink key={f.to} to={f.to} onLanding={onLanding}>
-                  {label(f)[0]}
+                  {isEn ? f.mEn || f.en[0] : f.no[0]}
                 </SiteLink>
               ))}
             </div>

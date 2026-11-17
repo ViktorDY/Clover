@@ -396,17 +396,15 @@ export default function BoardView({ v }) {
         </>
       ) : null}
       {v.bdShowCal ? (
-        <div style={sx("display: grid; gap: 16px")}>
-          <div style={sx("display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px")}>
+        <div data-bd-cal="" style={sx("display: flex; flex-direction: column; gap: 8px")}>
+          {/* [design 17 Nov] compact calendar head */}
+          <div data-bd-calhead="" style={sx("display: flex; flex-wrap: wrap; align-items: center; gap: 8px")}>
             <div style={sx("flex: 1; min-width: 220px")}>
-              <h2 style={sx("margin: 0; font-family: var(--font-heading); font-weight: 800; font-size: 30px; letter-spacing: -.02em; color: #16241a")}>
-                {v.tBdCal}
-              </h2>
-              <div style={sx("margin-top: 4px; font-size: 14px; color: rgba(22,36,26,.62)")}>
+              <div style={sx("font-size: 14.5px; font-weight: 600; color: #16241a")}>
                 {v.bdQLabel}
               </div>
             </div>
-            <button type="button" onClick={v.bdQPrev} aria-label={v.tBdPrevQ} style={sx("width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(22,36,26,.16); background: #ffffff; color: #16241a; cursor: pointer; display: grid; place-items: center")} className="kza-h6">
+            <button type="button" onClick={v.bdQPrev} aria-label={v.tBdPrevQ} style={sx("width: 32px; height: 32px; border-radius: 10px; border: 1px solid rgba(22,36,26,.16); background: #ffffff; color: #16241a; cursor: pointer; display: grid; place-items: center")} className="kza-h6">
               <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -414,15 +412,15 @@ export default function BoardView({ v }) {
             <button type="button" onClick={v.bdQNow} style={sx(v.bdQNowStyle)}>
               {v.tBdThisQ}
             </button>
-            <button type="button" onClick={v.bdQNext} aria-label={v.tBdNextQ} style={sx("width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(22,36,26,.16); background: #ffffff; color: #16241a; cursor: pointer; display: grid; place-items: center")} className="kza-h6">
+            <button type="button" onClick={v.bdQNext} aria-label={v.tBdNextQ} style={sx("width: 32px; height: 32px; border-radius: 10px; border: 1px solid rgba(22,36,26,.16); background: #ffffff; color: #16241a; cursor: pointer; display: grid; place-items: center")} className="kza-h6">
               <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
           </div>
-          <div data-rsp="stack" style={sx("display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(260px, 1.25fr); gap: 14px; align-items: stretch")}>
+          <div data-rsp="stack" data-bd-calgrid="" style={sx("display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(260px, 1.25fr); gap: 10px; align-items: stretch")}>
             {list(v.bdMonths).map((mo, i1) => (
-                <div key={mo.key ?? i1} style={sx("min-height: max(280px, calc(100vh - 420px)); border-radius: 20px; background: #ffffff; border: 1px solid rgba(22,36,26,.12); padding: 16px 14px; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box")}>
+                <div key={mo.key ?? i1} style={sx("min-height: 280px; border-radius: 20px; background: #ffffff; border: 1px solid rgba(22,36,26,.12); padding: 12px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box")}>
                   <b style={sx("font-family: var(--font-heading); font-weight: 800; font-size: 16px")}>
                     {mo.name}
                   </b>
@@ -447,7 +445,7 @@ export default function BoardView({ v }) {
                   ) : null}
                 </div>
             ))}
-            <div style={sx("border-radius: 20px; background: #f4f8f2; border: 1px solid rgba(116,205,133,.45); padding: 18px; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box")}>
+            <div style={sx("border-radius: 20px; background: #f4f8f2; border: 1px solid rgba(116,205,133,.45); padding: 14px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box")}>
               <b style={sx("display: flex; align-items: center; gap: 8px; font-family: var(--font-heading); font-weight: 800; font-size: 16px")}>
                 <span aria-hidden="true">
                   ✨
@@ -457,7 +455,7 @@ export default function BoardView({ v }) {
               <div style={sx("font-size: 13px; color: rgba(22,36,26,.65); line-height: 1.45")}>
                 {v.tBdPlanSub}
               </div>
-              <div style={sx("display: grid; gap: 7px; margin-top: 4px")}>
+              <div style={sx("display: grid; gap: 5px; margin-top: 2px")}>
                 {list(v.bdPlan).map((pl, i1) => (
                     <div key={pl.key ?? i1} style={sx("display: flex; align-items: center; gap: 10px; font-size: 14px")}>
                       <span aria-hidden="true" style={sx("flex: 0 0 auto; width: 26px; height: 26px; border-radius: 8px; background: #ffffff; border: 1px solid rgba(116,205,133,.45); display: grid; place-items: center; font-size: 13px")}>

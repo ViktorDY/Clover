@@ -1,5 +1,6 @@
 import Hv from "../../Hv";
 import { sx, list } from "../adminRuntime";
+import { FilterCells, TablePager } from "./TableParts";
 
 // Økonomi › Leverandørfakturaer: table with selection, sorting, filters,
 // export menu and a preview button per row (opens the PDF preview modal).
@@ -15,113 +16,63 @@ const SORT = (
   </span>
 );
 const SORT_BTN = sx("display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer");
-const POP_ITEM =
-  "text-align: left; padding: 12px 14px; border-radius: 14px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 14px; color: #16241a";
 const stop = (e) => e.stopPropagation();
+
+// [design 17 Nov] compact table: tab header with a ⋯ menu, per-column search
+// row, 40px rows and a footer with selection count, sum and pagination.
+const MENU_ITEM =
+  "display: block; width: 100%; text-align: left; padding: 10px 12px; border-radius: 10px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-body); font-size: 14px; color: #16241a";
 
 export default function SupplierView({ v }) {
   return (
-    <div style={sx("border-radius: 26px; background: #ffffff; border: 1px solid rgba(22,36,26,.12); padding: 24px 24px 8px; min-width: 0; max-width: 100%; box-sizing: border-box")}>
-      <div style={sx("display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 20px; justify-content: space-between")}>
-        <div>
-          <h2 style={sx("font-family: var(--font-heading); font-weight: 800; font-size: 30px; margin: 0; letter-spacing: -.02em")}>{v.tSvTitle}</h2>
-          <div style={sx("font-size: 13.5px; color: #1f7a3a; font-weight: 600; margin-top: 4px")}>{v.svCountLabel}</div>
+    <div data-sv-card="" style={sx("border-radius: 26px; background: #ffffff; border: 1px solid rgba(22,36,26,.12); padding: 22px; min-width: 0; max-width: 100%; box-sizing: border-box")}>
+      <div style={sx("display: flex; align-items: center; gap: 10px")}>
+        <div style={sx("flex: 1; min-width: 0; display: flex; gap: 4px; border-bottom: 1px solid rgba(22,36,26,.1)")}>
+          <span style={sx("padding: 8px 14px; margin-bottom: -1px; border-radius: 8px 8px 0 0; font-size: 14px; font-weight: 600; color: #16241a; background: #eaf7ed; box-shadow: inset 0 -3px 0 #16241a")}>
+            {v.tSvTitle} ({v.svCount})
+          </span>
         </div>
-        <div data-kza-invbar="" style={sx("position: relative; display: flex; flex-wrap: nowrap; align-items: center; gap: 10px")}>
-          <div style={{ position: "relative" }}>
-            <Hv
-              as="button"
-              type="button"
-              onClick={v.svToggleExp}
-              aria-expanded={!!v.svExpOpen}
-              style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 999px; border: 0; background: #7c4dcf; color: #ffffff; font-family: var(--font-heading); font-weight: 800; font-size: 13.5px; cursor: pointer; transition: background .3s"
-              hover="background: #5a2fa3"
-            >
-              <span aria-hidden="true" style={sx("font-size: 16px; line-height: .6")}>⋮</span> {v.tSvMore}
-            </Hv>
-            {v.svExpOpen ? (
-              <>
-                <div onClick={v.svClosePops} style={sx("position: fixed; inset: 0; z-index: 30")} />
-                <div style={sx("position: absolute; left: 0; top: calc(100% + 8px); z-index: 31; width: min(300px, 92vw); box-sizing: border-box; border-radius: 20px; background: #ffffff; border: 1px solid rgba(22,36,26,.14); box-shadow: 0 20px 50px rgba(22,36,26,.18); padding: 8px; display: grid; gap: 2px")}>
-                  <Hv as="button" type="button" onClick={v.svExportCsv} style={POP_ITEM} hover="background: #eaf7ed">
-                    {v.tSvExportCsv}
-                  </Hv>
-                  <Hv as="button" type="button" onClick={v.svExportPrint} style={POP_ITEM} hover="background: #eaf7ed">
-                    {v.tSvExportPdf}
-                  </Hv>
-                </div>
-              </>
-            ) : null}
-          </div>
-          <label style={sx("position: relative; display: block; width: 240px; flex: 0 1 240px; min-width: 150px")}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(22,36,26,.55)" strokeWidth="2" strokeLinecap="round" aria-hidden="true" style={sx("position: absolute; left: 16px; top: 50%; transform: translateY(-50%)")}>
-              <circle cx="11" cy="11" r="7" />
-              <path d="M21 21l-4.3-4.3" />
-            </svg>
-            <input
-              type="search"
-              value={v.svQ ?? ""}
-              onChange={v.onSvQ}
-              placeholder={v.tSvSearch}
-              aria-label={v.tSvSearch}
-              className="kza-fp"
-              style={sx("width: 100%; box-sizing: border-box; padding: 12px 18px 12px 42px; border-radius: 999px; border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a; font-family: var(--font-body); font-size: 14px; outline: none")}
-            />
-          </label>
-          <div style={{ position: "relative" }}>
-            <Hv
-              as="button"
-              type="button"
-              onClick={v.svToggleFilt}
-              aria-expanded={!!v.svFiltOpen}
-              style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 999px; border: 1px solid rgba(22,36,26,.2); background: #ffffff; color: #16241a; font-family: var(--font-heading); font-weight: 800; font-size: 13.5px; cursor: pointer"
-              hover="background: #eaf7ed"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M3 4h18l-7 8.5V20l-4-2v-5.5z" />
-              </svg>
-              {v.tSvFilter} <span aria-hidden="true" style={{ fontSize: "10px" }}>▾</span>
-            </Hv>
-            {v.svFiltOpen ? (
-              <>
-                <div onClick={v.svClosePops} style={sx("position: fixed; inset: 0; z-index: 30")} />
-                <div style={sx("position: absolute; right: 0; top: calc(100% + 8px); z-index: 31; width: min(420px, 92vw); box-sizing: border-box; border-radius: 20px; background: #ffffff; border: 1px solid rgba(22,36,26,.14); box-shadow: 0 20px 50px rgba(22,36,26,.18); padding: 18px; display: grid; gap: 14px")}>
-                  {[
-                    [v.tSvBooked, v.svBookedChips],
-                    [v.tSvReceived, v.svRecvChips],
-                  ].map(([label, chips], gi) => (
-                    <div key={gi} style={sx("display: grid; gap: 8px")}>
-                      <span style={sx("font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: rgba(22,36,26,.7)")}>{label}</span>
-                      <div style={sx("display: flex; flex-wrap: wrap; gap: 8px")}>
-                        {list(chips).map((c, i) => (
-                          <button key={c.key ?? i} type="button" onClick={c.pick} style={sx(c.style)}>
-                            {c.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : null}
-          </div>
-          <label
-            className="kza-hf"
-            style={sx("position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 999px; background: #16241a; color: #f6f8f3; font-family: var(--font-heading); font-weight: 800; font-size: 13.5px; cursor: pointer; white-space: nowrap; transition: background .3s")}
+        <div style={sx("position: relative; flex: none")}>
+          <Hv
+            as="button"
+            type="button"
+            onClick={v.svToggleExp}
+            aria-haspopup="true"
+            aria-expanded={!!v.svExpOpen}
+            aria-label={v.tSvMore}
+            title={v.tSvMore}
+            style="width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; border: 1px solid rgba(22,36,26,.16); background: #ffffff; color: #16241a; cursor: pointer; padding: 0; font-size: 18px; line-height: 1"
+            hover="background: #eaf4e7"
           >
-            <span aria-hidden="true" style={sx("font-size: 16px; line-height: 1")}>+</span> {v.tSvCreate}
-            <input type="file" accept=".pdf,application/pdf" multiple onChange={v.onPayableFiles} style={sx("position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none")} />
-          </label>
+            ⋯
+          </Hv>
+          {v.svExpOpen ? (
+            <>
+              <div onClick={v.svClosePops} style={sx("position: fixed; inset: 0; z-index: 30")} />
+              <div style={sx("position: absolute; right: 0; top: calc(100% + 6px); z-index: 31; width: min(280px, 92vw); box-sizing: border-box; border-radius: 16px; background: #ffffff; border: 1px solid rgba(22,36,26,.14); box-shadow: 0 18px 40px rgba(22,36,26,.2); padding: 6px; display: grid; gap: 2px")}>
+                <Hv as="label" style={MENU_ITEM + "; position: relative"} hover="background: #eaf4e7">
+                  + {v.tSvCreate}
+                  <input type="file" accept=".pdf,application/pdf" multiple onChange={v.onPayableFiles} style={sx("position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none")} />
+                </Hv>
+                <Hv as="button" type="button" onClick={v.svExportCsv} style={MENU_ITEM} hover="background: #eaf4e7">
+                  {v.tSvExportCsv}
+                </Hv>
+                <Hv as="button" type="button" onClick={v.svExportPrint} style={MENU_ITEM} hover="background: #eaf4e7">
+                  {v.tSvExportPdf}
+                </Hv>
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
-      <div style={sx("margin: 18px -24px 0; overflow-x: auto")}>
-        <div style={sx("min-width: 1314px")}>
+      <div data-sv-tbl="" style={sx("overflow-x: auto; margin-top: 10px")}>
+        <div data-sv-minw="" style={sx("min-width: 1080px")}>
           <div
             data-kza-svhead=""
-            style={sx("display: grid; grid-template-columns: " + v.svCols + "; gap: 12px; padding: 14px 24px; background: #eaf4e7; border-top: 1px solid rgba(22,36,26,.1); border-bottom: 1px solid rgba(22,36,26,.1); font-size: 11.5px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: rgba(22,36,26,.7); align-items: center")}
+            style={sx("display: grid; grid-template-columns: " + v.svCols + "; gap: 10px; padding: 10px 14px; background: #eaf4e7; border-top: 1px solid rgba(22,36,26,.1); border-bottom: 1px solid rgba(22,36,26,.1); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(22,36,26,.72); align-items: center")}
           >
             <span>
-              <input type="checkbox" checked={!!v.svAllSel} onChange={v.svToggleAll} aria-label={v.tSvSelectAll} style={sx("width: 17px; height: 17px; accent-color: #1f7a3a; cursor: pointer")} />
+              <input type="checkbox" checked={!!v.svAllSel} onChange={v.svToggleAll} aria-label={v.tSvSelectAll} style={sx("width: 16px; height: 16px; margin: 0; accent-color: #1f7a3a; cursor: pointer; display: block")} />
             </span>
             <button type="button" onClick={v.svSortNo} style={SORT_BTN}>
               {v.tSvNumber}
@@ -143,26 +94,31 @@ export default function SupplierView({ v }) {
                 {SORT}
               </button>
             </span>
-            <span>{v.tSvDetails}</span>
+            <span />
           </div>
-          <div style={sx("max-height: max(380px, calc(100vh - 430px)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin")}>
+          <div style={sx("display: grid; grid-template-columns: " + v.svCols + "; gap: 10px; align-items: center; padding: 6px 14px; background: #f6f8f3; border-bottom: 1px solid rgba(22,36,26,.1)")}>
+            <span />
+            <FilterCells cells={v.svFilterCells} />
+            <span />
+          </div>
+          <div data-sv-rows="" style={sx("max-height: max(380px, calc(100vh - 400px)); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin")}>
             {list(v.svRows).map((r, i) => (
               <Hv
                 key={r.key ?? i}
                 onClick={r.look}
-                style={"display: grid; grid-template-columns: " + v.svCols + "; gap: 12px; align-items: center; padding: 0 24px; height: 54px; border-bottom: 1px solid rgba(22,36,26,.08); font-size: 13.5px; cursor: pointer; transition: background .2s; background: " + r.rowBg}
+                style={"display: grid; grid-template-columns: " + v.svCols + "; gap: 10px; align-items: center; padding: 0 14px; height: 40px; box-sizing: border-box; border-bottom: 1px solid rgba(22,36,26,.07); font-size: 13.5px; cursor: pointer; transition: background .2s; background: " + r.rowBg}
                 hover="background: #f1f8ee"
               >
                 <span onClick={stop} style={{ display: "grid" }}>
-                  <input type="checkbox" checked={!!r.sel} onChange={r.toggleSel} aria-label={r.no} style={sx("width: 17px; height: 17px; accent-color: #1f7a3a; cursor: pointer")} />
+                  <input type="checkbox" checked={!!r.sel} onChange={r.toggleSel} aria-label={r.no} style={sx("width: 16px; height: 16px; margin: 0; accent-color: #1f7a3a; cursor: pointer")} />
                 </span>
                 <span style={sx("color: rgba(22,36,26,.8)")}>{r.no}</span>
                 <span>{r.type}</span>
                 <span style={sx("color: rgba(22,36,26,.8)")}>{r.due}</span>
                 <span style={sx("color: rgba(22,36,26,.8)")}>{r.po}</span>
-                <span style={{ minWidth: 0 }}>
-                  <span style={sx("display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap")}>{r.supplier}</span>
-                  {r.showClub ? <span style={sx("display: block; font-size: 12px; color: rgba(22,36,26,.6)")}>{r.club}</span> : null}
+                <span title={r.club} style={sx("min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap")}>
+                  <span style={sx("font-weight: 500")}>{r.supplier}</span>
+                  {r.showClub ? <> <span style={sx("font-size: 12px; color: rgba(22,36,26,.6)")}>· {r.club}</span></> : null}
                 </span>
                 <span style={sx("overflow: hidden; text-overflow: ellipsis; white-space: nowrap")}>{r.title}</span>
                 <span>
@@ -172,14 +128,14 @@ export default function SupplierView({ v }) {
                   <span style={sx(r.recvStyle)}>{r.recv}</span>
                 </span>
                 <span style={sx("text-align: right; font-weight: 500; white-space: nowrap")}>{r.total}</span>
-                <span onClick={stop} style={sx("display: flex; gap: 6px")}>
+                <span onClick={stop} style={sx("display: flex; gap: 4px; justify-content: flex-end")}>
                   <Hv
                     as="button"
                     type="button"
                     onClick={r.look}
                     aria-label={v.tSvPreview}
                     title={v.tSvPreview}
-                    style="width: 38px; height: 28px; border-radius: 999px; border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a; display: grid; place-items: center; cursor: pointer; transition: background .2s"
+                    style="width: 30px; height: 26px; border-radius: 999px; border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a; display: grid; place-items: center; cursor: pointer; transition: background .2s"
                     hover="background: #eaf7ed"
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -190,10 +146,21 @@ export default function SupplierView({ v }) {
                 </span>
               </Hv>
             ))}
-            {v.svEmpty ? <div style={sx("padding: 22px 24px; font-size: 14px; color: rgba(22,36,26,.72)")}>{v.tPayEmpty}</div> : null}
+            {v.svEmpty ? <div style={sx("padding: 30px 14px; text-align: center; font-size: 14px; color: rgba(22,36,26,.65)")}>{v.tPayEmpty}</div> : null}
           </div>
-          <div style={sx("display: flex; justify-content: flex-end; padding: 14px 24px 16px; font-size: 14.5px; font-weight: 600; border-top: 1px solid rgba(22,36,26,.12)")}>{v.svTotalAll}</div>
         </div>
+      </div>
+      <div data-sv-foot="" style={sx("display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 14px; border-top: 1px solid rgba(22,36,26,.1); font-size: 13.5px; color: #16241a")}>
+        <span style={sx("font-weight: 600")}>{v.svSelCount}</span>
+        <Hv as="label" style="position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 8px; cursor: pointer; font-size: 13.5px" hover="background: #eaf4e7">
+          + {v.tNewShort}
+          <input type="file" accept=".pdf,application/pdf" multiple onChange={v.onPayableFiles} style={sx("position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none")} />
+        </Hv>
+        <span style={sx("flex: 1")} />
+        <span style={sx("color: rgba(22,36,26,.72)")}>
+          {v.tSvSumLabel} <b style={sx("color: #16241a")}>{v.svTotalAll}</b>
+        </span>
+        <TablePager v={v} p="sv" total={v.svCount} onPer={v.onSvPer} label={v.tTblPer} />
       </div>
     </div>
   );

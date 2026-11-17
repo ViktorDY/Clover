@@ -47,7 +47,7 @@ class LogicBase {
 
 export class AdminLogic extends LogicBase {
   state = {
-    lang: 'no', club: 'all', tab: 'activities', navMenu: '', grantOpen: -1, sponsorOpen: -1, agreementFor: -1, sponsorFiles: null, sponsorMenu: -1, meetQ: '', meetSent: null, formFiles: [], payPaid: {}, payExtra: [], meetings: null, meetingForm: null, decDone: {}, meetingOpenId: '', meetingFiles: {}, roleFilter: '', roleQ: '', roleAssign: null, raName: '', raRole: 'coach', raClub: 'vif', raMsg: '', spCal: false, spCalMonth: (new Date().getFullYear() === 2026 ? new Date().getMonth() + 1 : 9), spCalPick: 0, confirmInactive: -1, inactiveSponsors: {}, extraSponsors: [], newSponsor: null, ttClub: '', venClub: '', venDraft: null, venSaved: '', venCloseDate: '', venIncDraft: '', venDay: -1, bcMonth: 9, bcDay: '', bcPanel: false, mbDate: '', mbTime: '18:00', mbUnit: 1, mbName: '', mbNote: '', mbSaved: '', ttEdit: null, ttDrag: null, ttDraft: null, ttGroupDraft: '', ttSaved: '', ttTick: 0, tfPeriod: 'month', tfPageSize: 50, tfPage: 0, exportOpen: false, kpiPanel: false, resHover: -1, tfFrom: '2026-08-01', tfTo: '2026-09-24', tfQ: '', compose: false, composeKind: 'activity', composeDone: false,
+    lang: 'no', sideMini: false /* [design 17 Nov] */, club: 'all', tab: 'activities', navMenu: '', grantOpen: -1, sponsorOpen: -1, agreementFor: -1, sponsorFiles: null, sponsorMenu: -1, meetQ: '', meetSent: null, formFiles: [], payPaid: {}, payExtra: [], meetings: null, meetingForm: null, decDone: {}, meetingOpenId: '', meetingFiles: {}, roleFilter: '', roleQ: '', roleAssign: null, raName: '', raRole: 'coach', raClub: 'vif', raMsg: '', spCal: false, spCalMonth: (new Date().getFullYear() === 2026 ? new Date().getMonth() + 1 : 9), spCalPick: 0, confirmInactive: -1, inactiveSponsors: {}, extraSponsors: [], newSponsor: null, ttClub: '', venClub: '', venDraft: null, venSaved: '', venCloseDate: '', venIncDraft: '', venDay: -1, bcMonth: 9, bcDay: '', bcPanel: false, mbDate: '', mbTime: '18:00', mbUnit: 1, mbName: '', mbNote: '', mbSaved: '', ttEdit: null, ttDrag: null, ttDraft: null, ttGroupDraft: '', ttSaved: '', ttTick: 0, tfPeriod: 'month', tfPageSize: 15 /* [design 17 Nov] was 50 */, tfPage: 0, exportOpen: false, kpiPanel: false, resHover: -1, tfFrom: '2026-08-01', tfTo: '2026-09-24', tfQ: '', compose: false, composeKind: 'activity', composeDone: false,
     memQ: '', member: '', guardian: '', hover: -1, smsSent: '', bulkSms: 0, bulkSmsAt: '', memGroup: 'all', signups: {}, msgTo: 'club', msgText: '', sentMsgs: [], calMonth: (new Date().getFullYear() === 2026 ? new Date().getMonth() + 1 : 9), calPick: 0, calEntries: [], calAdd: false, ceTitle: '', ceTime: '18:00', ceNote: '', ceShare: [], ceSent: '', formTitle2: '', postTo: 'club', actDone: false, postDone: false, memPeriod: 'month', notes: {}, noteDraft: '', invScope: 'club', invTarget: 'vif', invTitle: '', invAmount: '', invDue: '2026-10-01', invSent: false,
     formClub: 'vif', formTitle: '', formDate: '2026-09-20', formTime: '18:00',
     formPlace: '', formLeader: '', formCap: '20', formText: '', formHigh: false,
@@ -76,6 +76,8 @@ export class AdminLogic extends LogicBase {
     if (this._dashRs) window.removeEventListener('resize', this._dashRs);
     if (this._ttRs) window.removeEventListener('resize', this._ttRs);
     cancelAnimationFrame(this._dashRaf);
+    // [design 17 Nov] fitMain() toggles html.kza-fit; drop it when leaving the portal
+    if (typeof document !== 'undefined') document.documentElement.classList.remove('kza-fit');
   }
 
   ttData() {
@@ -418,14 +420,23 @@ export class AdminLogic extends LogicBase {
     });
     const bl = { yes: en ? 'Booked' : 'Bokført', no: en ? 'Draft' : 'Utkast' };
     const rl = { recv: en ? 'Received' : 'Mottatt', order: en ? 'See order' : 'Se ordre', none: en ? 'Not received' : 'Ikke mottatt' };
-    const shown = rows.filter(r => (fB === 'all' || (fB === 'yes') === r.booked) && (fR === 'all' || fR === r.recv) && (!q || (r.p.no + ' ' + r.p.supplier + ' ' + r.p.desc + ' ' + r.po + ' ' + c.clubOf(r.p.club)).toLowerCase().includes(q)))
+    // [design 17 Nov] per-column search row
+    const svCF = v('svCF', {});
+    const svColDefs = [['no', en ? 'number' : 'nummer', r => r.p.no], ['type', 'type', () => (en ? 'Invoice' : 'Faktura')], ['due', en ? 'due date' : 'forfall', r => fd(r.p.due)], ['po', en ? 'order' : 'ordre', r => r.po], ['sup', en ? 'supplier' : 'leverandør', r => r.p.supplier + ' ' + c.clubOf(r.p.club)], ['desc', en ? 'title' : 'overskrift', r => r.p.desc], ['booked', en ? 'posted' : 'bokført', r => r.booked ? bl.yes : bl.no], ['recv', en ? 'received' : 'mottatt', r => rl[r.recv]], ['total', 'total', r => String(r.p.n) + ' ' + money(r.p.n)]];
+    const shown = rows.filter(r => (fB === 'all' || (fB === 'yes') === r.booked) && (fR === 'all' || fR === r.recv) && (!q || (r.p.no + ' ' + r.p.supplier + ' ' + r.p.desc + ' ' + r.po + ' ' + c.clubOf(r.p.club)).toLowerCase().includes(q))
+      && svColDefs.every(cd => { const qq = (svCF[cd[0]] || '').trim().toLowerCase(); return !qq || String(cd[2](r)).toLowerCase().includes(qq); }))
       .sort((a, b) => { const x = sort.k === 'no' ? a.p.no : (sort.k === 'total' ? a.p.n : (sort.k === 'booked' ? Number(a.booked) : a.p.due)); const y = sort.k === 'no' ? b.p.no : (sort.k === 'total' ? b.p.n : (sort.k === 'booked' ? Number(b.booked) : b.p.due)); return (x < y ? -1 : x > y ? 1 : 0) * sort.d; });
     // eslint-disable-next-line no-unused-vars -- kept as in the design logic
-    const pill = (on, kind) => 'display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; ' + (on ? 'background: rgba(116,205,133,.3); color: #16241a;' : 'background: rgba(22,36,26,.08); color: rgba(22,36,26,.7);');
+    const pill = (on, kind) => 'display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; ' + (on ? 'background: rgba(116,205,133,.3); color: #16241a;' : 'background: rgba(22,36,26,.08); color: rgba(22,36,26,.7);');
     const chip = (on) => 'cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 12.5px; padding: 8px 15px; border-radius: 999px; white-space: nowrap; border: 1px solid ' + (on ? '#16241a' : 'rgba(22,36,26,.16)') + '; background: ' + (on ? '#16241a' : '#ffffff') + '; color: ' + (on ? '#f6f8f3' : '#16241a');
     const sortBy = (k) => () => set({ svSort: { k: k, d: sort.k === k ? -sort.d : 1 } });
     const csvRows = () => [['Nummer', 'Type', 'Forfallsdato', 'Innkjøpsordre', 'Leverandør', 'Overskrift', 'Bokført', 'Mottatt', 'Total (NOK)']].concat(shown.map(r => [r.p.no, 'Faktura', fd(r.p.due), r.po, r.p.supplier, r.p.desc, r.booked ? bl.yes : bl.no, rl[r.recv], r.p.n]));
-    const rowsOut = shown.map(r => {
+    // [design 17 Nov] pagination
+    const svPerN = [15, 50, 100, 250].indexOf(v('svPer', 15)) !== -1 ? v('svPer', 15) : 15;
+    const svPages = Math.max(1, Math.ceil(shown.length / svPerN)), svPg = Math.min(v('svPage', 1), svPages);
+    const svPgRows = shown.slice((svPg - 1) * svPerN, svPg * svPerN);
+    const svNav = (off) => 'width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; border: 0; background: transparent; padding: 0; ' + (off ? 'color: rgba(22,36,26,.3); cursor: default;' : 'color: #16241a; cursor: pointer;');
+    const rowsOut = svPgRows.map(r => {
       // eslint-disable-next-line no-unused-vars -- kept as in the design logic
       const p = r.p, isOpen = !!openMap[p.id], mShown = menu === p.id, pr = c.payRows.find(x => x.key === 'pb' + p.id);
       const tipFor = (t) => () => set({ svTip: t });
@@ -446,9 +457,16 @@ export class AdminLogic extends LogicBase {
     });
     return {
       svCount: shown.length, tSvTitle: en ? 'Supplier invoices' : 'Leverandørfakturaer',
-      svCols: '24px 104px 96px 118px 134px minmax(140px,1.1fr) minmax(150px,1.3fr) 100px 124px 116px 84px',
+      svCols: '24px 92px 64px 90px 76px minmax(150px,1.3fr) minmax(130px,1.2fr) 84px 104px 104px 30px',
+      // [design 17 Nov] column search cells, selection count and pagination
+      svFilterCells: svColDefs.map(cd => ({ key: 'svf' + cd[0], val: svCF[cd[0]] || '', ph: (en ? 'Search ' : 'Søk ') + cd[1], onInput: (e) => { const val = e.target.value; set(s2 => ({ svCF: Object.assign({}, s2.svCF || {}, { [cd[0]]: val }), svPage: 1 })); } })),
+      svSelCount: Object.keys(v('svSel', {})).length + (en ? ' selected' : ' valgt'), tSvSumLabel: en ? 'Total' : 'Sum',
+      svPer: svPerN, onSvPer: (e) => set({ svPer: parseInt(e.target.value, 10), svPage: 1 }),
+      svRange: shown.length ? ((svPg - 1) * svPerN + 1) + '–' + Math.min(svPg * svPerN, shown.length) : '0',
+      svAtStart: svPg <= 1, svAtEnd: svPg >= svPages, svPrevStyle: svNav(svPg <= 1), svNextStyle: svNav(svPg >= svPages),
+      svFirst: () => set({ svPage: 1 }), svPrev: () => set({ svPage: Math.max(1, svPg - 1) }), svNext: () => set({ svPage: Math.min(svPages, svPg + 1) }), svLast: () => set({ svPage: svPages }),
       tSvMore: en ? 'More' : 'Mer', tSvDetails: en ? 'Details' : 'Detaljer', tSvSelectAll: en ? 'Select all' : 'Velg alle', svCountLabel: (en ? 'Number of invoices: ' : 'Antall fakturaer: ') + shown.length,
-      svAllSel: shown.length > 0 && shown.every(r => v('svSel', {})[r.p.id]), svToggleAll: () => set(s2 => { const cur = s2.svSel || {}, all = shown.length > 0 && shown.every(r => cur[r.p.id]); const n = Object.assign({}, cur); shown.forEach(r => { if (all) delete n[r.p.id]; else n[r.p.id] = true; }); return { svSel: n }; }),
+      svAllSel: svPgRows.length > 0 && svPgRows.every(r => v('svSel', {})[r.p.id]), svToggleAll: () => set(s2 => { const cur = s2.svSel || {}, all = svPgRows.length > 0 && svPgRows.every(r => cur[r.p.id]); const n = Object.assign({}, cur); svPgRows.forEach(r => { if (all) delete n[r.p.id]; else n[r.p.id] = true; }); return { svSel: n }; }),
       tSvExport: en ? 'Export' : 'Eksporter', tSvExportCsv: en ? 'Export as CSV' : 'Eksporter som CSV', tSvExportPdf: en ? 'Print / save as PDF' : 'Skriv ut / lagre som PDF',
       svExpOpen: !!v('svExpOpen', false), svToggleExp: () => set({ svExpOpen: !v('svExpOpen', false), svFiltOpen: false }),
       svClosePops: () => set({ svExpOpen: false, svFiltOpen: false }),
@@ -462,7 +480,7 @@ export class AdminLogic extends LogicBase {
       svRecvChips: [['all', en ? 'All' : 'Alle'], ['recv', rl.recv], ['order', rl.order], ['none', rl.none]].map(o => ({ key: 'fr' + o[0], label: o[1], pick: () => set({ svFR: o[0] }), style: chip(fR === o[0]) })),
       svRememberLabel: v('svRem', false) ? (en ? 'Saved ✓' : 'Husket ✓') : (en ? 'Remember' : 'Husk'), svRememberBg: v('svRem', false) ? 'rgba(116,205,133,.3)' : '#f4f8f2',
       svRemember: () => { const on = !v('svRem', false); try { if (on) localStorage.setItem('kretzSupFilter', JSON.stringify({ q: v('svQ', ''), fB: fB, fR: fR })); else localStorage.removeItem('kretzSupFilter'); } catch { /* ignore */ } set({ svRem: on }); },
-      tSvNumber: en ? 'Number' : 'Nummer', tSvType: en ? 'Invoice type' : 'Fakturatype', tSvDue: en ? 'Due date' : 'Forfallsdato', tSvPO: en ? 'Purchase order' : 'Innkjøpsordre', tSvSupplier: en ? 'Supplier' : 'Leverandør', tSvTitleCol: en ? 'Title' : 'Overskrift', tSvBookedCol: en ? 'Posted' : 'Bokført', tSvReceivedCol: en ? 'Received' : 'Mottatt', tSvTotal: 'Total',
+      tSvNumber: en ? 'Number' : 'Nummer', tSvType: 'Type', tSvDue: en ? 'Due' : 'Forfall', tSvPO: en ? 'Order' : 'Ordre', tSvSupplier: en ? 'Supplier' : 'Leverandør', tSvTitleCol: en ? 'Title' : 'Overskrift', tSvBookedCol: en ? 'Posted' : 'Bokført', tSvReceivedCol: en ? 'Received' : 'Mottatt', tSvTotal: 'Total',
       svSortNo: sortBy('no'), svSortBooked: sortBy('booked'), svSortTotal: sortBy('total'),
       svRows: rowsOut, svEmpty: rowsOut.length === 0, svTotalAll: money(shown.reduce((n, r) => n + r.p.n, 0)),
       tSvExpand: en ? 'Show details' : 'Vis detaljer', tSvActions: en ? 'Actions' : 'Handlinger', tSvDesc: en ? 'Description' : 'Beskrivelse',
@@ -592,13 +610,16 @@ export class AdminLogic extends LogicBase {
         open: () => this.setState({ event: a.id, answerFilter: 'all' }) };
     });
     const evQl = (this.state.evQ || '').trim().toLowerCase();
-    const evFiltered = evAll.filter(r => !evQl || (r.title + ' ' + r.group + ' ' + r.host + ' ' + r.place + ' ' + r.typeLabel).toLowerCase().includes(evQl)).sort((x, y) => {
+    // [design 17 Nov] per-column search row in the activities table
+    const evCF = this.state.evCF || {};
+    const evTxt = (c, r) => c === 'type' ? r.typeLabel : c === 'title' ? r.title : c === 'date' ? r.date : c === 'group' ? r.group : c === 'host' ? r.host : c === 'place' ? r.place : String(r.part);
+    const evFiltered = evAll.filter(r => !evQl || (r.title + ' ' + r.group + ' ' + r.host + ' ' + r.place + ' ' + r.typeLabel).toLowerCase().includes(evQl)).filter(r => evColDefs.every(c => { const q = (evCF[c.id] || '').trim().toLowerCase(); return !q || String(evTxt(c.id, r) || '').toLowerCase().includes(q); })).sort((x, y) => {
       const k = evSort.k;
       const v = (r) => k === 'date' ? r.sortDate : k === 'part' ? r.partN : k === 'type' ? r.typeLabel : String(r[k] || '').toLowerCase();
       return (v(x) > v(y) ? 1 : v(x) < v(y) ? -1 : 0) * evSort.dir;
     });
     const evShowAll = !!this.state.evAllRows;
-    const evPerPage = [15, 25, 50, 100, 250].indexOf(this.state.evPer) !== -1 ? this.state.evPer : 15;
+    const evPerPage = [15, 50, 100, 250].indexOf(this.state.evPer) !== -1 ? this.state.evPer : 15;
     const evPageCount = Math.max(1, Math.ceil(evFiltered.length / evPerPage));
     const evPageN = Math.min(this.state.evPage || 1, evPageCount);
     const evPageRows = evShowAll ? evFiltered : evFiltered.slice((evPageN - 1) * evPerPage, evPageN * evPerPage);
@@ -709,7 +730,7 @@ export class AdminLogic extends LogicBase {
       if (!segs.length) segs.push([16 * 60, 20 * 60]);
       const spanMin = segs.reduce((n, g) => n + (g[1] - g[0]), 0) || 240;
       const vh = (typeof window !== 'undefined' && window.innerHeight) || 900;
-      pxMin = Math.max(0.4, Math.min(56 / 60, (vh - 500 - gapPx * (segs.length - 1)) / spanMin));
+      pxMin = Math.max(0.4, Math.min(56 / 60, (vh - 440 - gapPx * (segs.length - 1)) / spanMin)); // [design 17 Nov] 440 (was 500)
       const tops = []; let acc = 0;
       segs.forEach((g, i) => { tops.push(acc); acc += (g[1] - g[0]) * pxMin + (i < segs.length - 1 ? gapPx : 0); });
       const yOf = (m) => { for (let i = 0; i < segs.length; i++) if (m >= segs[i][0] && m <= segs[i][1]) return tops[i] + (m - segs[i][0]) * pxMin; return 0; };
@@ -830,11 +851,20 @@ export class AdminLogic extends LogicBase {
     const tfEnd = tfStart + tfChange;
     const tfNow = tfOpening + tfClubRows.filter(t => t.d >= '2026-01-01' && t.d <= tfToday).reduce((n, t) => n + t.n, 0);
     const tfQ = this.state.tfQ.trim().toLowerCase();
+    // [design 17 Nov] per-column search row and row selection in the team fund table
+    const tfCF = this.state.tfCF || {};
+    const tfSel = this.state.tfSel || {};
+    const tfColDefs = [['date', en ? 'date' : 'dato', t => tfFmt(t.d)], ['tx', en ? 'transaction no.' : 'transaksjonsnr.', t => t.tx]]
+      .concat(all ? [['acc', en ? 'account' : 'konto', t => clubOf(t.club) + ' ' + (tfAccounts[t.club] ? tfAccounts[t.club].no : '')]] : [])
+      .concat([['inv', en ? 'invoice no.' : 'fakturanr.', t => t.inv], ['desc', en ? 'description' : 'beskrivelse', t => t.desc], ['party', en ? 'customer/supplier' : 'kunde/leverandør', t => t.party], ['sum', 'sum', t => String(Math.abs(t.n)) + ' ' + tfKr(Math.abs(t.n))]]);
+    const tfMatch = (t) => (!tfQ || [tfFmt(t.d), t.tx, t.inv, t.desc, t.party].join(' ').toLowerCase().includes(tfQ)) && tfColDefs.every(c => { const q = (tfCF[c[0]] || '').trim().toLowerCase(); return !q || String(c[2](t)).toLowerCase().includes(q); });
     const tfRows = tfInPeriod
-      .filter(t => !tfQ || [tfFmt(t.d), t.tx, t.inv, t.desc, t.party].join(' ').toLowerCase().includes(tfQ))
+      .filter(tfMatch)
       // eslint-disable-next-line no-unused-vars -- kept as in the design logic
       .map((t, i) => ({
         key: 'tr' + t.tx,
+        checked: !!tfSel[t.tx], bg: tfSel[t.tx] ? '#eaf7ed' : 'transparent',
+        toggle: () => this.setState(st => ({ tfSel: Object.assign({}, st.tfSel || {}, { [t.tx]: !(st.tfSel || {})[t.tx] }) })),
         date: tfFmt(t.d),
         tx: t.tx,
         inv: t.inv,
@@ -846,7 +876,7 @@ export class AdminLogic extends LogicBase {
         sum: (t.n >= 0 ? '+ ' : '− ') + tfKr(Math.abs(t.n)),
         sumStyle: 'text-align: right; font-family: var(--font-heading); font-weight: 800; white-space: nowrap; color: ' + (t.n >= 0 ? '#1f7a3a' : '#16241a')
       }));
-    const tfPs = this.state.tfPageSize || 50;
+    const tfPs = [15, 50, 100, 250].indexOf(this.state.tfPageSize) !== -1 ? this.state.tfPageSize : 15; // [design 17 Nov]
     const tfPages = Math.max(1, Math.ceil(tfRows.length / tfPs));
     const tfPg = Math.min(this.state.tfPage || 0, tfPages - 1);
     const tfPageRows = tfRows.slice(tfPg * tfPs, tfPg * tfPs + tfPs);
@@ -858,7 +888,7 @@ export class AdminLogic extends LogicBase {
       desc: en ? 'Description' : 'Beskrivelse', club: en ? 'Club' : 'Klubb', party: en ? 'Customer/supplier' : 'Kunde/leverandør', sum: en ? 'Sum (NOK)' : 'Sum (kr)'
     };
     const tfExport = tfInPeriod
-      .filter(t => !tfQ || [tfFmt(t.d), t.tx, t.inv, t.desc, t.party].join(' ').toLowerCase().includes(tfQ))
+      .filter(tfMatch)
       .map(t => ({
         date: tfFmt(t.d), tx: t.tx, inv: t.inv, desc: t.desc, club: clubOf(t.club), party: t.party,
         acc: tfAccounts[t.club] ? tfAccounts[t.club].no : '',
@@ -931,8 +961,11 @@ export class AdminLogic extends LogicBase {
     const resMonths = resVals.map((v, i) => ({
       key: 'rm' + i,
       enter: () => { if (v) this.setState({ resHover: i }); },
-      incBg: resHov === i ? 'rgba(31,122,58,.55)' : 'rgba(31,122,58,.3)',
-      expBg: resHov === i ? 'rgba(236,48,19,.5)' : 'rgba(236,48,19,.26)',
+      // [design 17 Nov] gradient bars
+      incBg: resHov === i ? 'linear-gradient(180deg, #3E8A48, #5fb36f)' : 'linear-gradient(180deg, #74cd85, #a3e2ae)',
+      expBg: resHov === i ? 'linear-gradient(180deg, #d4968a, #c4806d)' : 'linear-gradient(180deg, #ecc9bf, #e3bcb0)',
+      band: resHov === i ? 'rgba(22,36,26,.045)' : 'transparent',
+      labelStyle: 'text-align: center; font-size: 12px; transition: color .2s; ' + (resHov === i ? 'font-weight: 800; color: #16241a;' : 'font-weight: 600; color: rgba(22,36,26,.6);'),
       label: en ? resNamesEn[i] : resNamesNo[i],
       incH: v ? (v[0] / resTop * 50).toFixed(2) + '%' : '0%',
       expH: v ? (v[1] / resTop * 50).toFixed(2) + '%' : '0%',
@@ -1240,7 +1273,43 @@ export class AdminLogic extends LogicBase {
     const boardNames = boardList.map(a => a.name);
     const boardEmails = boardList.map(a => a.name.toLowerCase().replace(/[^a-zæøå ]/g, '').trim().replace(/\s+/g, '.').replace(/æ/g, 'ae').replace(/ø/g, 'o').replace(/å/g, 'a') + '@kretz.no');
     const rq = this.state.roleQ.trim().toLowerCase();
+    // ---- [design 17 Nov] Roles: access per role, club/group/member filter, give-role dialog, pending approvals ----
+    // (the view keys and markup for these live outside design lines 5201–7800)
+    const PERMS = [['finance', en ? 'Finance' : 'Økonomi'], ['invoice', en ? 'Invoicing' : 'Fakturering'], ['teamfund', en ? 'Team fund' : 'Lagkasse'], ['members', en ? 'Members' : 'Medlemmer'], ['activities', en ? 'Activities' : 'Aktiviteter'], ['attendance', en ? 'Attendance' : 'Oppmøte'], ['comms', en ? 'Messages' : 'Kommunikasjon'], ['board', en ? 'Board' : 'Styret'], ['docs', en ? 'Documents' : 'Dokumenter'], ['booking', 'Booking'], ['volunteer', en ? 'Volunteering' : 'Dugnad'], ['settings', en ? 'Settings' : 'Innstillinger']];
+    const PERM0 = { chair: PERMS.map(x => x[0]), treasurer: ['finance', 'invoice', 'teamfund', 'members', 'docs'], board: ['board', 'activities', 'docs', 'comms'], coach: ['activities', 'attendance', 'comms'], manager: ['members', 'activities', 'comms', 'booking', 'docs', 'volunteer'], volunteer: ['volunteer', 'comms'] };
+    const permOf = (rid) => { const o = (this.state.rolePerms || {})[rid]; if (o) return o; const d = {}; (PERM0[rid] || []).forEach(k => { d[k] = true; }); return d; };
+    const rfClubsAll = clubs.filter(c => keep({ club: c.id }));
+    const rfClubSel = this.state.rfClubs || (() => { const o = {}; rfClubsAll.forEach(c => { o[c.id] = true; }); return o; })();
+    const rfClubIds = rfClubsAll.filter(c => rfClubSel[c.id]).map(c => c.id);
+    const rfGroupsAvail = []; rfClubIds.forEach(cid => this.groupsOf(cid, en).forEach(g => rfGroupsAvail.push({ key: cid + '|' + g, club: cid, g: g })));
+    const rfGroupSel = this.state.rfGroups || (() => { const o = {}; rfGroupsAvail.forEach(x => { o[x.key] = true; }); return o; })();
+    const rfGroupOn = (k) => this.state.rfGroups ? !!rfGroupSel[k] : true;
+    const rfMemAvail = (() => { const seen = {}; return this.members(en).filter(m => rfClubIds.indexOf(m.club) !== -1 && rfGroupOn(m.club + '|' + m.group)).filter(m => { if (seen[m.id]) return false; seen[m.id] = 1; return true; }); })();
+    const rfMemSel = this.state.rfMembers || {};
+    const rfMemChosen = rfMemAvail.filter(m => rfMemSel[m.id]);
+    const rfQv = (this.state.rfQ || '').trim().toLowerCase();
+    const rfMemShown = rfQv ? rfMemAvail.filter(m => m.name.toLowerCase().includes(rfQv)) : rfMemAvail;
+    const rfOpenSt = this.state.rfOpen || {};
+    const rfMenu = (id, label, summary) => ({ label: label, summary: summary, open: !!rfOpenSt[id],
+      toggle: () => this.setState(st => ({ rfOpen: Object.assign({}, st.rfOpen || {}, { [id]: !(st.rfOpen || {})[id] }) })),
+      chev: 'flex: 0 0 auto; font-size: 12px; color: rgba(22,36,26,.6); transition: transform .2s; transform: rotate(' + (rfOpenSt[id] ? '180deg' : '0deg') + ')' });
+    const rg = this.state.roleGive || null;
+    const rgDef = rg ? (roleDefs.find(r => r.id === rg.role) || { name: '' }) : { name: '' };
+    const rgClubSet = rfMemChosen.map(m => m.club).filter((c, i, a) => a.indexOf(c) === i);
+    const rgGroupsAll = []; (rgClubSet.length ? rgClubSet : rfClubIds).forEach(cid => this.groupsOf(cid, en).forEach(g => rgGroupsAll.push({ key: cid + '|' + g, club: cid, g: g })));
+    const rgGroups = (rg && rg.groups) || {};
+    const rgChosenGroups = rgGroupsAll.filter(x => rgGroups[x.key]);
+    const rgQv = ((rg && rg.q) || '').trim().toLowerCase();
+    const rgAccessTxt = rg ? (PERMS.filter(x => permOf(rg.role)[x[0]]).map(x => x[1]).join(', ') || (en ? 'none yet' : 'ingen ennå')) : '';
+    const rolePendSeed = () => [
+      { id: 'p1', name: 'Line Aas', role: 'coach', club: 'fana', scope: 'G12', by: 'Ida Krogh' },
+      { id: 'p2', name: 'Per Moe', role: 'volunteer', club: 'fana', scope: en ? 'Cup in March' : 'Cup i mars', by: 'Ida Krogh' },
+      { id: 'p3', name: 'Mari Holm', role: 'treasurer', club: 'varden', scope: '', by: 'Anne Bjørk' },
+      { id: 'p4', name: 'Jon Berg', role: 'board', club: 'vif', scope: '', by: 'Marit Sunde' }
+    ];
+    const rolePend = (this.state.rolePending || rolePendSeed()).filter(keep).filter(x => rfClubIds.indexOf(x.club) !== -1);
     const roleShown = roleList
+      .filter(a => rfClubIds.indexOf(a.club) !== -1)
       .filter(a => !this.state.roleFilter || a.role === this.state.roleFilter)
       .filter(a => !rq || (a.name + ' ' + ((roleDefs.find(r => r.id === a.role) || {}).name || '') + ' ' + (a.scope || '')).toLowerCase().includes(rq));
     const pickFiles = (ev) => {
@@ -1683,7 +1752,7 @@ export class AdminLogic extends LogicBase {
     }));
 
     const allActs = this.baseActs(en).concat(this.state.newActs);
-    const memGroup = this.state.memGroup;
+    const memGroup = 'all'; // [design 17 Nov] the member list no longer filters by group here (was this.state.memGroup)
     const groupOptions = all
       ? []
       : this.groupsOf(sel, en).map((g, i) => ({ id: 'g:' + g, name: g, key: 'gf' + i }))
@@ -1717,7 +1786,7 @@ export class AdminLogic extends LogicBase {
         { id: 'd-varden-b', name: en ? 'Table tennis' : 'Bordtennis', kids: [{ id: 'd-varden-n', name: en ? 'Beginners' : 'Nybegynnere', n: 14 }, { id: 'd-varden-v', name: en ? 'Advanced' : 'Viderekomne', n: 11 }] }] }
     ];
     const deptAdded = this.state.deptAdded || [], deptGone = this.state.deptGone || {}, deptOpenMap = this.state.deptOpenMap || {};
-    const deptVisibleRoots = deptTree.filter(c => all || c.club === sel);
+    const deptVisibleRoots = deptTree.filter(c => c.club === 'fana'); // [design 17 Nov] as in the design (was: all || c.club === sel)
     const deptRootId = (deptVisibleRoots[0] || deptTree[0]).id;
     const deptParents = [];
     const deptRows = [];
@@ -1752,6 +1821,67 @@ export class AdminLogic extends LogicBase {
       if (kids.length && (open || isClub)) kids.forEach(k => deptWalk(k, depth + 1, club));
     };
     deptVisibleRoots.forEach(c => deptWalk(c, 0, c.club));
+    // ---- [design 17 Nov] Groups page: club/group filter, member list per group, move members, invite ----
+    // (the view keys and markup for these live outside design lines 5201–7800)
+    const grpRoots = deptTree.filter(c => keep({ club: c.club }));
+    const grpClubSel = this.state.grpClubs || (() => { const o = {}; grpRoots.forEach(c => { o[c.id] = true; }); return o; })();
+    const grpClubsOn = grpRoots.filter(c => grpClubSel[c.id]);
+    const grpTop = []; grpClubsOn.forEach(c => deptKids(c).forEach(g => grpTop.push({ node: g, club: c })));
+    const grpGroupOn = (id) => this.state.grpGroups ? !!this.state.grpGroups[id] : true;
+    const grpTopOn = grpTop.filter(x => grpGroupOn(x.node.id));
+    const grpOpenSt = this.state.grpOpen || {};
+    const grpMenu = (id, label, summary) => ({ label: label, summary: summary, open: !!grpOpenSt[id],
+      toggle: () => this.setState(st => ({ grpOpen: Object.assign({}, st.grpOpen || {}, { [id]: !(st.grpOpen || {})[id] }) })),
+      chev: 'flex: 0 0 auto; font-size: 12px; color: rgba(22,36,26,.6); transition: transform .2s; transform: rotate(' + (grpOpenSt[id] ? '180deg' : '0deg') + ')' });
+    const grpNodeIndex = {};
+    const grpIdx = (n, club, path) => { grpNodeIndex[n.id] = { node: n, club: club, path: path }; deptKids(n).forEach(k => grpIdx(k, club, path.concat([n.name]))); };
+    deptTree.forEach(c => deptKids(c).forEach(g => grpIdx(g, c.club, [])));
+    const grpFirst = ['Emma', 'Noah', 'Olivia', 'Jakob', 'Nora', 'Lucas', 'Ella', 'Filip', 'Sofie', 'Oskar', 'Ingrid', 'Henrik', 'Maja', 'Elias', 'Thea', 'Isak', 'Leah', 'Aksel', 'Frida', 'Johannes', 'Sara', 'Magnus', 'Live', 'Tobias'];
+    const grpLast = ['Hansen', 'Johansen', 'Olsen', 'Larsen', 'Andersen', 'Pedersen', 'Nilsen', 'Kristiansen', 'Berg', 'Haugen', 'Hagen', 'Bakken', 'Dahl', 'Lie', 'Moen', 'Strand'];
+    const grpInv = this.state.grpInvites || [];
+    const grpLeafMembers = (n, club, path) => {
+      const out = []; const h0 = Array.from(String(n.id)).reduce((a2, ch) => (a2 * 31 + ch.charCodeAt(0)) >>> 0, 7);
+      for (let i = 0; i < (n.n || 0); i++) {
+        const f = grpFirst[(h0 + i * 7) % grpFirst.length], l = grpLast[(h0 + i * 5) % grpLast.length];
+        out.push({ id: n.id + '-' + i, name: f + ' ' + l, role: i === 0 ? (en ? 'Coach' : 'Trener') : (en ? 'Player' : 'Spiller'), group: path.concat([n.name]).slice(-2).join(' › '), email: (f + '.' + l).toLowerCase().replace(/æ/g, 'ae').replace(/ø/g, 'o').replace(/å/g, 'a') + '@example.no', invited: false, club: club });
+      }
+      return out;
+    };
+    const grpRemoved = this.state.grpRemoved || {};
+    const grpMoves = this.state.grpMoves || [];
+    const grpMovedIds = {}; grpMoves.forEach(x => { grpMovedIds[x.m.id] = 1; });
+    const grpMembersOf = (id) => {
+      const ix = grpNodeIndex[id]; if (!ix) return [];
+      let out = grpLeafMembers(ix.node, ix.club, ix.path).filter(m => !grpRemoved[m.id] && !grpMovedIds[m.id]);
+      grpMoves.filter(x => x.target === id && !grpRemoved[x.m.id]).forEach(x => out.push(Object.assign({}, x.m, { group: ix.path.concat([ix.node.name]).slice(-2).join(' › ') })));
+      deptKids(ix.node).forEach(k => { out = out.concat(grpMembersOf(k.id)); });
+      grpInv.filter(v => v.target === id && !grpRemoved[v.id]).forEach(v => out.push({ id: v.id, name: v.name, role: en ? 'Invited' : 'Invitert', group: ix.path.concat([ix.node.name]).slice(-2).join(' › '), email: v.email || '', invited: true, club: ix.club }));
+      return out;
+    };
+    const grpQsv = (this.state.grpQs || '').trim().toLowerCase();
+    const grpOrdered = [];
+    const grpWalk2 = (n, club, depth, path) => { if (!grpQsv || n.name.toLowerCase().includes(grpQsv) || path.join(' ').toLowerCase().includes(grpQsv)) grpOrdered.push({ n: n, club: club, depth: depth, path: path }); deptKids(n).forEach(k => grpWalk2(k, club, depth + 1, path.concat([n.name]))); };
+    grpTopOn.forEach(x => grpWalk2(x.node, x.club.club, 0, []));
+    const grpSel = this.state.grpSel || {};
+    const grpSelIds = Object.keys(grpSel).filter(k => grpSel[k] && grpNodeIndex[k]);
+    const grpMemAll = (() => { const seen = {}; const out = []; grpSelIds.forEach(id => grpMembersOf(id).forEach(m => { if (!seen[m.id]) { seen[m.id] = 1; out.push(m); } })); return out; })();
+    const grpQmv = (this.state.grpQm || '').trim().toLowerCase();
+    const grpMemShown = grpQmv ? grpMemAll.filter(m => (m.name + ' ' + m.email + ' ' + m.group).toLowerCase().includes(grpQmv)) : grpMemAll;
+    const grpMemSel = this.state.grpMemSel || {};
+    const grpChosen = grpMemShown.filter(m => grpMemSel[m.id]);
+    const gm = this.state.grpAct || null;
+    const gmTargetsAll = grpOrdered.map(x => ({ id: x.n.id, name: (grpClubsOn.length > 1 ? clubOf(x.club) + ' › ' : '') + x.path.concat([x.n.name]).join(' › ') }));
+    const gi = this.state.grpInvite || null;
+    const giTargetsAll = grpClubsOn.map(c => ({ id: c.id, name: (en ? 'Whole club – ' : 'Hele klubben – ') + c.name, club: c.club })).concat(grpOrdered.map(x => ({ id: x.n.id, name: (grpClubsOn.length > 1 ? clubOf(x.club) + ' › ' : '') + x.path.concat([x.n.name]).join(' › '), club: x.club })));
+    const giTarget = gi ? (gi.target || (giTargetsAll[0] || {}).id || '') : '';
+    const giTargetObj = giTargetsAll.find(o => o.id === giTarget) || { name: '', club: '' };
+    const giPicked = (gi && gi.picked) || {};
+    const giQv = ((gi && gi.q) || '').trim().toLowerCase();
+    const giPool = (() => { const seen = {}; return this.members(en).filter(m => m.club === giTargetObj.club).filter(m => { if (seen[m.name]) return false; seen[m.name] = 1; return true; }); })();
+    const giShown = giPool.filter(m => giPicked[m.name] || !giQv || m.name.toLowerCase().includes(giQv)).slice(0, 30);
+    const giNew = ((gi && gi.text) || '').split(/\n|,|;/).map(x => x.trim()).filter(Boolean);
+    const giCount = Object.keys(giPicked).filter(k => giPicked[k]).length + giNew.length;
+    const grpOpenInvite = (target) => this.setState({ grpInvite: { target: target, picked: {}, q: '', text: '' }, deptMenu: '' });
     const typeNames = { active: en ? 'Active member' : 'Aktivt medlem', support: en ? 'Supporting member' : 'Støttemedlem', coach: en ? 'Coach' : 'Trener', family: en ? 'Family membership' : 'Familiemedlemskap' };
     const typeOfRole = (m) => /trener|coach/i.test(m.role) ? 'coach' : /forelder|parent/i.test(m.role) ? 'support' : 'active';
     const addedAll = (this.state.addedMems || []).filter(m => all || m.club === sel);
@@ -1805,7 +1935,12 @@ export class AdminLogic extends LogicBase {
       if (k === 'photo') return seed % 4 === 0 ? T2('No', 'Nei') : T2('Yes', 'Ja');
       return '';
     };
-    const tblSrcRaw = tblSrcRaw0.filter(r => !memHid[r.id]).map(r => memGrpOv[r.id] !== undefined ? Object.assign({}, r, { raw: Object.assign({}, r.raw, { group: memGrpOv[r.id] }) }) : r);
+    // [design 17 Nov] bulk edit ("Behandle") can override membership type and active flag per member
+    const memTypeOv = this.state.memTypeOv || {}, memActOv = this.state.memActOv || {};
+    const tblSrcRaw = tblSrcRaw0.filter(r => !memHid[r.id]).map(r => { let o = memGrpOv[r.id] !== undefined ? Object.assign({}, r, { raw: Object.assign({}, r.raw, { group: memGrpOv[r.id] }) }) : r;
+      if (memTypeOv[r.id]) o = Object.assign({}, o, { type: typeNames[memTypeOv[r.id]] });
+      if (memActOv[r.id] !== undefined) o = Object.assign({}, o, { inactive: !memActOv[r.id] });
+      return o; });
     const E0 = { id: 'empty', label: T2('Field without content', 'Felt uten innhold') };
     const yearOf = (iso) => { const p = String(iso || '').split('.'); return p.length === 3 ? parseInt(p[2], 10) : 0; };
     const sportsAll = [sportOf.vif, sportOf.fana, sportOf.varden];
@@ -1838,7 +1973,11 @@ export class AdminLogic extends LogicBase {
     const catDefs = makeCats(tblSrcRaw);
     const rowFacts = new Map(); tblSrcRaw.forEach(r => rowFacts.set(r, facts(r)));
     const filtSel = this.state.memFilt || {};
-    const tblSrc = tblSrcRaw.filter(r => catDefs.every(cd => { const ch = Object.keys(filtSel[cd.k] || {}).filter(x => filtSel[cd.k][x]); if (!ch.length) return true; const got = cd.get(r, rowFacts.get(r)); return ch.some(x => got.indexOf(x) !== -1); }));
+    // [design 17 Nov] per-column search row in the member table
+    const colF = this.state.colF || {};
+    const colVal = (c, r) => c.k === 'name' ? r.name : c.k === 'email' ? (r.email || '') : c.k === 'type' ? r.type : c.k === 'status' ? (r.inactive ? (en ? 'Inactive' : 'Inaktiv') : r.paid ? (en ? 'Active' : 'Aktiv') : (en ? 'Unpaid' : 'Ubetalt')) : String(extra(c.k, r) || '');
+    const colMatch = (r) => cols.every(c => { const q = (colF[c.k] || '').trim().toLowerCase(); return !q || colVal(c, r).toLowerCase().includes(q); });
+    const tblSrc = tblSrcRaw.filter(colMatch).filter(r => catDefs.every(cd => { const ch = Object.keys(filtSel[cd.k] || {}).filter(x => filtSel[cd.k][x]); if (!ch.length) return true; const got = cd.get(r, rowFacts.get(r)); return ch.some(x => got.indexOf(x) !== -1); }));
     const filtCat = catDefs.some(c => c.k === this.state.filtCat) ? this.state.filtCat : catDefs[0].k;
     const nSel = (k) => Object.keys(filtSel[k] || {}).filter(x => filtSel[k][x]).length;
     const totalSel = catDefs.reduce((n, c) => n + nSel(c.k), 0);
@@ -1848,7 +1987,7 @@ export class AdminLogic extends LogicBase {
     const tblMinW = 44 + cols.reduce((n, c) => n + c.mn, 0) + 12 * cols.length + 28;
     const allMemTotal = this.members(en).filter(keep).length + (this.state.addedMems || []).filter(m => all || m.club === sel).length;
     const tblAll = !!this.state.tblAll;
-    const tblPer = [15, 25, 50, 100, 250].indexOf(this.state.tblPer) !== -1 ? this.state.tblPer : 15;
+    const tblPer = [15, 50, 100, 250].indexOf(this.state.tblPer) !== -1 ? this.state.tblPer : 15;
     const tblPageCount = Math.max(1, Math.ceil(tblSrc.length / tblPer));
     const tblPageN = Math.min(this.state.tblPage || 1, tblPageCount);
     const tblShown = tblAll ? tblSrc : tblSrc.slice((tblPageN - 1) * tblPer, tblPageN * tblPer);
@@ -1873,7 +2012,9 @@ export class AdminLogic extends LogicBase {
     const pmSet = (entries, label) => { const on = entries.length > 0 && entries.every(x => pmHas[x.key]); return { label: (on ? '✓ ' : '+ ') + label, style: pmChipStyle(on), pick: () => on ? pmDropMany(entries.map(x => x.key)) : pmAddMany(entries) }; };
     // ---- end member register (logic) ----
     const bulkKey = sel + '|' + memGroup + '|' + this.state.memQ.trim().toLowerCase();
-    const openMem = this.members(en).find(m => m.id === this.state.member) || null;
+    // [design 17 Nov] on the members tab the register shows the picked (or first) member beside the table
+    const memPickId = this.state.member || (tab === 'members' ? (this.state.memPick || ((this.members(en)[0] || {}).id)) : '');
+    const openMem = this.members(en).find(m => m.id === memPickId) || null;
     let openGuardian = null;
     this.members(en).forEach(m => (m.guardians || []).forEach(g => { if (g.id === this.state.guardian) openGuardian = g; }));
     const seedNotes = openMem ? [
@@ -2012,9 +2153,9 @@ export class AdminLogic extends LogicBase {
       tblAllChecked: tblSrc.length > 0 && tblChecked.length === tblSrc.length,
       tblToggleAll: () => this.setState(st => { const cur = st.tblSel || {}; const every = tblSrc.length > 0 && tblSrc.every(r => cur[r.id]); const nx = Object.assign({}, cur); tblSrc.forEach(r => { if (every) delete nx[r.id]; else nx[r.id] = true; }); return { tblSel: nx }; }),
       tblRows: tblShown.map(r => ({ key: 'tr' + r.id, name: r.name, email: r.email, type: r.type, checked: !!tblSel[r.id],
-        status: r.paid ? (en ? 'Active' : 'Aktiv') : (en ? 'Unpaid' : 'Ubetalt'),
-        statusStyle: 'display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; ' + (r.paid ? 'background: rgba(116,205,133,.3); color: #16241a;' : 'background: rgba(148,92,214,.18); color: #4b2a85;'),
-        rowStyle: 'display: grid; grid-template-columns: ' + tblGrid + '; gap: 12px; align-items: center; height: 62px; box-sizing: border-box; overflow: hidden; padding: 0 14px; border-bottom: 1px solid rgba(22,36,26,.08); font-size: 14px; cursor: pointer; transition: background .2s; background: ' + (tblSel[r.id] ? '#eaf7ed' : 'transparent') + ';',
+        status: r.inactive ? (en ? 'Inactive' : 'Inaktiv') : r.paid ? (en ? 'Active' : 'Aktiv') : (en ? 'Unpaid' : 'Ubetalt'),
+        statusStyle: 'display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; ' + (r.inactive ? 'background: rgba(22,36,26,.08); color: rgba(22,36,26,.65);' : r.paid ? 'background: rgba(116,205,133,.3); color: #16241a;' : 'background: rgba(148,92,214,.18); color: #4b2a85;'),
+        rowStyle: 'display: grid; grid-template-columns: ' + tblGrid + '; gap: 12px; align-items: center; height: 40px; box-sizing: border-box; overflow: hidden; padding: 0 14px; border-bottom: 1px solid rgba(22,36,26,.07); font-size: 13.5px; cursor: pointer; transition: background .2s; background: ' + (tblSel[r.id] ? '#eaf7ed' : (tab === 'members' && r.id === memPickId ? '#f1f5ee' : 'transparent')) + ';' + (tab === 'members' && r.id === memPickId ? ' box-shadow: inset 3px 0 0 #1f7a3a;' : ''),
         cells: cols.map(c => c.k === 'status' ? { key: 'c' + c.k, isStatus: true, isText: false, val: '' } : { key: 'c' + c.k, isStatus: false, isText: true, strong: c.k === 'name', val: c.k === 'name' ? r.name : (c.k === 'email' ? r.email : (c.k === 'type' ? r.type : extra(c.k, r))) }),
         open: r.open,
         toggle: () => this.setState(st => { const nx = Object.assign({}, st.tblSel || {}); if (nx[r.id]) delete nx[r.id]; else nx[r.id] = true; return { tblSel: nx }; })
@@ -2022,15 +2163,27 @@ export class AdminLogic extends LogicBase {
 
       tblGrid: tblGrid, tblMinW: tblMinW + 'px',
       ...(() => {
-        const pdone = this.state.pendDone || {}, psel = this.state.pendSel || {}, pq = (this.state.pendQ || '').trim().toLowerCase();
+        const pdone = this.state.pendDone || {}, psel = this.state.pendSel || {};
         const seedP = [['p1', 'vif', 'Nora', 'Lie', T2('Player', 'Spiller'), 'G14', 'Anne Lie'], ['p2', 'vif', 'Jakob', 'Strand', T2('Player', 'Spiller'), 'G16', 'Mona Strand'], ['p3', 'fana', 'Sondre', 'Haug', T2('Player', 'Spiller'), 'G12', 'Lars Haug'], ['p4', 'fana', 'Emilie', 'Vik', T2('Parent', 'Forelder'), 'G16', 'Emilie Vik'], ['p5', 'varden', 'Tarjei', 'Moe', T2('Player', 'Spiller'), T2('Open hall', 'Åpen hall'), 'Tarjei Moe']].map(p => ({ id: p[0], club: p[1], first: p[2], last: p[3], role: p[4], group: p[5], pay: p[6] }));
         const all0 = seedP.filter(p => !pdone[p.id] && (all || p.club === sel));
-        const list = all0.filter(p => !pq || (p.first + ' ' + p.last + ' ' + p.group).toLowerCase().includes(pq));
+        // [design 17 Nov] pending table: per-column search + pagination, and Members / Pending / Age-and-gender tabs
+        const pcf = this.state.pendCF || {};
+        const pcols = [['first', T2('First name', 'Fornavn')], ['last', T2('Last name', 'Etternavn')], ['role', T2('Group role', 'Grupperolle')], ['group', T2('Groups', 'Grupper')], ['pay', T2('Payment contact', 'Betalingskontakt')]];
+        const list = all0.filter(p => pcols.every(c => { const q = (pcf[c[0]] || '').trim().toLowerCase(); return !q || String(p[c[0]] || '').toLowerCase().includes(q); }));
+        const pPer = [15, 50, 100, 250].indexOf(this.state.pendPer) !== -1 ? this.state.pendPer : 15;
+        const pCount = Math.max(1, Math.ceil(list.length / pPer)), pPage = Math.min(this.state.pendPage || 1, pCount);
+        const pShown = list.slice((pPage - 1) * pPer, pPage * pPer);
+        const navSt = (off) => 'width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; border: 0; background: transparent; padding: 0; ' + (off ? 'color: rgba(22,36,26,.3); cursor: default;' : 'color: #16241a; cursor: pointer;');
         const approve = (ps) => this.setState(st => ({ pendDone: Object.assign({}, st.pendDone || {}, ps.reduce((o, p) => { o[p.id] = true; return o; }, {})), pendSel: {}, addedMems: (st.addedMems || []).concat(ps.map(p => ({ id: 'ap' + p.id, club: p.club, name: p.first + ' ' + p.last, email: (p.first + '.' + p.last).toLowerCase().replace(/[æ]/g, 'ae').replace(/[ø]/g, 'o').replace(/[å]/g, 'a') + '@example.no', type: 'active' }))) }));
         const reject = (ps) => this.setState(st => ({ pendDone: Object.assign({}, st.pendDone || {}, ps.reduce((o, p) => { o[p.id] = true; return o; }, {})), pendSel: {} }));
         const chosen = list.filter(p => psel[p.id]);
+        const mView = this.state.memDemo ? 'demo' : (this.state.pendOpen ? 'pend' : 'mem');
         return {
-          tPendTitle: T2('Pending', 'Ubehandlede'), notPend: !this.state.pendOpen, pendBtnRing: this.state.pendOpen ? '0 0 0 3px #ffffff, 0 0 0 5px #7c4dcf' : 'none', pendCount: String(all0.length), pendOpen: !!this.state.pendOpen, togglePend: () => this.setState({ pendOpen: !this.state.pendOpen }),
+          memDemoOn: mView === 'demo',
+          memTabs: [['mem', T2('Members', 'Medlemmer')], ['pend', T2('Pending', 'Ubehandlede') + (all0.length ? ' (' + all0.length + ')' : '')], ['demo', T2('Age and gender', 'Alder og kjønn')]].map(x => { const on = mView === x[0];
+            return { key: 'mtb' + x[0], label: x[1], on: on ? 'true' : 'false', pick: () => this.setState({ pendOpen: x[0] === 'pend', memDemo: x[0] === 'demo', memMenuOpen: false }),
+              style: 'padding: 8px 14px; margin-bottom: -1px; border: 0; border-radius: 8px 8px 0 0; cursor: pointer; font-family: var(--font-body); font-size: 14px; font-weight: 600; color: #16241a; ' + (on ? 'background: #eaf7ed; box-shadow: inset 0 -3px 0 #16241a;' : 'background: transparent; color: rgba(22,36,26,.7);') }; }),
+          tPendTitle: T2('Pending', 'Ubehandlede'), notPend: mView === 'mem', pendBtnRing: this.state.pendOpen ? '0 0 0 3px #ffffff, 0 0 0 5px #7c4dcf' : 'none', pendCount: String(all0.length), pendOpen: mView === 'pend', togglePend: () => this.setState({ pendOpen: !this.state.pendOpen, memDemo: false }),
           tPendIntro: T2('Pending members must be approved before they become active in the club, but they will still have access to the groups they belong to in the app.', 'Ubehandlede medlemmer må godkjennes før de blir aktive i klubben, men de vil uansett ha tilgang til gruppene de er medlem av i appen.'),
           tPendSearch: T2('Search', 'Søk'), tFirst: T2('First name', 'Fornavn'), tLast: T2('Last name', 'Etternavn'), tPGroupRole: T2('Group role', 'Grupperolle'), tPGroups: T2('Groups', 'Grupper'), tPPay: T2('Payment contact', 'Betalingskontakt'),
           tPendApprove: T2('Approve', 'Godkjenn'), tPendReject: T2('Decline', 'Avslå'), tPendApproveSel: T2('Approve selected', 'Godkjenn valgte'), tPendRejectSel: T2('Decline selected', 'Avslå valgte'), tPendNone: T2('You have no pending members', 'Du har ingen ubehandlede medlemmer'),
@@ -2038,7 +2191,13 @@ export class AdminLogic extends LogicBase {
           pendSelAny: chosen.length > 0, pendApproveSel: () => approve(chosen), pendRejectSel: () => reject(chosen),
           pendAllChecked: list.length > 0 && chosen.length === list.length,
           pendToggleAll: () => this.setState(st => { const every = list.length > 0 && list.every(p => (st.pendSel || {})[p.id]); const nx = {}; if (!every) list.forEach(p => { nx[p.id] = true; }); return { pendSel: nx }; }),
-          pendRows: list.map(p => ({ key: 'pr' + p.id, first: p.first, last: p.last, role: p.role, group: p.group, pay: p.pay, checked: !!psel[p.id], bg: psel[p.id] ? '#f3ecfc' : 'transparent',
+          pendFilterCells: pcols.map(c => ({ key: 'pcf' + c[0], val: pcf[c[0]] || '', ph: (en ? 'Search ' : 'Søk ') + c[1].toLowerCase(), onInput: (e) => { const v = e.target.value; this.setState(st => ({ pendCF: Object.assign({}, st.pendCF || {}, { [c[0]]: v }), pendPage: 1 })); } })),
+          pendSelCount: chosen.length + (en ? ' selected' : ' valgt'),
+          pendPer: pPer, onPendPer: (e) => this.setState({ pendPer: parseInt(e.target.value, 10), pendPage: 1 }),
+          pendRange: list.length ? ((pPage - 1) * pPer + 1) + '–' + Math.min(pPage * pPer, list.length) : '0', pendTotal: String(list.length),
+          pendAtStart: pPage <= 1, pendAtEnd: pPage >= pCount, pendPrevStyle: navSt(pPage <= 1), pendNextStyle: navSt(pPage >= pCount),
+          pendFirst: () => this.setState({ pendPage: 1 }), pendPrev: () => this.setState({ pendPage: Math.max(1, pPage - 1) }), pendNext: () => this.setState({ pendPage: Math.min(pCount, pPage + 1) }), pendLast: () => this.setState({ pendPage: pCount }),
+          pendRows: pShown.map(p => ({ key: 'pr' + p.id, first: p.first, last: p.last, role: p.role, group: p.group, pay: p.pay, checked: !!psel[p.id], bg: psel[p.id] ? '#eaf7ed' : 'transparent',
             toggle: () => this.setState(st => { const nx = Object.assign({}, st.pendSel || {}); if (nx[p.id]) delete nx[p.id]; else nx[p.id] = true; return { pendSel: nx }; }), approve: () => approve([p]), reject: () => reject([p]) }))
         };
       })(),
@@ -2055,6 +2214,11 @@ export class AdminLogic extends LogicBase {
       fHasChips: totalSel > 0, tRemoveL: T2('Remove', 'Fjern'),
       tblShowing: (() => { const a = tblAll ? tblSrc.length : tblShown.length, tot = allMemTotal; return en ? 'Showing ' + a + ' of ' + tot + ' members' : 'Viser ' + a + ' av ' + tot + ' medlemmer'; })(),
       tblHead: cols.map(c => ({ key: 'h' + c.k, label: c.label })),
+      // [design 17 Nov] column search row + "…" menu in the member register
+      tblFilterCells: cols.map(c => ({ key: 'tf' + c.k, val: colF[c.k] || '', ph: (en ? 'Search ' : 'Søk ') + c.label.toLowerCase(), onInput: (e) => { const v = e.target.value; this.setState(st => ({ colF: Object.assign({}, st.colF || {}, { [c.k]: v }), tblPage: 1 })); } })),
+      memMenuOpen: !!this.state.memMenu, memMenuToggle: () => this.setState(st => ({ memMenu: !st.memMenu })),
+      memMenuClose: () => this.setState({ memMenu: false }),
+      tPendMenu: this.state.pendOpen ? (en ? 'Back to members (pending)' : 'Tilbake fra ubehandlede') : (en ? 'Pending' : 'Ubehandlede'), tVisMenu: en ? 'Show columns' : 'Vis kolonner',
       tVis: en ? 'Show' : 'Vis', tVisHint: en ? 'Choose columns' : 'Velg kolonner',
       visOpen: !!this.state.visOpen, toggleVis: () => this.setState({ visOpen: !this.state.visOpen }), closeVis: () => this.setState({ visOpen: false }),
       visCount: cols.length + '/' + colDefs.length,
@@ -2065,7 +2229,16 @@ export class AdminLogic extends LogicBase {
       tTblPer: en ? 'Members per page' : 'Medlemmer per side',
       tblPer: String(tblPer),
       onTblPer: (e) => this.setState({ tblPer: parseInt(e.target.value, 10), tblPage: 1, tblAll: false }),
-      tblPerOpts: [15, 25, 50, 100, 250].map(v => ({ key: 'tpo' + v, v: v })),
+      tblPerOpts: [15, 50, 100, 250].map(v => ({ key: 'tpo' + v, v: v })),
+      // [design 17 Nov] compact pager ("1–15 av 120" + arrows)
+      tblSelCount: Object.keys(tblSel).filter(k => tblSel[k]).length + (en ? ' selected' : ' valgt'), tNewShort: en ? 'New' : 'Ny', tOf: en ? 'of' : 'av',
+      tblRange: tblSrc.length ? (tblAll ? '1–' + tblSrc.length : ((tblPageN - 1) * tblPer + 1) + '–' + Math.min(tblPageN * tblPer, tblSrc.length)) : '0', tblTotal: String(tblSrc.length),
+      tFirstPage: en ? 'First page' : 'Første side', tPrevPage: en ? 'Previous page' : 'Forrige side', tNextPage: en ? 'Next page' : 'Neste side', tLastPage: en ? 'Last page' : 'Siste side',
+      tblAtStart: tblAll || tblPageN <= 1, tblAtEnd: tblAll || tblPageN >= tblPageCount,
+      tblFirst: () => this.setState({ tblPage: 1, tblAll: false }), tblPrev: () => this.setState({ tblPage: Math.max(1, tblPageN - 1), tblAll: false }),
+      tblNext: () => this.setState({ tblPage: Math.min(tblPageCount, tblPageN + 1), tblAll: false }), tblLast: () => this.setState({ tblPage: tblPageCount, tblAll: false }),
+      tblNavPrevStyle: 'width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; border: 0; background: transparent; padding: 0; ' + ((tblAll || tblPageN <= 1) ? 'color: rgba(22,36,26,.3); cursor: default;' : 'color: #16241a; cursor: pointer;'),
+      tblNavNextStyle: 'width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; border: 0; background: transparent; padding: 0; ' + ((tblAll || tblPageN >= tblPageCount) ? 'color: rgba(22,36,26,.3); cursor: default;' : 'color: #16241a; cursor: pointer;'),
       tblPages: (() => {
         const n = tblPageCount, cur = tblPageN;
         const btn = (key, label, go, on, dis, wide) => ({ key: key, label: label, go: dis ? () => {} : go, aria: label,
@@ -2127,10 +2300,42 @@ export class AdminLogic extends LogicBase {
         try { const k = 'kretz.priority.v1'; const cur = JSON.parse(localStorage.getItem(k) || '[]'); cur.push(msg); localStorage.setItem(k, JSON.stringify(cur.slice(-30))); } catch { /* storage unavailable */ }
         const n = ch.length; if (pmComms) { this.setState({ pmOpen: false, pmList: [], pmOff: {}, cmPmSent: T2('Priority message sent to ' + n + (n === 1 ? ' member.' : ' members.'), 'Prioritetsmelding sendt til ' + n + (n === 1 ? ' medlem.' : ' medlemmer.')) }); return; } this.setState({ pmOpen: false, tblSel: {}, memMsg: T2('Priority message sent to ' + n + (n === 1 ? ' member.' : ' members.') + ' It appears in "Important from the board" on their home page.', 'Prioritetsmelding sendt til ' + n + (n === 1 ? ' medlem.' : ' medlemmer.') + ' Den vises i «Viktig fra styret» på hjemmesiden deres.') });
       },
+      // [design 17 Nov] "Behandle" (process) menu for ticked members + bulk edit dialog
+      bhOpen: !!this.state.bhOpen, bhToggle: () => this.setState(st => ({ bhOpen: !st.bhOpen, memMenuOpen: false })), bhClose: () => this.setState({ bhOpen: false }),
+      bhNone: tblChecked.length === 0, tBhNone: T2('Tick members in the list first, then choose what to do with them.', 'Huk av medlemmer i listen først, og velg så hva du vil gjøre med dem.'),
+      bhLabel: T2('Process', 'Behandle') + (tblChecked.length ? ' (' + tblChecked.length + ')' : ''), bhBtnBg: tblChecked.length ? '#16241a' : '#ffffff', bhBtnInk: tblChecked.length ? '#f6f8f3' : '#16241a',
+      bhHead: T2(tblChecked.length + (tblChecked.length === 1 ? ' member selected' : ' members selected'), tblChecked.length + (tblChecked.length === 1 ? ' medlem valgt' : ' medlemmer valgt')),
+      tBhPriority: T2('Send priority message', 'Send prioritetsmelding'), tBhEdit: T2('Edit…', 'Rediger …'), tBhExport: T2('Export selected (' + tblChecked.length + ')', 'Eksporter valgte (' + tblChecked.length + ')'),
+      bhMessage: () => { this.setState({ bhOpen: false }); setTimeout(() => this.bkMessageRef && this.bkMessageRef(), 0); },
+      bhPriority: () => { if (tblChecked.length) this.setState({ bhOpen: false, pmOpen: true, pmSrc: 'members', pmTitle: '', pmText: '' }); },
+      bhExport: () => { this.setState({ bhOpen: false }); if (this.exportMembersRef) this.exportMembersRef(); },
+      bhEditOpen: () => { if (!tblChecked.length) return; this.setState({ bhOpen: false, bhEdit: true, bhGrp: '', bhType: '', bhActive: tblChecked.every(r => !r.inactive) }); },
+      bhEditShown: !!this.state.bhEdit && tblChecked.length > 0, bhEditClose: () => this.setState({ bhEdit: false }),
+      bhEditTitle: T2('Edit ' + tblChecked.length + (tblChecked.length === 1 ? ' member' : ' members'), 'Rediger ' + tblChecked.length + (tblChecked.length === 1 ? ' medlem' : ' medlemmer')),
+      bhEditNames: tblChecked.length <= 3 ? tblChecked.map(r => r.name).join(', ') : tblChecked.slice(0, 3).map(r => r.name).join(', ') + T2(' and ' + (tblChecked.length - 3) + ' more', ' og ' + (tblChecked.length - 3) + ' til'),
+      tBhGroup: T2('Add to group / subgroup', 'Legg til i gruppe / undergruppe'), tBhType: T2('Membership type', 'Medlemskapstype'), tBhActive: T2('Active member', 'Aktivt medlem'),
+      bhActiveNote: (this.state.bhActive === false) ? T2('will be set inactive', 'settes som inaktiv') : T2('untick to set inactive', 'fjern haken for inaktiv'),
+      tBhSave: T2('Save changes', 'Lagre endringer'),
+      bhGrp: this.state.bhGrp || '', onBhGrp: (e) => this.setState({ bhGrp: e.target.value }),
+      bhType: this.state.bhType || '', onBhType: (e) => this.setState({ bhType: e.target.value }),
+      bhActive: this.state.bhActive !== false, bhToggleActive: () => this.setState(st => ({ bhActive: st.bhActive === false })),
+      bhTypeOpts: [{ key: 'bht0', id: '', label: T2('— Do not change —', '— Ikke endre —') }].concat(['active', 'support', 'coach', 'family'].map(k => ({ key: 'bht' + k, id: k, label: typeNames[k] }))),
+      bhGrpOpts: (() => { const clubsSel = Array.from(new Set(tblChecked.map(r => (r.raw && r.raw.club) || (all ? 'vif' : sel)))); const out = [{ key: 'bhg0', id: '', label: T2('— Do not change —', '— Ikke endre —') }];
+        deptTree.filter(c => clubsSel.indexOf(c.club) !== -1).forEach(c => { if (clubsSel.length > 1) out.push({ key: 'bhgc' + c.id, id: 'club:' + c.id, label: c.name.toUpperCase() });
+          const walk = (n, d) => { out.push({ key: 'bhg' + n.id, id: n.id, label: '\u00a0\u00a0\u00a0'.repeat(d) + (d ? '› ' : '') + n.name }); deptKids(n).forEach(k => walk(k, d + 1)); }; deptKids(c).forEach(k => walk(k, 0)); });
+        return out; })(),
+      bhSave: (e) => { if (e && e.preventDefault) e.preventDefault(); const ids = tblChecked.map(r => r.id); if (!ids.length) return;
+        let gName = ''; const gid = this.state.bhGrp || ''; if (gid && gid.indexOf('club:') !== 0) { const find = (n) => { if (n.id === gid) return n; for (const k of deptKids(n)) { const f = find(k); if (f) return f; } return null; }; for (const c of deptTree) { const f = find(c); if (f) { gName = f.name; break; } } }
+        const ty = this.state.bhType || '', act = this.state.bhActive !== false, n = ids.length;
+        this.setState(st => ({ bhEdit: false, tblSel: {},
+          memGroupOv: gName ? Object.assign({}, st.memGroupOv || {}, ids.reduce((o, id) => { o[id] = gName; return o; }, {})) : (st.memGroupOv || {}),
+          memTypeOv: ty ? Object.assign({}, st.memTypeOv || {}, ids.reduce((o, id) => { o[id] = ty; return o; }, {})) : (st.memTypeOv || {}),
+          memActOv: Object.assign({}, st.memActOv || {}, ids.reduce((o, id) => { o[id] = act; return o; }, {})),
+          memMsg: T2('Changes saved for ' + n + (n === 1 ? ' member.' : ' members.'), 'Endringer lagret for ' + n + (n === 1 ? ' medlem.' : ' medlemmer.')) })); },
       tBkClear: T2('Clear selection', 'Fjern valg'), bkClear: () => this.setState({ tblSel: {}, bkMenu: false }),
       tBkMessage: T2('Send message', 'Send melding'), tBkEdit: T2('Edit', 'Rediger'), tBkAdd: T2('Add to group', 'Legg til i gruppe'), tBkRemove: T2('Remove from group', 'Fjern fra gruppe'), tBkMerge: T2('Merge', 'Slå sammen'), tBkExport: T2('Export', 'Eksporter'), tBkDeactivate: T2('Deactivate', 'Deaktiver'),
       memMsg: this.state.memMsg || '', closeMemMsg: () => this.setState({ memMsg: '' }),
-      bkMessage: () => {
+      bkMessage: this.bkMessageRef = () => {
         const ch = tblChecked.slice(); if (!ch.length) return;
         const names = ch.map(r => r.name), club = (ch[0].raw && ch[0].raw.club) || (all ? 'vif' : sel);
         const title = ch.length === 1 ? names[0] : (ch.length <= 3 ? names.join(', ') : names.slice(0, 2).join(', ') + ' +' + (ch.length - 2));
@@ -2215,7 +2420,8 @@ export class AdminLogic extends LogicBase {
           chevron: '',
           items: [],
           pick: () => this.setState(st => ({ tab: t.id, navMenu: '', kpiPanel: false, spCal: false, bulkSms: 0, bulkSmsAt: '' , club: (t.id === 'booking' && st.club === 'all') ? 'vif' : st.club, venDraft: null, venSaved: '' })),
-          style: navItem(tab === t.id), act: tab === t.id ? 'yes' : 'no'
+          // [design 17 Nov] the docs view lives under the board item, so keep Board highlighted there
+          style: navItem(tab === t.id || (t.id === 'board' && tab === 'docs')), act: (tab === t.id || (t.id === 'board' && tab === 'docs')) ? 'yes' : 'no'
         };
       }),
       showInvoicing: tab === 'invoicing',
@@ -2264,6 +2470,8 @@ export class AdminLogic extends LogicBase {
       ...(() => {
         const T = (a, b) => (en ? a : b);
         const bt = this.state.bdTab || 'overview';
+        // [design 17 Nov] board tabs: "docs" tab is on when the docs view (tab 'docs') is open
+        const bdOn = (k) => this.state.tab === 'docs' ? k === 'docs' : bt === k;
         const now = new Date();
         const q0 = Math.floor(now.getMonth() / 3), qi = (this.state.bdQ || 0);
         const qAbs = now.getFullYear() * 4 + q0 + qi, qy = Math.floor(qAbs / 4), qq = qAbs % 4;
@@ -2295,7 +2503,7 @@ export class AdminLogic extends LogicBase {
             const col = st === 'signed' ? ['#eaf7ed', '#1f7a3a', '#1f7a3a'] : st === 'plan' ? ['#fff6d6', '#6b5300', '#e0a100'] : ['#f1f3ef', '#4C5E50', '#7d8a7f'];
             return { key: 'bm' + x.id, date: x.d + '. ' + mn(x.m - 1), title: x.title, status: lab,
               open: () => { if (x.real) this.setState({ bdTab: 'overview', meetingOpenId: x.id }); },
-              style: 'display: block; width: 100%; text-align: left; padding: 12px 12px; border-radius: 14px; border: 1px solid rgba(116,205,133,.35); background: #f4f8f2; cursor: pointer; font-family: var(--font-body); transition: border-color .2s',
+              style: 'display: block; width: 100%; text-align: left; padding: 8px 10px; border-radius: 12px; border: 1px solid rgba(116,205,133,.35); background: #f4f8f2; cursor: pointer; font-family: var(--font-body); transition: border-color .2s',
               chipStyle: 'display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: ' + col[0] + '; color: ' + col[1],
               dotStyle: 'width: 6px; height: 6px; border-radius: 999px; background: ' + col[2] };
           });
@@ -2429,8 +2637,9 @@ export class AdminLogic extends LogicBase {
           agPublishStyle: 'padding: 13px 22px; border-radius: 12px; border: 0; font-family: var(--font-heading); font-weight: 800; font-size: 14px; ' + (agPub ? 'background: #eaf7ed; color: #1f7a3a; cursor: default;' : 'background: #1f7a3a; color: #ffffff; cursor: pointer;')
         };
         return {
-          bdTabs: [['overview', T('Overview', 'Oversikt')], ['minutes', T('Minutes', 'Protokoll')], ['cal', T('Calendar', 'Kalender')]].map(o => ({ key: 'bt' + o[0], label: o[1], on: bt === o[0], pick: () => this.setState({ bdTab: o[0] }),
-            style: 'padding: 14px 18px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-body); font-size: 16px; margin-bottom: -1px; color: ' + (bt === o[0] ? '#1f7a3a' : 'rgba(22,36,26,.55)') + '; border-bottom: 3px solid ' + (bt === o[0] ? '#74cd85' : 'transparent') })),
+          // [design 17 Nov] board tabs gained "Documents" (opens the docs view, tab 'docs')
+          bdTabs: [['overview', T('Overview', 'Oversikt')], ['minutes', T('Minutes', 'Protokoll')], ['cal', T('Calendar', 'Kalender')], ['docs', T('Documents', 'Dokumenter')]].map(o => ({ key: 'bt' + o[0], label: o[1], on: bdOn(o[0]), pick: () => this.setState(o[0] === 'docs' ? { tab: 'docs' } : { tab: 'board', bdTab: o[0] }),
+            style: 'padding: 14px 18px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-body); font-size: 16px; margin-bottom: -1px; color: ' + (bdOn(o[0]) ? '#1f7a3a' : 'rgba(22,36,26,.55)') + '; border-bottom: 3px solid ' + (bdOn(o[0]) ? '#74cd85' : 'transparent') })),
           bdShowOverview: bt === 'overview',
           bdListMeetings: blv !== 'members', bdListMembers: blv === 'members',
           bdListTabs: [['meetings', T('Board meetings', 'Styremøter')], ['members', T('Board members', 'Styremedlemmer')]].map(o => ({ key: 'bl' + o[0], label: o[1], on: blv === o[0] ? 'true' : 'false', count: '',
@@ -2442,7 +2651,7 @@ export class AdminLogic extends LogicBase {
           bdQLabel: (isNow ? T('This quarter · ', 'Dette kvartalet · ') : '') + mn(qq * 3) + '–' + mn(qq * 3 + 2) + ' ' + qy,
           tBdPrevQ: T('Previous quarter', 'Forrige kvartal'), tBdNextQ: T('Next quarter', 'Neste kvartal'), tBdThisQ: T('This quarter', 'Dette kvartalet'),
           bdQPrev: () => this.setState(s2 => ({ bdQ: (s2.bdQ || 0) - 1 })), bdQNext: () => this.setState(s2 => ({ bdQ: (s2.bdQ || 0) + 1 })), bdQNow: () => this.setState({ bdQ: 0 }),
-          bdQNowStyle: 'height: 36px; padding: 0 16px; border-radius: 10px; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 13px; ' + (isNow ? 'border: 1px solid #1f7a3a; background: #1f7a3a; color: #ffffff;' : 'border: 1px solid rgba(22,36,26,.16); background: #ffffff; color: #16241a;'),
+          bdQNowStyle: 'height: 32px; padding: 0 14px; border-radius: 10px; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 13px; ' + (isNow ? 'border: 1px solid #1f7a3a; background: #1f7a3a; color: #ffffff;' : 'border: 1px solid rgba(22,36,26,.16); background: #ffffff; color: #16241a;'),
           bdMonths: months, tBdNoMeet: T('No meetings', 'Ingen møter'),
           tBdPlanTitle: T('Suggested annual plan', 'Forslag til årsplan'),
           tBdPlanSub: T('A typical year for a sports club board, built around the annual meeting.', 'Et typisk styreår for et idrettslag, bygget rundt årsmøtet.'),
@@ -2471,6 +2680,131 @@ export class AdminLogic extends LogicBase {
       tMore: en ? 'More' : 'Mer', tAddHere: en ? 'Create subgroup here' : 'Opprett undergruppe her', tRemove: en ? 'Remove' : 'Fjern',
       tSave: en ? 'Save' : 'Lagre',
       deptRows: deptRows,
+      // ---- [design 17 Nov] Groups view: club/group pickers, subgroup list, member list, actions, move/message and invite dialogs ----
+      tGrpSub: en ? 'Pick club and group. Subgroups show on the right – tick one to see its members.' : 'Velg klubb og gruppe. Undergruppene vises til høyre – huk av én for å se medlemmene.',
+      grpmClubs: (() => {
+        const q = (this.state.grpQc || '').trim().toLowerCase();
+        const shown = grpRoots.filter(c => !q || c.name.toLowerCase().includes(q));
+        const allOn = shown.length > 0 && shown.every(c => grpClubSel[c.id]);
+        return Object.assign(grpMenu('clubs', en ? 'Club' : 'Klubb', grpClubsOn.length === grpRoots.length ? (en ? 'All clubs' : 'Alle klubber') : (grpClubsOn.map(c => c.name).join(', ') || (en ? 'None selected' : 'Ingen valgt'))), {
+          q: this.state.grpQc || '', onQ: (e) => this.setState({ grpQc: e.target.value }), ph: en ? 'Search club…' : 'Søk etter klubb …',
+          items: shown.map(c => ({ key: 'gc' + c.id, name: c.name, meta: deptSum(c) + '', on: !!grpClubSel[c.id], toggle: () => this.setState(() => { const o = Object.assign({}, grpClubSel); if (o[c.id]) delete o[c.id]; else o[c.id] = true; return { grpClubs: o }; }) })),
+          empty: shown.length === 0, allLbl: allOn ? (en ? 'Clear all' : 'Fjern alle') : (en ? 'Select all' : 'Velg alle'),
+          all: () => this.setState(() => { const o = Object.assign({}, grpClubSel); shown.forEach(c => { if (allOn) delete o[c.id]; else o[c.id] = true; }); return { grpClubs: o }; })
+        });
+      })(),
+      grpmGroups: (() => {
+        const q = (this.state.grpQg || '').trim().toLowerCase();
+        const shown = grpTop.filter(x => !q || (x.node.name + ' ' + x.club.name).toLowerCase().includes(q));
+        const allOn = shown.length > 0 && shown.every(x => grpGroupOn(x.node.id));
+        const cur = () => { const o = {}; grpTop.forEach(x => { if (grpGroupOn(x.node.id)) o[x.node.id] = true; }); return o; };
+        return Object.assign(grpMenu('groups', en ? 'Group' : 'Gruppe', grpTopOn.length === grpTop.length ? (en ? 'All groups' : 'Alle grupper') + ' (' + grpTop.length + ')' : (grpTopOn.map(x => x.node.name).join(', ') || (en ? 'None selected' : 'Ingen valgt'))), {
+          q: this.state.grpQg || '', onQ: (e) => this.setState({ grpQg: e.target.value }), ph: en ? 'Search group…' : 'Søk etter gruppe …',
+          items: shown.map(x => ({ key: 'gg' + x.node.id, name: x.node.name, meta: grpClubsOn.length > 1 ? x.club.name : deptSum(x.node) + '', on: grpGroupOn(x.node.id), toggle: () => this.setState(() => { const o = cur(); if (o[x.node.id]) delete o[x.node.id]; else o[x.node.id] = true; return { grpGroups: o }; }) })),
+          empty: shown.length === 0, allLbl: allOn ? (en ? 'Clear all' : 'Fjern alle') : (en ? 'Select all' : 'Velg alle'),
+          all: () => this.setState(() => { const o = cur(); shown.forEach(x => { if (allOn) delete o[x.node.id]; else o[x.node.id] = true; }); return { grpGroups: o }; })
+        });
+      })(),
+      tGrpSubs: en ? 'Subgroups' : 'Undergrupper', grpSubCount: String(grpOrdered.length),
+      grpQs: this.state.grpQs || '', onGrpQs: (e) => this.setState({ grpQs: e.target.value }),
+      grpAnySel: grpSelIds.length > 0, tGrpClearSel: en ? 'Clear selection' : 'Fjern valg', grpClearSel: () => this.setState({ grpSel: {} }),
+      grpSubNone: grpOrdered.length === 0, tGrpSubNone: en ? 'No groups – pick a club and group on the left.' : 'Ingen grupper – velg klubb og gruppe til venstre.',
+      grpSubRows: grpOrdered.map(x => { const on = !!grpSel[x.n.id];
+        return { key: 'gs' + x.n.id, name: x.n.name, path: x.depth === 0 && grpClubsOn.length > 1 ? clubOf(x.club) : '', indent: (x.depth * 22) + 'px', on: on,
+          count: deptSum(x.n) + grpInv.filter(v => v.target === x.n.id).length + (en ? ' members' : ' medlemmer'),
+          nameStyle: 'min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; ' + (x.depth === 0 ? 'font-family: var(--font-heading); font-weight: 800;' : 'font-weight: 500;'),
+          style: 'display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px;' + (on ? ' background: #f4f8f2;' : ''),
+          toggle: () => this.setState(st => { const o = Object.assign({}, st.grpSel || {}); if (o[x.n.id]) delete o[x.n.id]; else o[x.n.id] = true; return { grpSel: o }; }),
+          menu: () => this.setState(st => ({ deptMenu: st.deptMenu === x.n.id ? '' : x.n.id })), menuOpen: this.state.deptMenu === x.n.id,
+          invite: () => grpOpenInvite(x.n.id),
+          addHere: () => this.setState({ deptMenu: '', deptModal: 'group', dmName: '', gmShort: '', gmFull: '', gmDesc: '', gmContact: '', dmParent: x.n.id }),
+          remove: () => this.setState(st => ({ deptGone: Object.assign({}, st.deptGone || {}, { [x.n.id]: true }), deptMenu: '' })) }; }),
+      tGrpMembers: en ? 'Members' : 'Medlemmer', grpMemCount: grpSelIds.length ? String(grpMemShown.length) : '',
+      grpQm: this.state.grpQm || '', onGrpQm: (e) => this.setState({ grpQm: e.target.value }),
+      tGrpMemSearch: en ? 'Search name or email…' : 'Søk på navn eller e-post …',
+      tGrpColGroup: en ? 'Group' : 'Gruppe', tGrpColEmail: en ? 'Email' : 'E-post',
+      grpMemHead: grpMemShown.length > 0,
+      grpMemRows: grpMemShown.slice(0, 300).map(m => ({ key: 'gm' + m.id, on: !!grpMemSel[m.id], toggle: () => this.setState(st => { const o = Object.assign({}, st.grpMemSel || {}); if (o[m.id]) delete o[m.id]; else o[m.id] = true; return { grpMemSel: o }; }),
+        rowStyle: 'display: grid; grid-template-columns: 22px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.3fr) 80px; gap: 12px; align-items: center; padding: 6px 10px; border-bottom: 1px solid rgba(22,36,26,.06); font-size: 13.5px; cursor: pointer;' + (grpMemSel[m.id] ? ' background: #f4f8f2;' : ''), name: m.name, role: m.role, group: m.group, email: m.email || '–', status: m.invited ? (en ? 'Invited' : 'Invitert') : (en ? 'Active' : 'Aktiv'),
+        statusStyle: 'font-size: 12.5px; ' + (m.invited ? 'color: rgba(22,36,26,.6); font-style: italic;' : 'color: #16241a;') })),
+      grpMemNone: grpMemShown.length === 0,
+      grpMemNoneText: grpSelIds.length ? (en ? 'No members here yet.' : 'Ingen medlemmer her ennå.') : (en ? 'Tick a subgroup above to see its members.' : 'Huk av en undergruppe over for å se medlemmene.'),
+      grpSelInfo: grpChosen.length ? grpChosen.length + (en ? ' selected' : ' valgt') : '',
+      tGrpSelAll: en ? 'Select all' : 'Velg alle',
+      grpMemAllOn: grpMemShown.length > 0 && grpMemShown.every(m => grpMemSel[m.id]),
+      grpMemAllToggle: () => this.setState(st => { const o = Object.assign({}, st.grpMemSel || {}); const allOn = grpMemShown.length > 0 && grpMemShown.every(m => o[m.id]); grpMemShown.forEach(m => { if (allOn) delete o[m.id]; else o[m.id] = true; }); return { grpMemSel: o }; }),
+      tGrpBeh: en ? 'Actions' : 'Behandling', grpBehOpen: !!this.state.grpBeh, grpBehToggle: () => this.setState(st => ({ grpBeh: !st.grpBeh })),
+      grpBehItems: (() => {
+        const n = grpChosen.length;
+        const base = 'display: block; width: 100%; text-align: left; padding: 10px 12px; border-radius: 10px; border: 0; background: transparent; font-family: var(--font-body); font-size: 14px; ';
+        const it = (key, label, need, run, danger) => ({ key: 'gb' + key, label: label + (need && n ? ' (' + n + ')' : ''), off: need && !n, run: () => { if (need && !n) return; this.setState({ grpBeh: false }); run(); },
+          style: base + (need && !n ? 'color: rgba(22,36,26,.35); cursor: default;' : 'cursor: pointer; color: ' + (danger ? '#a3282f' : '#16241a') + ';') });
+        return [
+          it('inv', en ? 'Invite new people to the group' : 'Inviter nye til gruppa', false, () => grpOpenInvite(grpSelIds[0] || (grpClubsOn[0] || {}).id || '')),
+          it('msg', en ? 'Send message' : 'Send melding', true, () => this.setState({ grpAct: { kind: 'msg', subject: '', body: '' } })),
+          it('mail', en ? 'Send email' : 'Send e-post', true, () => { const to = grpChosen.map(m => m.email).filter(Boolean).join(','); window.location.href = 'mailto:' + to; }),
+          it('move', en ? 'Move to another group' : 'Flytt til en annen gruppe', true, () => this.setState({ grpAct: { kind: 'move', target: (gmTargetsAll.find(o => !grpSel[o.id]) || gmTargetsAll[0] || {}).id || '' } })),
+          it('csv', en ? 'Export list (CSV)' : 'Eksporter liste (CSV)', false, () => {
+            const rows = (n ? grpChosen : grpMemShown);
+            const csv = [[en ? 'Name' : 'Navn', en ? 'Role' : 'Rolle', en ? 'Group' : 'Gruppe', en ? 'Email' : 'E-post', 'Status']].concat(rows.map(m => [m.name, m.role, m.group, m.email, m.invited ? (en ? 'Invited' : 'Invitert') : (en ? 'Active' : 'Aktiv')])).map(r => r.map(x => '"' + String(x || '').replace(/"/g, '""') + '"').join(';')).join('\n');
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })); a.download = (en ? 'members' : 'medlemmer') + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+          }),
+          it('del', en ? 'Remove from the group' : 'Slett medlem fra gruppa', true, () => {
+            const ids = grpChosen.map(m => m.id);
+            this.setState(st => { const r = Object.assign({}, st.grpRemoved || {}); ids.forEach(id => { r[id] = true; }); return { grpRemoved: r, grpMemSel: {}, grpUndoIds: ids, grpMsg: ids.length + (en ? ' removed from the group' : ' fjernet fra gruppa') }; });
+            clearTimeout(this._grpMsgT); this._grpMsgT = setTimeout(() => this.setState({ grpMsg: '', grpUndoIds: null }), 8000);
+          }, true)
+        ];
+      })(),
+      grpCanUndo: !!(this.state.grpUndoIds && this.state.grpUndoIds.length), tGrpUndo: en ? 'Undo' : 'Angre',
+      grpUndo: () => this.setState(st => { const r = Object.assign({}, st.grpRemoved || {}); (st.grpUndoIds || []).forEach(id => { delete r[id]; }); return { grpRemoved: r, grpUndoIds: null, grpMsg: '' }; }),
+      gmOpen: !!gm, gmClose: () => this.setState({ grpAct: null }),
+      gmIsMove: !!gm && gm.kind === 'move', gmIsMsg: !!gm && gm.kind === 'msg',
+      gmTitle: gm && gm.kind === 'move' ? (en ? 'Move to another group' : 'Flytt til en annen gruppe') : (en ? 'Send message' : 'Send melding'),
+      gmWho: grpChosen.length + (en ? ' selected: ' : ' valgt: ') + grpChosen.slice(0, 5).map(m => m.name).join(', ') + (grpChosen.length > 5 ? (en ? ' and ' : ' og ') + (grpChosen.length - 5) + (en ? ' more' : ' til') : ''),
+      tGmMoveTo: en ? 'Move to' : 'Flytt til', gmTarget: (gm && gm.target) || '', gmTargets: gmTargetsAll.map(o => ({ key: 'gmt' + o.id, id: o.id, name: o.name })),
+      onGmTarget: (e) => { const v = e.target.value; this.setState(st => ({ grpAct: Object.assign({}, st.grpAct, { target: v }) })); },
+      tGmSubject: en ? 'Title' : 'Tittel', tGmBody: en ? 'Message' : 'Melding',
+      gmSubject: (gm && gm.subject) || '', onGmSubject: (e) => { const v = e.target.value; this.setState(st => ({ grpAct: Object.assign({}, st.grpAct, { subject: v }) })); },
+      gmBody: (gm && gm.body) || '', onGmBody: (e) => { const v = e.target.value; this.setState(st => ({ grpAct: Object.assign({}, st.grpAct, { body: v }) })); },
+      gmOff: !gm || !grpChosen.length || (gm.kind === 'msg' ? !(gm.body || '').trim() : !gm.target), gmOpacity: (!gm || !grpChosen.length || (gm.kind === 'msg' ? !(gm.body || '').trim() : !gm.target)) ? '.45' : '1',
+      gmSendLabel: gm && gm.kind === 'move' ? (en ? 'Move' : 'Flytt') : (en ? 'Send' : 'Send'),
+      gmSend: (e) => {
+        e.preventDefault(); if (!gm || !grpChosen.length) return;
+        if (gm.kind === 'move') {
+          if (!gm.target) return;
+          const tg = gmTargetsAll.find(o => o.id === gm.target) || { name: '' };
+          const moved = grpChosen.map(m => ({ m: Object.assign({}, m), target: gm.target }));
+          this.setState(st => ({ grpMoves: (st.grpMoves || []).filter(x => !moved.some(y => y.m.id === x.m.id)).concat(moved), grpAct: null, grpMemSel: {}, grpUndoIds: null, grpMsg: moved.length + (en ? ' moved to ' : ' flyttet til ') + tg.name }));
+        } else {
+          if (!(gm.body || '').trim()) return;
+          this.setState({ grpAct: null, grpUndoIds: null, grpMsg: (en ? 'Message sent to ' : 'Melding sendt til ') + grpChosen.length + (en ? ' members' : ' medlemmer') });
+        }
+        clearTimeout(this._grpMsgT); this._grpMsgT = setTimeout(() => this.setState({ grpMsg: '' }), 5000);
+      },
+      tGrpInviteClub: en ? '+ Invite members' : '+ Inviter medlemmer', grpInviteClub: () => grpOpenInvite(grpSelIds[0] || (grpClubsOn[0] || {}).id || ''),
+      tGrpInviteHere: en ? 'Invite to this group' : 'Inviter til denne gruppen',
+      grpMsg: this.state.grpMsg || '',
+      giOpen: !!gi, giClose: () => this.setState({ grpInvite: null }),
+      tGiTitle: en ? 'Invite members' : 'Inviter medlemmer', tGiTo: en ? 'Invite to' : 'Inviter til',
+      giTarget: giTarget, giTargets: giTargetsAll.map(o => ({ key: 'gt' + o.id, id: o.id, name: o.name })),
+      onGiTarget: (e) => { const v = e.target.value; this.setState(st => ({ grpInvite: Object.assign({}, st.grpInvite, { target: v, picked: {} }) })); },
+      tGiPick: en ? 'Existing members of the club' : 'Eksisterende medlemmer i klubben', tGiSearch: en ? 'Search by name…' : 'Søk på navn …',
+      giQ: (gi && gi.q) || '', onGiQ: (e) => { const v = e.target.value; this.setState(st => ({ grpInvite: Object.assign({}, st.grpInvite, { q: v }) })); },
+      giResults: giShown.map(m => ({ key: 'gp' + m.id, name: m.name, meta: m.group || '', on: !!giPicked[m.name],
+        toggle: () => this.setState(st => { const p2 = Object.assign({}, (st.grpInvite || {}).picked || {}); if (p2[m.name]) delete p2[m.name]; else p2[m.name] = true; return { grpInvite: Object.assign({}, st.grpInvite, { picked: p2 }) }; }) })),
+      tGiNew: en ? 'New people (email, one per line)' : 'Nye personer (e-post, én per linje)', tGiNewPh: 'navn@epost.no',
+      giText: (gi && gi.text) || '', onGiText: (e) => { const v = e.target.value; this.setState(st => ({ grpInvite: Object.assign({}, st.grpInvite, { text: v }) })); },
+      giSummary: giCount ? giCount + (en ? (giCount === 1 ? ' person' : ' people') + ' will be invited to ' : (giCount === 1 ? ' person' : ' personer') + ' blir invitert til ') + giTargetObj.name + '.' : (en ? 'Pick members or type emails.' : 'Velg medlemmer eller skriv inn e-post.'),
+      giOff: giCount === 0 || !giTarget, giOpacity: (giCount === 0 || !giTarget) ? '.45' : '1', tGiSend: en ? 'Send invitation' : 'Send invitasjon',
+      giSend: (e) => {
+        e.preventDefault(); if (!giCount || !giTarget) return;
+        const stamp = Date.now();
+        const rows = Object.keys(giPicked).filter(k => giPicked[k]).map((nm, i) => { const m = giPool.find(x => x.name === nm) || {}; return { id: 'gi' + stamp + 'a' + i, target: giTarget, name: nm, email: m.email || '' }; })
+          .concat(giNew.map((x, i) => ({ id: 'gi' + stamp + 'b' + i, target: giTarget, name: x.indexOf('@') > 0 ? x.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : x, email: x.indexOf('@') > 0 ? x : '' })));
+        this.setState(st => ({ grpInvites: (st.grpInvites || []).concat(rows), grpInvite: null, grpMsg: rows.length + (en ? ' invited to ' : ' invitert til ') + giTargetObj.name }));
+        clearTimeout(this._grpMsgT); this._grpMsgT = setTimeout(() => this.setState({ grpMsg: '' }), 5000);
+      },
       deptQ: this.state.deptQ || '',
       onDeptQ: (e) => this.setState({ deptQ: e.target.value }),
       tDeptSearch: en ? 'Search group names…' : 'Søk etter gruppenavn …',
@@ -2673,7 +3007,7 @@ export class AdminLogic extends LogicBase {
       ].map(o => ({
         key: 'aud' + o.id, label: o.label,
         pick: () => venUpd(v => { v.audience = o.id; }),
-        style: 'padding: 8px 14px; border-radius: 999px; font-family: var(--font-heading); font-weight: 800; font-size: 12.5px; cursor: pointer; ' + ((venV && (venV.audience || 'all')) === o.id ? 'background: #16241a; border: 1px solid #16241a; color: #f6f8f3;' : 'background: #ffffff; border: 1px solid rgba(22,36,26,.2); color: #16241a;')
+        style: 'padding: 5px 10px; border-radius: 999px; font-family: var(--font-body); font-weight: 700; font-size: 12px; cursor: pointer; ' + ((venV && (venV.audience || 'all')) === o.id ? 'background: #16241a; border: 1px solid #16241a; color: #f6f8f3;' : 'background: #ffffff; border: 1px solid rgba(22,36,26,.2); color: #16241a;')
       })),
       venAudienceNote: (venV && venV.audience) === 'members'
         ? (en ? 'Visitors see the venue but cannot book. Members log in to book.' : 'Besøkende ser stedet, men kan ikke booke. Medlemmer logger inn for å booke.')
@@ -2856,8 +3190,13 @@ export class AdminLogic extends LogicBase {
       venClean: venClean,
       tVenSave: en ? 'Save and publish' : 'Lagre og publiser',
       tVenDiscard: en ? 'Discard changes' : 'Forkast endringer',
-      tVenPreview: en ? 'Open booking page' : 'Åpne bookingsiden',
-      venSaveStyle: 'padding: 13px 22px; border-radius: 999px; border: 0; font-family: var(--font-heading); font-weight: 800; font-size: 14px; cursor: ' + (venClean ? 'default' : 'pointer') + '; background: ' + (venClean ? 'rgba(22,36,26,.12)' : '#1f7a3a') + '; color: ' + (venClean ? 'rgba(22,36,26,.5)' : '#ffffff') + '; transition: background .3s',
+      // [design 17 Nov] compact action bar: Preview opens the public booking page in an overlay (nothing is saved there)
+      tVenPreview: 'Preview', tVenSchedule: en ? 'Schedule' : 'Tidsplan',
+      bkPreviewShown: !!this.state.bkPreview, bkPreviewOpen: () => this.setState({ bkPreview: true }), bkPreviewClose: () => this.setState({ bkPreview: false }),
+      bkPreviewSrc: '#/booking?klubb=' + encodeURIComponent(venCur ? venCur.slug : '') + '&preview=1',
+      tBkPreviewBack: en ? 'Back to booking admin' : 'Tilbake til booking-admin',
+      tBkPreviewNote: en ? 'Preview – this is what members and visitors see. Nothing you do here is saved.' : 'Forhåndsvisning – slik ser medlemmer og besøkende bookingsiden. Ingenting du gjør her lagres.',
+      venSaveStyle: 'padding: 8px 18px; border-radius: 999px; border: 0; font-family: var(--font-heading); font-weight: 800; font-size: 14px; cursor: ' + (venClean ? 'default' : 'pointer') + '; background: ' + (venClean ? 'rgba(22,36,26,.12)' : '#1f7a3a') + '; color: ' + (venClean ? 'rgba(22,36,26,.5)' : '#ffffff') + '; transition: background .3s',
       venSave: () => {
         if (!venDraft || !KretzVenues) return;
         const all2 = KretzVenues.load();
@@ -2972,7 +3311,8 @@ export class AdminLogic extends LogicBase {
       tQuickPost: en ? 'New post' : 'Nytt innlegg',
       tQuickPostNote: en ? 'Share news with a club or group' : 'Del nyheter med en klubb eller gruppe',
       // design Nov 2026: the later key in the design object wins ('Add invoice'); new payment modal title
-      tInvoiceMerged: en ? 'Add invoice' : 'Legg til faktura', tInvoiceModal: en ? 'New payment' : 'Ny betaling',
+      tInvoiceMerged: en ? 'Add invoice' : 'Legg til faktura', // design: a later 'restored' key overrides 'Invoicing members'
+      tInvoiceModal: en ? 'New payment' : 'Ny betaling',
       tPayables: en ? 'Invoices the club must pay' : 'Fakturaer klubben skal betale',
       tAddPayable: en ? 'Add invoice (PDF)' : 'Legg til faktura (PDF)',
       tPayDue: en ? 'Unpaid' : 'Ubetalt',
@@ -3095,25 +3435,121 @@ export class AdminLogic extends LogicBase {
         }));
       },
       tRolesHeading: en ? 'Roles in the club' : 'Roller i klubben',
-      tRolesSub: en ? 'Click a role to see who has it.' : 'Klikk på en rolle for å se hvem som har den.',
+      // ---- [design 17 Nov] Roles view: access per role, people picker menus, give-role dialog, pending approvals ----
+      tRolesSub: en ? 'Each role shows what it has access to. Click Access to change it, or the name to see who has it.' : 'Hver rolle viser hva den har tilgang til. Klikk Tilgang for å endre, eller navnet for å se hvem som har den.',
       roleCards: roleDefs.map(r => {
-        const n = roleList.filter(a => a.role === r.id).length;
+        const n = roleList.filter(a => a.role === r.id && rfClubIds.indexOf(a.club) !== -1).length;
         const on = this.state.roleFilter === r.id;
+        const po = permOf(r.id);
+        const open = this.state.roleEdit === r.id;
+        const nSel = rfMemChosen.length;
         return {
           key: 'rc' + r.id,
-          name: r.name, num: n,
+          name: r.name, num: n, numLabel: n + (en ? ' assigned' : ' tildelt'), onAttr: on ? 'true' : 'false',
           dotStyle: 'width: 10px; height: 10px; flex: 0 0 auto; border-radius: 999px; background: ' + r.color,
           pick: () => this.setState(st => ({ roleFilter: st.roleFilter === r.id ? '' : r.id })),
-          menu: (e) => { e.stopPropagation(); this.setState(st => ({ roleMenu: st.roleMenu === r.id ? '' : r.id })); },
-          menuOpen: this.state.roleMenu === r.id,
-          closeMenu: (e) => { e.stopPropagation(); this.setState({ roleMenu: '' }); },
-          showLabel: on ? (en ? 'Show all people' : 'Vis alle personer') : (en ? 'Show people' : 'Vis personer'),
-          show: (e) => { e.stopPropagation(); this.setState(st => ({ roleFilter: st.roleFilter === r.id ? '' : r.id, roleMenu: '' })); },
+          accessText: PERMS.some(x => po[x[0]]) ? (en ? 'Access: ' : 'Tilgang: ') + PERMS.filter(x => po[x[0]]).map(x => x[1]).join(', ') : (en ? 'No access yet' : 'Ingen tilgang ennå'),
+          menuHead: (en ? 'Functions for ' : 'Funksjoner for ') + r.name.toLowerCase(),
+          permAllLbl: PERMS.every(x => po[x[0]]) ? (en ? 'Clear all' : 'Fjern alle') : (en ? 'Select all' : 'Velg alle'),
+          permAll: () => this.setState(st => { const all = Object.assign({}, st.rolePerms || {}); const on = PERMS.every(x => po[x[0]]); const cur = {}; if (!on) PERMS.forEach(x => { cur[x[0]] = true; }); all[r.id] = cur; return { rolePerms: all }; }),
+          editOpen: open,
+          edit: () => this.setState(st => ({ roleEdit: st.roleEdit === r.id ? '' : r.id })),
+          editLabel: (en ? 'Access' : 'Tilgang') + ' (' + PERMS.filter(x => po[x[0]]).length + ')',
+          editStyle: 'padding: 7px 13px; border-radius: 999px; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 12.5px; color: #16241a; border: 1px solid ' + (open ? '#16241a' : 'rgba(22,36,26,.18)') + '; background: ' + (open ? '#f4f8f2' : '#ffffff') + ';',
+          perms: PERMS.map(x => ({ key: 'rp' + r.id + x[0], name: x[1], on: !!po[x[0]],
+            toggle: () => this.setState(st => { const all = Object.assign({}, st.rolePerms || {}); const cur = Object.assign({}, permOf(r.id)); if (cur[x[0]]) delete cur[x[0]]; else cur[x[0]] = true; all[r.id] = cur; return { rolePerms: all }; }) })),
+          giveOff: nSel === 0,
+          giveTitle: nSel ? (en ? 'Send for confirmation' : 'Send til bekreftelse') : (en ? 'Pick members on the left first' : 'Velg medlemmer til venstre først'),
+          giveLabel: (en ? 'Give to selected' : 'Gi til valgte') + (nSel ? ' (' + nSel + ')' : ''),
+          giveStyle: 'padding: 7px 13px; border-radius: 999px; font-family: var(--font-heading); font-weight: 800; font-size: 12.5px; ' + (nSel ? 'border: 0; background: #16241a; color: #f6f8f3; cursor: pointer;' : 'border: 1px dashed rgba(22,36,26,.2); background: transparent; color: rgba(22,36,26,.4); cursor: default;'),
+          give: () => { if (!nSel) return; const pre = {}; const anyOff = rfGroupsAvail.some(x => !rfGroupOn(x.key)); if (anyOff) rfGroupsAvail.forEach(x => { if (rfGroupOn(x.key)) pre[x.key] = true; }); else rfMemChosen.forEach(m => { if (m.group) pre[m.club + '|' + m.group] = true; }); this.setState({ roleGive: { role: r.id, scope: anyOff ? 'groups' : 'club', groups: pre, q: '' } }); },
           canRemove: !!r.custom,
-          remove: (e) => { e.stopPropagation(); this.setState(st => ({ addedRoleDefs: (st.addedRoleDefs || []).filter(x => x.id !== r.id), roleMenu: '', roleFilter: st.roleFilter === r.id ? '' : st.roleFilter })); },
-          style: 'display: grid; grid-template-columns: minmax(0,1fr) 110px 56px; align-items: center; height: 46px; box-sizing: border-box; padding: 0 18px; border-bottom: 1px solid rgba(22,36,26,.08); font-size: 14px; cursor: pointer; transition: background .2s;' + (on ? ' background: #eaf7ed; font-weight: 700;' : '')
+          remove: (e) => { e.stopPropagation(); this.setState(st => ({ addedRoleDefs: (st.addedRoleDefs || []).filter(x => x.id !== r.id), roleFilter: st.roleFilter === r.id ? '' : st.roleFilter, roleEdit: '' })); },
+          style: 'padding: 14px 22px; border-bottom: 1px solid rgba(22,36,26,.08);' + (on ? ' background: #f6f8f3; box-shadow: inset 3px 0 0 #16241a;' : '')
         };
       }),
+      tRoleNoAccess: en ? 'No access yet – click Access.' : 'Ingen tilgang ennå – klikk Tilgang.',
+      tRfHead: en ? 'Choose people' : 'Velg personer', tRfSub: en ? 'Open each menu to filter by club and group, then tick the members who should get a role.' : 'Åpne menyene for å filtrere på klubb og gruppe, og huk av medlemmene som skal få en rolle.',
+      tRfClubs: en ? 'Club' : 'Klubb', tRfGroups: en ? 'Group' : 'Gruppe', tRfMembers: en ? 'Members' : 'Medlemmer',
+      tRfNone: en ? 'Nothing to show.' : 'Ingenting å vise.', tRfSearch: en ? 'Search name…' : 'Søk på navn …',
+      rfmClubs: (() => {
+        const q = (this.state.rfQc || '').trim().toLowerCase();
+        const shown = rfClubsAll.filter(c => !q || c.name.toLowerCase().includes(q));
+        const allOn = shown.length > 0 && shown.every(c => rfClubSel[c.id]);
+        return Object.assign(rfMenu('clubs', en ? 'Club' : 'Klubb', rfClubIds.length === rfClubsAll.length ? (en ? 'All clubs' : 'Alle klubber') : (rfClubIds.length ? rfClubsAll.filter(c => rfClubSel[c.id]).map(c => c.name).join(', ') : (en ? 'None selected' : 'Ingen valgt'))), {
+          q: this.state.rfQc || '', onQ: (e) => this.setState({ rfQc: e.target.value }), ph: en ? 'Search club…' : 'Søk etter klubb …',
+          items: shown.map(c => ({ key: 'fc' + c.id, name: c.name, meta: '', on: !!rfClubSel[c.id], toggle: () => this.setState(() => { const o = Object.assign({}, rfClubSel); if (o[c.id]) delete o[c.id]; else o[c.id] = true; return { rfClubs: o }; }) })),
+          empty: shown.length === 0, allLbl: allOn ? (en ? 'Clear all' : 'Fjern alle') : (en ? 'Select all' : 'Velg alle'),
+          all: () => this.setState(() => { const o = Object.assign({}, rfClubSel); shown.forEach(c => { if (allOn) delete o[c.id]; else o[c.id] = true; }); return { rfClubs: o }; })
+        });
+      })(),
+      rfmGroups: (() => {
+        const q = (this.state.rfQg || '').trim().toLowerCase();
+        const shown = rfGroupsAvail.filter(x => !q || (x.g + ' ' + clubOf(x.club)).toLowerCase().includes(q));
+        const allOn = shown.length > 0 && shown.every(x => rfGroupOn(x.key));
+        const nOn = rfGroupsAvail.filter(x => rfGroupOn(x.key)).length;
+        const cur = () => { const o = {}; rfGroupsAvail.forEach(y => { if (rfGroupOn(y.key)) o[y.key] = true; }); return o; };
+        return Object.assign(rfMenu('groups', en ? 'Group' : 'Gruppe', nOn === rfGroupsAvail.length ? (en ? 'All groups' : 'Alle grupper') + ' (' + nOn + ')' : nOn + (en ? ' of ' : ' av ') + rfGroupsAvail.length + (en ? ' selected' : ' valgt')), {
+          q: this.state.rfQg || '', onQ: (e) => this.setState({ rfQg: e.target.value }), ph: en ? 'Search group…' : 'Søk etter gruppe …',
+          items: shown.map(x => ({ key: 'fg' + x.key, name: x.g, meta: rfClubIds.length > 1 ? clubOf(x.club) : '', on: rfGroupOn(x.key), toggle: () => this.setState(() => { const o = cur(); if (o[x.key]) delete o[x.key]; else o[x.key] = true; return { rfGroups: o }; }) })),
+          empty: shown.length === 0, allLbl: allOn ? (en ? 'Clear all' : 'Fjern alle') : (en ? 'Select all' : 'Velg alle'),
+          all: () => this.setState(() => { const o = cur(); shown.forEach(x => { if (allOn) delete o[x.key]; else o[x.key] = true; }); return { rfGroups: o }; })
+        });
+      })(),
+      rfmMembers: (() => {
+        const allOn = rfMemShown.length > 0 && rfMemShown.every(m => rfMemSel[m.id]);
+        return Object.assign(rfMenu('members', en ? 'Members' : 'Medlemmer', rfMemChosen.length + (en ? ' of ' : ' av ') + rfMemAvail.length + (en ? ' selected' : ' valgt')), {
+          q: this.state.rfQ || '', onQ: (e) => this.setState({ rfQ: e.target.value }), ph: en ? 'Search member…' : 'Søk etter medlem …',
+          items: rfMemShown.map(m => ({ key: 'fm' + m.id, name: m.name, meta: [m.group, rfClubIds.length > 1 ? clubOf(m.club) : ''].filter(Boolean).join(' · '), on: !!rfMemSel[m.id], toggle: () => this.setState(st => { const o = Object.assign({}, st.rfMembers || {}); if (o[m.id]) delete o[m.id]; else o[m.id] = true; return { rfMembers: o }; }) })),
+          empty: rfMemShown.length === 0, allLbl: allOn ? (en ? 'Clear all' : 'Fjern alle') : (en ? 'Select all' : 'Velg alle'),
+          all: () => this.setState(st => { const o = Object.assign({}, st.rfMembers || {}); rfMemShown.forEach(m => { if (allOn) delete o[m.id]; else o[m.id] = true; }); return { rfMembers: o }; })
+        });
+      })(),
+      rfSelCount: rfMemChosen.length + (en ? ' selected' : ' valgt'),
+      tRfSelHint: en ? 'Next: click "Give to selected" on a role and choose whether it applies to the whole club or only some groups.' : 'Neste: klikk «Gi til valgte» på en rolle og velg om den skal gjelde hele klubben eller bare noen grupper.',
+      rgOpen: !!rg,
+      rgClose: () => this.setState({ roleGive: null }),
+      rgTitle: rg ? (en ? 'Give the role ' : 'Gi rollen ') + rgDef.name.toLowerCase() : '',
+      rgPeople: rfMemChosen.length + (en ? ' people: ' : ' personer: ') + rfMemChosen.slice(0, 6).map(m => m.name).join(', ') + (rfMemChosen.length > 6 ? (en ? ' and ' : ' og ') + (rfMemChosen.length - 6) + (en ? ' more' : ' til') : ''),
+      tRgWhere: en ? 'Where should the access apply?' : 'Hvor skal tilgangen gjelde?',
+      tRgClub: en ? 'The whole club' : 'Hele klubben', tRgClubSub: en ? 'They can use the role for everything in their club.' : 'De kan bruke rollen for alt i sin klubb.',
+      tRgGroups: en ? 'Only selected groups' : 'Bare utvalgte grupper', tRgGroupsSub: en ? 'For example a coach who should only see J14.' : 'For eksempel en trener som bare skal se J14.',
+      rgIsClub: !!rg && rg.scope === 'club', rgIsGroups: !!rg && rg.scope === 'groups',
+      rgPickClub: () => this.setState(st => ({ roleGive: Object.assign({}, st.roleGive, { scope: 'club' }) })),
+      rgPickGroups: () => this.setState(st => ({ roleGive: Object.assign({}, st.roleGive, { scope: 'groups' }) })),
+      rgClubStyle: 'border: 1px solid ' + (rg && rg.scope === 'club' ? '#16241a' : 'rgba(22,36,26,.12)') + '; background: ' + (rg && rg.scope === 'club' ? '#f6f8f3' : '#ffffff'),
+      rgGroupsStyle: 'border: 1px solid ' + (rg && rg.scope === 'groups' ? '#16241a' : 'rgba(22,36,26,.12)') + '; background: ' + (rg && rg.scope === 'groups' ? '#f6f8f3' : '#ffffff'),
+      rgQ: (rg && rg.q) || '', onRgQ: (e) => { const v = e.target.value; this.setState(st => ({ roleGive: Object.assign({}, st.roleGive, { q: v }) })); },
+      tRgSearch: en ? 'Search group…' : 'Søk etter gruppe …',
+      rgGroupList: rgGroupsAll.filter(x => !rgQv || (x.g + ' ' + clubOf(x.club)).toLowerCase().includes(rgQv)).map(x => ({ key: 'rgg' + x.key, name: x.g, meta: rgClubSet.length > 1 ? clubOf(x.club) : '', on: !!rgGroups[x.key],
+        toggle: () => this.setState(st => { const g = Object.assign({}, (st.roleGive || {}).groups || {}); if (g[x.key]) delete g[x.key]; else g[x.key] = true; return { roleGive: Object.assign({}, st.roleGive, { groups: g }) }; }) })),
+      rgNoGroups: !!rg && rg.scope === 'groups' && rgChosenGroups.length === 0, tRgPickOne: en ? 'Pick at least one group.' : 'Velg minst én gruppe.',
+      tRgAccess: en ? 'Access:' : 'Tilgang:', rgAccess: rgAccessTxt,
+      rgSummary: rg ? (rg.scope === 'groups' ? (en ? 'Applies to: ' : 'Gjelder: ') + (rgChosenGroups.map(x => x.g).join(', ') || '–') : (en ? 'Applies to the whole club.' : 'Gjelder hele klubben.')) + (en ? ' Goes to "Awaiting confirmation" first.' : ' Havner først i «Venter på bekreftelse».') : '',
+      rgDisabled: !rg || (rg.scope === 'groups' && rgChosenGroups.length === 0), rgBtnOpacity: (!rg || (rg.scope === 'groups' && rgChosenGroups.length === 0)) ? '.45' : '1',
+      tRgSend: en ? 'Send for confirmation' : 'Send til bekreftelse', tCancel2: en ? 'Cancel' : 'Avbryt',
+      rgSend: (e) => {
+        e.preventDefault(); if (!rg || (rg.scope === 'groups' && !rgChosenGroups.length)) return;
+        const stamp = Date.now();
+        const rows = rfMemChosen.map((m, k) => {
+          let scope = '';
+          if (rg.scope === 'groups') { const own = rgChosenGroups.filter(x => x.club === m.club).map(x => x.g); scope = (own.length ? own : rgChosenGroups.map(x => x.g)).join(', '); }
+          return { id: 'pn' + stamp + k, name: m.name, role: rg.role, club: m.club, scope: scope, by: en ? 'You' : 'Deg' };
+        });
+        this.setState(st => ({ rolePending: (st.rolePending || rolePendSeed()).concat(rows), rfMembers: {}, roleGive: null }));
+      },
+      tRoleGiven: en ? 'Assigned' : 'Tildelt', roleGivenCount: String(roleShown.length),
+      tRolePending: en ? 'Awaiting confirmation' : 'Venter på bekreftelse', rolePendCount: String(rolePend.length),
+      rolePendAny: rolePend.length > 1, rolePendNone: rolePend.length === 0,
+      tRolePendNone: en ? 'Nothing waiting for you.' : 'Ingenting venter på deg.',
+      tRolePendAll: en ? 'Assign all' : 'Tildel alle', tRoleAccept: en ? 'Assign' : 'Tildel', tRoleReject: en ? 'Decline' : 'Avslå',
+      rolePendAll: () => this.setState(st => { const ids = {}; rolePend.forEach(x => { ids[x.id] = 1; }); const stamp = Date.now(); return { rolePending: (st.rolePending || rolePendSeed()).filter(x => !ids[x.id]), roleAssign: (st.roleAssign || seedRoles()).concat(rolePend.map((x, k) => ({ id: 'ra' + stamp + k, name: x.name, role: x.role, club: x.club, scope: x.scope }))) }; }),
+      rolePendRows: rolePend.map(x => { const d = roleDefs.find(r => r.id === x.role) || { name: x.role, color: '#c9d8c4' }; const pp = PERMS.filter(y => permOf(x.role)[y[0]]).map(y => y[1]);
+        return { key: 'rpd' + x.id, name: x.name, initials: x.name.split(/\s+/).slice(0, 2).map(s => s.slice(0, 1)).join(''), role: d.name,
+          roleStyle: 'padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; color: #16241a; background: ' + d.color,
+          meta: [clubOf(x.club), (en ? 'Applies to: ' : 'Gjelder: ') + (x.scope || (en ? 'whole club' : 'hele klubben')), (en ? 'asked by ' : 'ønsket av ') + x.by].join(' · ') + (pp.length ? '. ' + (en ? 'Access: ' : 'Tilgang: ') + pp.join(', ') : ''),
+          accept: () => this.setState(st => ({ rolePending: (st.rolePending || rolePendSeed()).filter(y => y.id !== x.id), roleAssign: (st.roleAssign || seedRoles()).concat([{ id: 'ra' + Date.now(), name: x.name, role: x.role, club: x.club, scope: x.scope }]) })),
+          reject: () => this.setState(st => ({ rolePending: (st.rolePending || rolePendSeed()).filter(y => y.id !== x.id) })) }; }),
       roleGridCols: this.state.roleFilter ? 'minmax(0, 1fr) minmax(0, 1.35fr)' : 'minmax(0, 1fr)',
       tAssignBtn2: en ? 'Assign role' : 'Tildel rolle',
       tTaPerson: en ? 'Person' : 'Person', tTaClub: en ? 'Club' : 'Klubb', tTaRole: en ? 'Role' : 'Rolle',
@@ -3168,9 +3604,9 @@ export class AdminLogic extends LogicBase {
           key: 'ra' + a.id,
           name: a.name,
           initials: a.name.split(/\s+/).slice(0, 2).map(x => x.slice(0, 1)).join(''),
-          meta: (all ? clubOf(a.club) + ' · ' : '') + (a.scope || (en ? 'Whole club' : 'Hele klubben')),
+          meta: (all ? clubOf(a.club) + ' · ' : '') + (en ? 'Applies to: ' : 'Gjelder: ') + (a.scope || (en ? 'whole club' : 'hele klubben')), // [design 17 Nov]
           role: d.name,
-          roleStyle: 'flex: 0 0 auto; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; color: #16241a; background: ' + d.color,
+          roleStyle: 'padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; color: #16241a; background: ' + d.color,
           remove: () => this.setState(st => ({ roleAssign: (st.roleAssign || seedRoles()).filter(x => x.id !== a.id) }))
         };
       }),
@@ -3505,6 +3941,14 @@ export class AdminLogic extends LogicBase {
         style: chip(this.state.tfPeriod === p.id, false)
       })),
       tfCustom: this.state.tfPeriod === 'custom',
+      // [design 17 Nov] period dropdown in the team fund header
+      tfPerOpen: !!this.state.tfPerOpen,
+      tfPerToggle: () => this.setState(st => ({ tfPerOpen: !st.tfPerOpen })),
+      tfPerLabel: (tfPeriodDefs.find(p => p.id === this.state.tfPeriod) || tfPeriodDefs[0]).label,
+      tfPerItems: tfPeriodDefs.map(p => { const on = this.state.tfPeriod === p.id; return {
+        key: 'tpi' + p.id, label: p.label, mark: on ? '✓' : '',
+        pick: () => this.setState({ tfPeriod: p.id, tfPage: 0, tfPerOpen: p.id === 'custom' }),
+        style: 'display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 9px 12px; border-radius: 10px; border: 0; cursor: pointer; font-family: var(--font-body); font-size: 13.5px; color: #16241a; font-weight: ' + (on ? '700; background: #f4f8f2' : '500; background: transparent') }; }),
       tfFrom: this.state.tfFrom,
       tfTo: this.state.tfTo,
       onTfFrom: (e) => this.setState({ tfFrom: e.target.value }),
@@ -3514,9 +3958,11 @@ export class AdminLogic extends LogicBase {
         { key: 'tc1', label: en ? 'Current balance' : 'Saldo nå', value: kr(tfNow), note: all ? (en ? 'Combined · 3 bank accounts' : 'Samlet · 3 bankkontoer') : tfAcc(sel), dot: '#16241a', tint: '#ffffff' },
         { key: 'tc2', label: en ? 'Incoming' : 'Innkommende', value: sgn(pgIn, kr), note: pgInN + (en ? ' transactions' : ' transaksjoner') + pgNoteSuffix, dot: '#1f7a3a', tint: '#eaf7ed' },
         { key: 'tc3', label: en ? 'Outgoing' : 'Utgående', value: sgn(-pgOut, kr), note: pgOutN + (en ? ' transactions' : ' transaksjoner') + pgNoteSuffix, dot: '#d9644f', tint: '#fbe9e5' }
-      ].map(c => ({
+      ].map((c, i) => ({
         key: c.key, label: c.label, value: c.value, note: c.note,
-        style: 'border-radius: 26px; background: ' + c.tint + '; border: 1px solid rgba(22,36,26,.12); padding: 22px',
+        // [design 17 Nov] cards became stacked rows with coloured values
+        style: 'display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; padding: 13px 22px;' + (i < 2 ? ' border-bottom: 1px solid rgba(22,36,26,.1);' : ''),
+        valueStyle: 'font-family: var(--font-heading); font-weight: 800; font-size: 22px; white-space: nowrap; min-width: 150px; color: ' + (c.key === 'tc2' ? '#1f7a3a' : (c.key === 'tc3' ? '#b3261e' : '#16241a')),
         dotStyle: 'width: 9px; height: 9px; border-radius: 999px; background: ' + c.dot
       })),
       tfFlow: [
@@ -3538,18 +3984,25 @@ export class AdminLogic extends LogicBase {
       tColInv: en ? 'Invoice no.' : 'Fakturanr.',
       tColAcc: en ? 'Receiving account' : 'Mottakerkonto',
       tfShowAcc: all,
-      tfCols: all ? '96px 140px 170px 120px minmax(0,1.6fr) minmax(0,1.2fr) 120px' : '96px 140px 120px minmax(0,1.6fr) minmax(0,1.2fr) 120px',
-      tfMinW: all ? '990px' : '820px',
+      // [design 17 Nov] checkbox column, per-column search row, selection count and compact pager
+      tfCols: all ? '24px 96px 136px minmax(150px,1.1fr) 110px minmax(0,1.6fr) minmax(0,1.2fr) 110px' : '24px 96px 136px 110px minmax(0,1.6fr) minmax(0,1.2fr) 110px',
+      tfMinW: all ? '1000px' : '820px',
+      tfFilterCells: tfColDefs.map(c => ({ key: 'tfc' + c[0], val: tfCF[c[0]] || '', ph: (en ? 'Search ' : 'Søk ') + c[1], onInput: (e) => { const v = e.target.value; this.setState(st => ({ tfCF: Object.assign({}, st.tfCF || {}, { [c[0]]: v }), tfPage: 0 })); } })),
+      tfAllChecked: tfPageRows.length > 0 && tfPageRows.every(r => tfSel[r.tx]),
+      tfToggleAll: () => { const on = !(tfPageRows.length > 0 && tfPageRows.every(r => tfSel[r.tx])); this.setState(st => { const m = Object.assign({}, st.tfSel || {}); tfPageRows.forEach(r => { m[r.tx] = on; }); return { tfSel: m }; }); },
+      tfSelCount: Object.keys(tfSel).filter(k => tfSel[k]).length + (en ? ' selected' : ' valgt'),
+      tfRangeOnly: tfRows.length ? (tfFrom1 + '–' + tfTo1) : '0', tfTotal: String(tfRows.length),
+      tfFirst: () => this.setState({ tfPage: 0 }), tfLast: () => this.setState({ tfPage: tfPages - 1 }),
+      tfPrevStyle: 'width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; border: 0; background: transparent; padding: 0; ' + (tfPg === 0 ? 'color: rgba(22,36,26,.3); cursor: default;' : 'color: #16241a; cursor: pointer;'),
+      tfNextStyle: 'width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; border: 0; background: transparent; padding: 0; ' + (tfPg >= tfPages - 1 ? 'color: rgba(22,36,26,.3); cursor: default;' : 'color: #16241a; cursor: pointer;'),
       tColDesc: en ? 'Description' : 'Beskrivelse',
       tColParty: en ? 'Customer/supplier' : 'Kunde/leverandør',
       tColSum: en ? 'Sum' : 'Sum',
       tfTx: tfPageRows,
       tPerPage: en ? 'Show per page' : 'Vis per side',
-      tfPageSize: String(this.state.tfPageSize),
-      onTfPageSize: (e) => this.setState({ tfPageSize: parseInt(e.target.value, 10) || 50, tfPage: 0 }),
+      tfPageSize: String(tfPs),
+      onTfPageSize: (e) => this.setState({ tfPageSize: parseInt(e.target.value, 10) || 15, tfPage: 0 }), // [design 17 Nov] fallback 15
       tfPageLabel: tfRows.length ? (tfFrom1 + '–' + tfTo1 + (en ? ' of ' : ' av ') + tfRows.length) : '',
-      tPrevPage: en ? 'Previous page' : 'Forrige side',
-      tNextPage: en ? 'Next page' : 'Neste side',
       tfNoPrev: tfPg === 0,
       tfNoNext: tfPg >= tfPages - 1,
       tfPrevOpacity: tfPg === 0 ? '.4' : '1',
@@ -3681,6 +4134,7 @@ export class AdminLogic extends LogicBase {
       showSideDefault: false,
       showDailySide: false,
       splitCols: (tab === 'daily' || tab === 'invoicing' || (tab === 'supplier' || tab === 'budget' || tab === 'integr' || tab === 'comms' || tab === 'planning' || tab === 'docs' || tab === 'volunteer' || tab === 'nif' || tab === 'settle')) ? 'minmax(0, 1fr)' : 'minmax(0, 1.5fr) minmax(0, 1fr)',
+      showClubPicker: false, // [design 17 Nov]
       showBandFilters: tab !== 'invoicing' && tab !== 'timetable' && tab !== 'depts' && tab !== 'profile',
       showMsgBox: false,
       showDemo: tab === 'members',
@@ -3783,7 +4237,7 @@ export class AdminLogic extends LogicBase {
           return { key: 'p' + id, name: c ? c.name : id };
         }))
       })),
-      calCanAdd: !!this.state.calPick,
+      calCanAdd: !!this.state.calPick && !isPast(calM, this.state.calPick), // [design 17 Nov] no new entries on past days
       calAddOpen: this.state.calAdd,
       calAddClosed: !this.state.calAdd,
       tAddToCal: en ? '+ Add to calendar' : '+ Legg til i kalenderen',
@@ -3969,7 +4423,33 @@ export class AdminLogic extends LogicBase {
       goHome: () => this.setState({ tab: 'activities' }),
       crumbMb: tab === 'booking' ? '38px' : '18px',
       tCrumbLabel: en ? 'You are here' : 'Du er her',
-      crumbParent: (() => { const k = Object.keys(menus).find(k => menus[k].subs.some(x => x.id === tab)); return k ? menus[k].label : ''; })(),
+      // [design 17 Nov] the docs view sits under Board in the breadcrumb
+      crumbParent: (() => { if (tab === 'docs') return en ? 'Board' : 'Styret'; const k = Object.keys(menus).find(k => menus[k].subs.some(x => x.id === tab)); return k ? menus[k].label : ''; })(),
+      // ---- [design 17 Nov] page chrome: wide pages, top bar (breadcrumb, assistant shortcuts, notifications) ----
+      wideAttr: (tab === 'roles' || tab === 'depts' || tab === 'members') ? 'true' : 'false',
+      showBandCrumb: false,
+      tbHome: () => this.setState({ tab: 'activities', navMenu: '' }),
+      tbCurrent: tab === 'activities' ? T2('Overview', 'Oversikt') : (tab === 'profile' ? T2('My profile', 'Min profil') : (() => { for (const k of Object.keys(menus)) { const f = menus[k].subs.find(x => x.id === tab); if (f) return f.label; } const t = tabs.find(x => x.id === tab); return t ? t.label : ''; })()),
+      tTbFeedback: T2('Feedback', 'Tilbakemelding'),
+      tTbAi: T2('Kretz assistant', 'Kretz-assistent'), tTbAiSub: T2('Shortcuts to what admins do most. The assistant itself is coming soon.', 'Snarveier til det administratorer gjør oftest. Selve assistenten kommer snart.'),
+      tbAiOpen: !!this.state.tbAi, tbAiToggle: () => this.setState(st => ({ tbAi: !st.tbAi, tbBell: false })),
+      tbAiItems: [['invoicing', T2('Who has not paid yet?', 'Hvem har ikke betalt ennå?')], ['board', T2('Prepare the next board meeting', 'Forbered neste styremøte')], ['depts', T2('Invite members to a group', 'Inviter medlemmer til en gruppe')], ['nif', T2('Send members to NIF', 'Send inn medlemmer til NIF')]].map(x => ({ key: 'ai' + x[0], label: x[1], go: () => this.setState({ tab: x[0], tbAi: false, navMenu: '' }) })),
+      tTbBell: T2('Notifications', 'Varsler'),
+      tbBellOpen: !!this.state.tbBell, tbBellToggle: () => this.setState(st => ({ tbBell: !st.tbBell, tbAi: false })),
+      tTbReadAll: T2('Mark all read', 'Merk alle som lest'),
+      tbReadAll: () => this.setState({ tbRead: { n1: 1, n2: 1, n3: 1, n4: 1, n5: 1 } }),
+      tbUnread: String(['n1', 'n2', 'n3', 'n4', 'n5'].filter(k => !(this.state.tbRead || {})[k]).length),
+      tbUnreadAny: ['n1', 'n2', 'n3', 'n4', 'n5'].some(k => !(this.state.tbRead || {})[k]),
+      tbNotes: [
+        ['n1', 'roles', T2('4 role requests waiting', '4 rolleforespørsler venter'), T2('Roles in the club · today', 'Roller i klubben · i dag')],
+        ['n2', 'invoicing', T2('6 invoices are unpaid', '6 fakturaer er ubetalt'), T2('Invoices · kr 31 500 outstanding', 'Fakturaer · kr 31 500 utestående')],
+        ['n3', 'board', T2('Board meeting in 14 days', 'Styremøte om 14 dager'), T2('Board · agenda not sent yet', 'Styret · innkalling ikke sendt ennå')],
+        ['n4', 'sponsors', T2('Grant deadline 1 Dec', 'Søknadsfrist 1. desember'), T2('Grants · Municipal youth fund', 'Støtte · Kommunalt ungdomsfond')],
+        ['n5', 'nif', T2('4 members ready for NIF', '4 medlemmer klare for NIF'), T2('Submit to NIF', 'Innsending til NIF')]
+      ].map(x => { const read = !!(this.state.tbRead || {})[x[0]]; return { key: 'tb' + x[0], title: x[2], meta: x[3],
+        dot: 'width: 8px; height: 8px; flex: 0 0 auto; margin-top: 6px; border-radius: 999px; background: ' + (read ? 'transparent' : '#1f7a3a'),
+        style: 'display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left; padding: 10px; border-radius: 10px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-body); color: #16241a;' + (read ? ' opacity: .65;' : ''),
+        go: () => this.setState(st => ({ tab: x[1], tbBell: false, navMenu: '', tbRead: Object.assign({}, st.tbRead || {}, { [x[0]]: 1 }) })) }; }),
       crumbCurrent: (() => { const k = Object.keys(menus).find(k => menus[k].subs.some(x => x.id === tab)); if (k) return menus[k].subs.find(x => x.id === tab).label; if (tab === 'profile') return en ? 'My profile' : 'Min profil'; const t = tabs.find(x => x.id === tab); return t ? t.label : ''; })(),
       rows: rows,
       tPostsHeading: en ? 'Posts' : 'Innlegg',
@@ -3977,9 +4457,9 @@ export class AdminLogic extends LogicBase {
       openPostCompose: () => this.setState({ compose: true, composeKind: 'post', composeDone: false, formTitle: '', formText: '' }),
 
       evQ: this.state.evQ || '', onEvQ: (e) => this.setState({ evQ: e.target.value, evPage: 1 }),
-      tEvSearch: en ? 'Search events…' : 'Søk i aktiviteter …',
+      tEvSearch: T2('Search activities', 'Søk i aktiviteter'), // [design 17 Nov]
       tEvColumns: en ? 'Columns' : 'Kolonner', tEvColSearch: en ? 'Search' : 'Søk',
-      tEvEmpty: en ? 'No events match.' : 'Ingen aktiviteter matcher.',
+      tEvEmpty: T2('No activities match.', 'Ingen aktiviteter matcher.'),
       evColsOpen: !!this.state.evColsOpen,
       toggleEvCols: () => this.setState(st => ({ evColsOpen: !st.evColsOpen, evColQ: '' })),
       closeEvCols: () => this.setState({ evColsOpen: false }),
@@ -3987,7 +4467,15 @@ export class AdminLogic extends LogicBase {
       // eslint-disable-next-line no-unused-vars -- kept as in the design logic
       evColOpts: evColDefs.filter(c => !evCq || c.label.toLowerCase().includes(evCq)).map(c => ({ key: 'eco' + c.id, label: c.label, on: !!evColsOn[c.id], toggle: () => this.setState(st => ({ evCols: Object.assign({}, evColsOn, { [c.id]: !evColsOn[c.id] }) })) })),
       evGrid: evVisCols.map(c => c.w).join(' '),
-      evMinW: Math.max(420, evVisCols.length * 120) + 'px',
+      evMinW: (evVisCols.length * 120) + 'px',
+      // [design 17 Nov] column search row (type column = filter button), compact pager, "New activity"
+      evFilterCells: evVisCols.map(c => ({ key: 'evf' + c.id, isBtn: c.id === 'type', isInput: c.id !== 'type', val: evCF[c.id] || '', ph: T2('Search ', 'Søk ') + c.label.toLowerCase(), onInput: (e) => { const v = e.target.value; this.setState(st => ({ evCF: Object.assign({}, st.evCF || {}, { [c.id]: v }), evPage: 1 })); } })),
+      evTotal: String(evFiltered.length),
+      evAtStart: evShowAll || evPageN <= 1, evAtEnd: evShowAll || evPageN >= evPageCount,
+      evPrevStyle: 'width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; border: 0; background: transparent; padding: 0; ' + ((evShowAll || evPageN <= 1) ? 'color: rgba(22,36,26,.3); cursor: default;' : 'color: #16241a; cursor: pointer;'),
+      evNextStyle: 'width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; border: 0; background: transparent; padding: 0; ' + ((evShowAll || evPageN >= evPageCount) ? 'color: rgba(22,36,26,.3); cursor: default;' : 'color: #16241a; cursor: pointer;'),
+      evFirst: () => this.setState({ evPage: 1, evAllRows: false }), evPrev: () => this.setState({ evPage: Math.max(1, evPageN - 1), evAllRows: false }), evNext: () => this.setState({ evPage: Math.min(evPageCount, evPageN + 1), evAllRows: false }), evLast: () => this.setState({ evPage: evPageCount, evAllRows: false }),
+      tEvNew: T2('New activity', 'Ny aktivitet'),
       evHead: evVisCols.map(c => ({ key: 'eh' + c.id, label: c.label, caret: evSort.k === c.id ? (evSort.dir === 1 ? '▲' : '▼') : '▾',
         style: 'border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; text-align: ' + (c.right ? 'right' : 'left'),
         // eslint-disable-next-line no-unused-vars -- kept as in the design logic
@@ -3995,14 +4483,14 @@ export class AdminLogic extends LogicBase {
       evRows: evPageRows.map(r => ({ key: 'er' + r.id, open: r.open,
         cells: evVisCols.map(c => ({ key: 'ec' + r.id + c.id, isIcon: c.id === 'type', isText: c.id !== 'type', icon: r.icon, text: c.id === 'type' ? r.typeLabel : r[c.id],
           style: 'min-width: 0; display: flex; align-items: center; ' + (c.id === 'title' ? 'font-family: var(--font-heading); font-weight: 800; font-size: 14px; ' : 'color: rgba(22,36,26,.85); ') + (c.right ? 'justify-content: flex-end; ' : '') + (c.id === 'type' ? '' : 'overflow: hidden; text-overflow: ellipsis; white-space: nowrap;') })) })),
-      evShowing: evFiltered.length === acts.length ? (en ? 'Showing all ' + acts.length + ' rows.' : 'Viser alle ' + acts.length + ' rader.') : (en ? 'Showing ' + evFiltered.length + ' of ' + acts.length + ' rows.' : 'Viser ' + evFiltered.length + ' av ' + acts.length + ' rader.'),
+      evShowing: T2('Showing ' + evPageRows.length + ' of ' + evFiltered.length + ' activities', 'Viser ' + evPageRows.length + ' av ' + evFiltered.length + ' aktiviteter'),
       evEmpty: evFiltered.length === 0,
       evMulti: evFiltered.length > 0,
-      tEvPer: en ? 'Events per page' : 'Aktiviteter per side',
+      tEvPer: T2('Activities per page', 'Aktiviteter per side'),
       evPer: String(evPerPage),
       onEvPer: (e) => this.setState({ evPer: parseInt(e.target.value, 10), evPage: 1, evAllRows: false }),
-      evPerOpts: [15, 25, 50, 100, 250].map(v => ({ key: 'epo' + v, v: v })),
-      evRange: evShowAll ? (en ? 'Showing all ' + evFiltered.length + ' per page' : 'Viser alle ' + evFiltered.length + ' per side') : (en ? 'Showing ' + ((evPageN - 1) * evPerPage + 1) + '–' + Math.min(evPageN * evPerPage, evFiltered.length) + ' of ' + evFiltered.length + ' · ' + evPerPage + ' per page' : 'Viser ' + ((evPageN - 1) * evPerPage + 1) + '–' + Math.min(evPageN * evPerPage, evFiltered.length) + ' av ' + evFiltered.length + ' · ' + evPerPage + ' per side'),
+      evPerOpts: [15, 50, 100, 250].map(v => ({ key: 'epo' + v, v: v })),
+      evRange: evFiltered.length ? (evShowAll ? '1–' + evFiltered.length : ((evPageN - 1) * evPerPage + 1) + '–' + Math.min(evPageN * evPerPage, evFiltered.length)) : '0',
       evPages: (() => {
         const n = evPageCount, cur = evPageN;
         const btn = (key, label, go, on, dis, wide) => ({ key: key, label: label, go: dis ? () => {} : go, aria: label,
@@ -4139,7 +4627,33 @@ export class AdminLogic extends LogicBase {
       invSentText: en ? ('Invoice sent to ' + invCount + (invCount === 1 ? ' member.' : ' members.')) : ('Faktura sendt til ' + invCount + (invCount === 1 ? ' medlem.' : ' medlemmer.')),
       ...this.adminInvVals({ en, all, sel, keep, invTargets, invCount, scope, invClub, clubOf, allActs, defaultTarget, payAll }),
 
-      memberOpen: !!openMem,
+      // ---- [design 17 Nov] member card beside the register on the members tab (stats / internal notes) ----
+      mcIsStats: (this.state.mcTab || 'stats') === 'stats', mcIsNotes: this.state.mcTab === 'notes',
+      mcTabs: [['stats', T2('Statistics', 'Statistikk')], ['notes', T2('Internal notes', 'Interne notater') + (noteList.length ? ' (' + noteList.length + ')' : '')]].map(x => { const on = (this.state.mcTab || 'stats') === x[0];
+        return { key: 'mct' + x[0], label: x[1], on: on ? 'true' : 'false', pick: () => this.setState({ mcTab: x[0] }),
+          style: 'padding: 8px 14px; margin-bottom: -1px; border: 0; border-radius: 8px 8px 0 0; cursor: pointer; font-family: var(--font-body); font-size: 14px; font-weight: 600; color: #16241a; ' + (on ? 'background: #eaf7ed; box-shadow: inset 0 -3px 0 #16241a;' : 'background: transparent; color: rgba(22,36,26,.7);') }; }),
+      mcHas: !!openMem && tab === 'members', mcNone: !openMem && tab === 'members', tMcPick: T2('Click a member in the register to see their card.', 'Klikk på et medlem i registeret for å se kortet.'),
+      tMcFull: T2('Full profile', 'Full profil'), mcOpenFull: () => { if (openMem) this.setState({ member: openMem.id }); },
+      mcSub: openMem ? [openMem.role, clubOf(openMem.club)].join(' · ') : '',
+      mcFields: (() => {
+        if (!openMem) return [];
+        const omG = (this.state.memGroupOv || {})[openMem.id]; const om = omG !== undefined ? Object.assign({}, openMem, { group: omG }) : openMem;
+        const ad = String(openMem.address || '');
+        const mm = ad.match(/^(.*?),\s*(\d{4})\s+(.+)$/);
+        const street = mm ? mm[1] : (ad || '–'), zip = mm ? mm[2] : '–', city = mm ? mm[3] : '–';
+        const kids = (() => { for (const c of deptTree) { if (c.club !== om.club) continue; let found = null; const walk = (n) => { if (found) return; if (n.name === om.group) { found = n; return; } deptKids(n).forEach(walk); }; deptKids(c).forEach(walk); if (found) return { node: found, top: deptKids(c).find(tp => { let ok = false; const w2 = (n) => { if (n === found) ok = true; deptKids(n).forEach(w2); }; w2(tp); return ok; }) }; } return null; })();
+        const sub = kids && deptKids(kids.node).length ? deptKids(kids.node)[(openMem.seed || 0) % deptKids(kids.node).length].name : '–';
+        const typeOvK = (this.state.memTypeOv || {})[openMem.id]; const typeN = typeOvK ? typeNames[typeOvK] : /trener|coach/i.test(openMem.role) ? T2('Coach', 'Trener') : /forelder|parent/i.test(openMem.role) ? T2('Supporting member', 'Støttemedlem') : T2('Active member', 'Aktivt medlem');
+        const f = [[T2('Address', 'Adresse'), street], [T2('Postcode', 'Postnr.'), zip], [T2('City', 'Poststed'), city], [T2('Phone', 'Telefonnr.'), openMem.phone || '–'], [T2('Email', 'E-post'), openMem.email || '–'],
+          [T2('Date of birth', 'Fødselsdato'), (openMem.born || '–') + (openMem.age ? ' (' + openMem.age + T2(' yrs', ' år') + ')' : '')], [T2('Gender', 'Kjønn'), femaleN.indexOf(String(openMem.name).split(' ')[0]) !== -1 ? T2('Female', 'Kvinne') : T2('Male', 'Mann')], [T2('Membership', 'Medlemskap'), typeN],
+          [T2('Club', 'Klubb'), clubOf(openMem.club)], [T2('Group', 'Gruppe'), kids && kids.top ? kids.top.name : '–'], [T2('Subgroup', 'Undergruppe'), (om.group || '–') + (sub !== '–' ? ' › ' + sub : '')],
+          [T2('Member since', 'Medlem siden'), String(2016 + ((openMem.seed || 0) % 9))], [T2('Dues', 'Kontingent'), openMem.due > 0 ? openMem.due + T2(' unpaid', ' ubetalt') : T2('Paid', 'Betalt')]];
+        return f.map((x, i) => ({ key: 'mcf' + i, label: x[0], value: x[1], style: 'min-width: 0;' + (x[2] ? ' grid-column: 1 / -1;' : '') }));
+      })(),
+      mcContactLabel: openMem && openMem.guardians && openMem.guardians.length ? T2('Guardians', 'Foresatte') : T2('Contact person', 'Kontaktperson'),
+      mcContacts: openMem ? ((openMem.guardians && openMem.guardians.length) ? openMem.guardians.map(g => ({ key: 'mcg' + g.id, name: g.name, relation: g.relation, phone: g.phone || g.email || '', contact: [g.phone, g.email].filter(Boolean).join(' · ') }))
+        : [{ key: 'mcself', name: openMem.name, relation: T2('own contact', 'selv kontakt'), phone: openMem.phone || '', contact: [openMem.phone, openMem.email].filter(Boolean).join(' · ') }]) : [],
+      memberOpen: !!openMem && !!this.state.member, // [design 17 Nov] members tab previews a member without opening the modal
       closeMember: () => this.setState({ member: '', smsSent: '' }),
       memName: openMem ? openMem.name : '',
       memInitials: openMem ? openMem.name.split(/\s+/).slice(0, 2).map(x => x.slice(0, 1)).join('') : '',
@@ -4275,6 +4789,9 @@ export class AdminLogic extends LogicBase {
         : (en ? 'Published — sign-up is open.' : 'Publisert — påmeldingen er åpen.'),
       tClose: en ? 'Close' : 'Lukk',
       openCompose: () => this.setState({ compose: true, composeKind: 'activity', composeDone: false, formTitle: '', formText: '', formPlace: '', formLeader: '' }),
+      // [design 17 Nov] "+" next to the planner month: new activity on the picked (or today's) date
+      planAddAct: () => { const pd = (n) => (n < 10 ? '0' : '') + n; const st = this.state; const now = new Date(); const m = st.calMonth || (now.getMonth() + 1); const d = st.calPick || (m === now.getMonth() + 1 ? now.getDate() : 1);
+        this.setState({ compose: true, composeKind: 'activity', composeDone: false, formTitle: '', formText: '', formPlace: '', formLeader: '', formDate: '2026-' + pd(m) + '-' + pd(d) }); },
       closeCompose: () => this.setState({ compose: false }),
       inputStyle: inputStyle,
       inputStyleWhite: inputStyle.replace('background: #f4f8f2', 'background: #ffffff'),

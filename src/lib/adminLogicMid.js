@@ -66,6 +66,7 @@ export const midMethods = {
     const filesWord = (n) => n + (en ? (n === 1 ? ' file' : ' files') : (n === 1 ? ' fil' : ' filer'));
     return {
       tDcTitle: en ? 'Documents' : 'Dokumenter', tDcUpload: en ? 'Upload document' : 'Last opp dokument', tDcSearch: en ? 'Search meetings, items and documents…' : 'Søk i møter, saker og dokumenter…', tDcEmpty: en ? 'No documents match.' : 'Ingen dokumenter matcher.',
+      dcShowHeading: searching || !!root, // [design 17 Nov] heading only in search results or inside a folder
       dcHeading: searching ? (en ? 'Search results' : 'Søkeresultater') : (root ? root.name : (en ? 'Documents' : 'Dokumenter')),
       dcSub: searching ? filesWord(rows.length) : (root ? filesWord(countIn(root.id)) + ' · ' + (en ? 'Access: ' : 'Tilgang: ') + root.who : (en ? 'Access controlled per folder · full audit log' : 'Tilgangsstyrt per mappe · full revisjonslogg')),
       dcInFolder: !!cur && !searching, dcFolderName: chain.map(n => n.name).join(' › '), dcBack: () => set({ dcFolder: '', dcNewSub: null }),
@@ -189,10 +190,18 @@ export const midMethods = {
     const merged = created.concat(seedGrp).concat(base).filter(x => !del[x.id]).map(x => Object.assign({}, x, ov[x.id] || {}, (v('stDet', {})[x.id]) || {}));
     const arch = v('invArch', {}), tabK = v('invTab', 'active');
     const nAct = merged.filter(x => !arch[x.id]).length, nArc = merged.filter(x => arch[x.id]).length;
-    const shown = merged.filter(x => (tabK === 'archived' ? !!arch[x.id] : !arch[x.id]) && (stat === 'all' || x.status === stat) && (!q || (x.id + ' ' + x.type + ' ' + x.number + ' ' + x.name + ' ' + x.date).toLowerCase().includes(q)));
     const sl = { paid: en ? 'Paid' : 'Betalt', unpaid: en ? 'Unpaid' : 'Ubetalt', overdue: en ? 'Overdue' : 'Forfalt' };
+    // [design 17 Nov] per-column search row and pagination
+    const invCF = v('invCF', {});
+    const invColDefs = [['id', 'ID', x => x.id], ['type', en ? 'type' : 'type', x => x.type], ['number', en ? 'number' : 'nummer', x => x.number], ['date', en ? 'date' : 'dato', x => x.date], ['name', en ? 'name' : 'navn', x => x.name], ['amount', en ? 'amount' : 'beløp', x => String(x.amt * Math.max(1, x.count || 1)) + ' ' + kr(x.amt * Math.max(1, x.count || 1))], ['status', 'status', x => sl[x.status] || '']];
+    const shown = merged.filter(x => (tabK === 'archived' ? !!arch[x.id] : !arch[x.id]) && (stat === 'all' || x.status === stat) && (!q || (x.id + ' ' + x.type + ' ' + x.number + ' ' + x.name + ' ' + x.date).toLowerCase().includes(q))
+      && invColDefs.every(cd => { const qq = (invCF[cd[0]] || '').trim().toLowerCase(); return !qq || String(cd[2](x)).toLowerCase().includes(qq); }));
+    const invPerN = [15, 50, 100, 250].indexOf(v('invPer', 15)) !== -1 ? v('invPer', 15) : 15;
+    const invPages = Math.max(1, Math.ceil(shown.length / invPerN)), invPgN = Math.min(v('invPage', 1), invPages);
+    const invPgRows = shown.slice((invPgN - 1) * invPerN, invPgN * invPerN);
+    const invNav = (off) => 'width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; border: 0; background: transparent; padding: 0; ' + (off ? 'color: rgba(22,36,26,.3); cursor: default;' : 'color: #16241a; cursor: pointer;');
     const ss = { paid: 'background: rgba(116,205,133,.3); color: #16241a', unpaid: 'background: rgba(148,92,214,.18); color: #4b2a85', overdue: 'background: #fbe9e5; color: #a3280e' };
-    const pillSt = (k) => 'display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; ' + ss[k];
+    const pillSt = (k) => 'display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; ' + ss[k];
     const set = (o) => this.setState(o);
     const selInv = v('invSel', {});
     const TODAY = '2026-10-25';
@@ -317,20 +326,26 @@ export const midMethods = {
         const lines = [['ID', en ? 'Type' : 'Type', en ? 'Number' : 'Nummer', en ? 'Issued' : 'Utstedt', en ? 'Name' : 'Navn', en ? 'Amount (NOK)' : 'Beløp (NOK)', 'Status'].map(qv).join(';')].concat(shown.map(x => [x.id, x.type, x.number, x.date, x.name, x.amt * Math.max(1, x.count || 1), sl[x.status]].map(qv).join(';')));
         const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })); a.download = 'fakturaer.csv'; document.body.appendChild(a); a.click(); a.remove(); set({ invMoreOpen: false });
       },
-      invTabs: [['active', (en ? 'Active' : 'Aktive') + ' (' + nAct + ')'], ['archived', (en ? 'Archived' : 'Arkiverte') + ' (' + nArc + ')']].map(t => ({ key: 'it' + t[0], label: t[1], on: tabK === t[0], pick: () => set({ invTab: t[0], invSel: {} }),
-        style: 'padding: 16px 2px 14px; margin-bottom: -1px; cursor: pointer; background: transparent; border: 0; border-bottom: 4px solid ' + (tabK === t[0] ? '#8BCB8B' : 'transparent') + '; font-family: var(--font-body); font-size: 18px; font-weight: 500; color: ' + (tabK === t[0] ? '#3E8A48' : 'rgba(22,36,26,.55)') + '; transition: color .2s, border-color .2s' })),
+      invTabs: [['active', (en ? 'Active' : 'Aktive') + ' (' + nAct + ')'], ['archived', (en ? 'Archived' : 'Arkiverte') + ' (' + nArc + ')']].map(t => ({ key: 'it' + t[0], label: t[1], on: tabK === t[0] ? 'true' : 'false', pick: () => set({ invTab: t[0], invSel: {}, invPage: 1 }),
+        style: 'padding: 8px 14px; margin-bottom: -1px; border: 0; border-radius: 8px 8px 0 0; cursor: pointer; font-family: var(--font-body); font-size: 14px; font-weight: 600; ' + (tabK === t[0] ? 'color: #16241a; background: #eaf7ed; box-shadow: inset 0 -3px 0 #16241a;' : 'color: rgba(22,36,26,.7); background: transparent;') })), // [design 17 Nov] new tab style
+      // [design 17 Nov] column search cells and pagination
+      invFilterCells: invColDefs.map(cd => ({ key: 'icf' + cd[0], val: invCF[cd[0]] || '', ph: (en ? 'Search ' : 'Søk ') + (cd[0] === 'id' ? 'ID' : cd[1]), onInput: (e) => { const val = e.target.value; set(s2 => ({ invCF: Object.assign({}, s2.invCF || {}, { [cd[0]]: val }), invPage: 1 })); } })),
+      invPer: invPerN, onInvPer: (e) => set({ invPer: parseInt(e.target.value, 10), invPage: 1 }),
+      invRange: shown.length ? ((invPgN - 1) * invPerN + 1) + '–' + Math.min(invPgN * invPerN, shown.length) : '0', invTotal: String(shown.length),
+      invAtStart: invPgN <= 1, invAtEnd: invPgN >= invPages, invPrevStyle: invNav(invPgN <= 1), invNextStyle: invNav(invPgN >= invPages),
+      invFirst: () => set({ invPage: 1 }), invPrev: () => set({ invPage: Math.max(1, invPgN - 1) }), invNext: () => set({ invPage: Math.min(invPages, invPgN + 1) }), invLast: () => set({ invPage: invPages }),
       invSelBar: shown.some(x => selInv[x.id]),
       invSelText: shown.filter(x => selInv[x.id]).length + (en ? ' selected' : ' valgt'),
       invArchiveLabel: tabK === 'archived' ? (en ? 'Restore' : 'Gjenopprett') : (en ? 'Archive' : 'Arkiver'),
       invArchiveSel: () => set(s2 => { const a = Object.assign({}, s2.invArch || {}); shown.forEach(x => { if (selInv[x.id]) { if (tabK === 'archived') delete a[x.id]; else a[x.id] = true; } }); return { invArch: a, invSel: {} }; }),
       invClearSel: () => set({ invSel: {} }),
-      invCols: '24px 72px minmax(110px,1.2fr) minmax(90px,.8fr) minmax(100px,1fr) minmax(130px,1.4fr) minmax(90px,.9fr) minmax(90px,.9fr) 134px',
+      invCols: '24px 72px minmax(110px,1.2fr) minmax(90px,.8fr) minmax(96px,.9fr) minmax(130px,1.4fr) minmax(96px,.9fr) minmax(90px,.8fr) 104px',
       tColType: en ? 'Type' : 'Type', tColNumber: en ? 'Number' : 'Nummer', tColIssued: en ? 'Date of issue' : 'Utstedt', tColName: en ? 'Name' : 'Navn', tColAmount: en ? 'Amount' : 'Beløp', tColStatus: 'Status', tColDetails: en ? 'Details' : 'Detaljer',
       tView: en ? 'View' : 'Vis', tEditL: en ? 'Edit' : 'Rediger', tDelete: en ? 'Delete' : 'Slett',
       tInvEmpty: tabK === 'archived' ? (en ? 'No archived invoices.' : 'Ingen arkiverte fakturaer.') : (en ? 'No invoices match.' : 'Ingen fakturaer matcher.'), invEmpty: shown.length === 0,
       tInvSelAll: en ? 'Select all' : 'Velg alle',
-      invAllOn: shown.length > 0 && shown.every(x => selInv[x.id]),
-      invToggleAll: () => { const on = shown.length > 0 && shown.every(x => selInv[x.id]); set(s2 => { const n = Object.assign({}, s2.invSel || {}); shown.forEach(x => { if (on) delete n[x.id]; else n[x.id] = true; }); return { invSel: n }; }); },
+      invAllOn: invPgRows.length > 0 && invPgRows.every(x => selInv[x.id]),
+      invToggleAll: () => { const on = invPgRows.length > 0 && invPgRows.every(x => selInv[x.id]); set(s2 => { const n = Object.assign({}, s2.invSel || {}); invPgRows.forEach(x => { if (on) delete n[x.id]; else n[x.id] = true; }); return { invSel: n }; }); },
       tArchiveRow: tabK === 'archived' ? (en ? 'Restore' : 'Gjenopprett') : (en ? 'Archive' : 'Arkiver'),
       ...(() => {
         const p = pdfX ? mkPdf(pdfX) : null, kr3 = kr;
@@ -389,7 +404,7 @@ export const midMethods = {
             saveFee: (ev) => { if (ev && ev.preventDefault) ev.preventDefault(); const val = parseInt(v('stFeeDraft', ''), 10); set(s2 => ({ stFee: Object.assign({}, s2.stFee || {}, isNaN(val) ? {} : { [r.key]: Math.max(0, val) }), stFeeKey: '' })); } }; })
         };
       })(),
-      invRows: shown.map((x, xi) => ({ key: 'ir' + x.id + '-' + xi, openStats: () => set({ stId: x.id, stQ: '', stF: 'all', stFeeKey: '' }), arch: () => set(s2 => { const a = Object.assign({}, s2.invArch || {}); if (a[x.id]) delete a[x.id]; else a[x.id] = true; const n = Object.assign({}, s2.invSel || {}); delete n[x.id]; return { invArch: a, invSel: n }; }), sel: !!selInv[x.id], rowBg: selInv[x.id] ? '#eaf7ed' : 'transparent', toggleSel: () => set(s2 => { const n = Object.assign({}, s2.invSel || {}); if (n[x.id]) delete n[x.id]; else n[x.id] = true; return { invSel: n }; }), id: x.id, type: x.type, number: x.number, date: x.date, name: x.name, amount: kr(x.amt * Math.max(1, x.count || 1)), statusLabel: sl[x.status], statusStyle: pillSt(x.status),
+      invRows: invPgRows.map((x, xi) => ({ key: 'ir' + x.id + '-' + xi, openStats: () => set({ stId: x.id, stQ: '', stF: 'all', stFeeKey: '' }), arch: () => set(s2 => { const a = Object.assign({}, s2.invArch || {}); if (a[x.id]) delete a[x.id]; else a[x.id] = true; const n = Object.assign({}, s2.invSel || {}); delete n[x.id]; return { invArch: a, invSel: n }; }), sel: !!selInv[x.id], rowBg: selInv[x.id] ? '#eaf7ed' : 'transparent', toggleSel: () => set(s2 => { const n = Object.assign({}, s2.invSel || {}); if (n[x.id]) delete n[x.id]; else n[x.id] = true; return { invSel: n }; }), id: x.id, type: x.type, number: x.number, date: x.date, name: x.name, amount: kr(x.amt * Math.max(1, x.count || 1)), statusLabel: sl[x.status], statusStyle: pillSt(x.status),
         view: () => set({ pdfId: x.id }),
         edit: () => set({ invModal: { id: x.id, edit: true }, invDType: x.type, invDAmt: String(x.amt), invDDue: x.due, invDStatus: x.status }),
         del: () => set(s2 => ({ invDel: Object.assign({}, s2.invDel || {}, { [x.id]: true }) })) })),
@@ -553,11 +568,11 @@ export const midMethods = {
     const toggleOpt = (k, id) => set(s2 => { const cur = Object.assign({}, (s2.nifFilt || {})[k] || {}); if (cur[id]) delete cur[id]; else cur[id] = true; return { nifFilt: Object.assign({}, s2.nifFilt || {}, { [k]: cur }) }; });
     const waitAll = inClub.filter(r => kindOf(r) === 'wait'), missAll = inClub.filter(r => kindOf(r) === 'miss');
     const tab = st.nifTab || 'wait';
-    const rows = (tab === 'wait' ? waitAll : missAll).filter(applyF);
+    let rows = (tab === 'wait' ? waitAll : missAll).filter(applyF);
     const groups = Array.from(new Set(inClub.map(r => r.group)));
     const dl = (name, content) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); };
     const tabSt = (on) => 'padding: 16px 18px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-body); font-size: 17px; margin-bottom: -1px; color: ' + (on ? '#1f7a3a' : 'rgba(22,36,26,.55)') + '; border-bottom: 3px solid ' + (on ? '#74cd85' : 'transparent');
-    const nifSel = st.nifSel || {}, chosen = rows.filter(r => nifSel[r.id]);
+    const nifSel = st.nifSel || {}; let chosen = rows.filter(r => nifSel[r.id]);
     const colDefs = [
       { k: 'first', w: 'minmax(110px,1fr)', mn: 110, label: T('First name', 'Fornavn'), on: true }, { k: 'last', w: 'minmax(110px,1fr)', mn: 110, label: T('Last name', 'Etternavn'), on: true },
       { k: 'born', w: '110px', mn: 110, label: T('Date of birth', 'Fødselsdato'), on: true }, { k: 'group', w: '90px', mn: 90, label: T('Group', 'Gruppe'), on: true },
@@ -577,11 +592,20 @@ export const midMethods = {
       if (k === 'address') return streets[n % streets.length] + ', ' + (cities[r.club] || cities.vif); if (k === 'nat') return T('Norwegian', 'Norsk');
       return '';
     };
+    // [design 17 Nov] NIF table: per-column search row and pagination
+    const nifCF = st.nifCF || {};
+    const cellVal = (k, r) => k === 'status' ? (tab === 'wait' ? T('Ready to submit', 'Klar til innsending') : r.missing) : val(k, r);
+    rows = rows.filter(r => colsOn.every(x => { const qq = (nifCF[x.k] || '').trim().toLowerCase(); return !qq || String(cellVal(x.k, r)).toLowerCase().includes(qq); }));
+    chosen = rows.filter(r => nifSel[r.id]);
+    const nifPerN = [15, 50, 100, 250].indexOf(st.nifPer) !== -1 ? st.nifPer : 15;
+    const nifPages = Math.max(1, Math.ceil(rows.length / nifPerN)), nifPg = Math.min(st.nifPage || 1, nifPages);
+    const nifPgRows = rows.slice((nifPg - 1) * nifPerN, nifPg * nifPerN);
+    const nifNav = (off) => 'width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; border: 0; background: transparent; padding: 0; ' + (off ? 'color: rgba(22,36,26,.3); cursor: default;' : 'color: #16241a; cursor: pointer;');
     const send = (list) => set(s2 => ({ nifSel: {}, nifOv: Object.assign({}, s2.nifOv || {}, list.reduce((o, r) => { o[r.id] = 'sent'; return o; }, {})), nifMsg: T(list.length + (list.length === 1 ? ' member submitted to NIF.' : ' members submitted to NIF.'), list.length + (list.length === 1 ? ' medlem er sendt inn til NIF.' : ' medlemmer er sendt inn til NIF.')) }));
     return {
       tNifTitle: T('Submission to NIF', 'Innsending til NIF'), tNifDownload: T('Download basis for coordinated reporting 2026', 'Last ned grunnlag for samordnet rapportering 2026'),
       nifDownload: () => { const qv = (x) => '"' + String(x).replace(/"/g, '""') + '"'; dl('grunnlag-samordnet-rapportering-2026.csv', '\ufeff' + [[T('First name', 'Fornavn'), T('Last name', 'Etternavn'), T('Date of birth', 'Fødselsdato'), T('Group', 'Gruppe'), T('Contact', 'Kontakt'), 'Status']].concat(inClub.filter(r => kindOf(r) !== 'sent').map(r => [r.first, r.last, r.born, r.group, r.contact, kindOf(r) === 'wait' ? T('Waiting', 'Venter på innsendelse') : T('Missing information', 'Mangler informasjon')])).map(l => l.map(qv).join(';')).join('\n')); },
-      nifTabs: [['wait', T('Waiting for submission', 'Venter på innsendelse'), waitAll.length], ['miss', T('Missing information', 'Mangler informasjon'), missAll.length]].map(t => ({ key: 'nt' + t[0], label: t[1] + ' (' + t[2] + ')', on: tab === t[0], style: tabSt(tab === t[0]), pick: () => set({ nifTab: t[0], nifMsg: '', nifSel: {} }) })),
+      nifTabs: [['wait', T('Waiting for submission', 'Venter på innsendelse'), waitAll.length], ['miss', T('Missing information', 'Mangler informasjon'), missAll.length]].map(t => ({ key: 'nt' + t[0], label: t[1] + ' (' + t[2] + ')', on: tab === t[0] ? 'true' : 'false', style: 'padding: 8px 14px; margin-bottom: -1px; border: 0; border-radius: 8px 8px 0 0; cursor: pointer; font-family: var(--font-body); font-size: 14px; font-weight: 600; ' + (tab === t[0] ? 'color: #16241a; background: #eaf7ed; box-shadow: inset 0 -3px 0 #16241a;' : 'color: rgba(22,36,26,.7); background: transparent;'), pick: () => set({ nifTab: t[0], nifMsg: '', nifSel: {} }) })), // [design 17 Nov] new tab style
       nifInfo: tab === 'miss' ? T('We can help you collect missing information by sending a link to a form by email to members/guardians. In the form they can enter the missing information required by NIF. The form is available for 7 days from when you send it. Tick the members below that you want to send the link to. Members must have an email address registered.', 'Vi kan hjelpe deg med å innhente manglende informasjon ved å sende lenke til et skjema via e-post til medlemmer/foresatte. Via skjemaet kan de skrive inn manglende informasjon som er påkrevd av NIF. Skjemaet vil være tilgjengelig i 7 dager fra du sender det. Kryss av medlemmene nedenfor som du ønsker å sende lenken til. Medlemmene må være lagt inn med e-postadresse.') : T('Members already registered with NIF are verified automatically. Some members will receive a message from NIF asking them to confirm that they want to be a member of the club. If the member has not been registered with NIF before, the message is sent to the email address shown below. If you want to use another email address or mobile number for individual members, you must open that member and send the message from there.', 'Medlemmer som allerede er registrert hos NIF blir automatisk verifisert. Noen medlemmer vil derimot motta en melding fra NIF med beskjed om å bekrefte at de ønsker å bli medlem av klubben. Dersom medlemmet ikke tidligere er registrert hos NIF, sendes meldingen til e-postadressen som er oppgitt nedenfor. Ønsker du å bruke en annen e-postadresse eller et annet mobilnummer for enkelte medlemmer, må du gå inn på det aktuelle medlemmet og sende meldingen derfra.'),
       tFilter: T('Filter', 'Filter'), tFHint: T('Filter members by', 'Filtrer medlemmer etter'), tFClearCat: T('Clear', 'Fjern valg'), tFClearAll: T('Clear all', 'Nullstill alle'), tFDone: T('Done', 'Ferdig'), tRemoveL: T('Remove', 'Fjern'),
       nfOpen: !!st.nifFiltOpen, nfToggle: () => set({ nifFiltOpen: !st.nifFiltOpen }), nfClose: () => set({ nifFiltOpen: false }), nfBadge: totalSel > 0, nfBadgeN: String(totalSel),
@@ -602,7 +626,7 @@ export const midMethods = {
       nvCols: colDefs.map(x => { const on = colOn(x); return { key: 'nv' + x.k, label: x.label, on: on, mark: on ? '✓' : '', toggle: () => set(s2 => ({ nifCols: Object.assign({}, s2.nifCols || {}, { [x.k]: !(((s2.nifCols || {})[x.k] !== undefined) ? (s2.nifCols || {})[x.k] : !!x.on) }) })),
         box: 'width: 20px; height: 20px; flex: 0 0 auto; box-sizing: border-box; border-radius: 6px; display: grid; place-items: center; font-size: 13px; line-height: 1; border: 1.5px solid ' + (on ? '#1f7a3a' : 'rgba(22,36,26,.3)') + '; background: ' + (on ? '#1f7a3a' : '#ffffff') + '; color: #ffffff' }; }),
       tVis: T('Show', 'Vis'), tVisHint: T('Choose columns', 'Velg kolonner'), tVisAll: T('Show all', 'Vis alle'), tVisReset: T('Reset', 'Nullstill'),
-      nifGrid: '30px ' + colsOn.map(x => x.w).join(' ') + ' 150px', nifMinW: (30 + colsOn.reduce((n, x) => n + x.mn, 0) + 150 + 12 * (colsOn.length + 1) + 52) + 'px',
+      nifGrid: '30px ' + colsOn.map(x => x.w).join(' ') + (tab === 'wait' ? ' 0px' : ' 140px'), nifHasAct: tab !== 'wait', nifNoAct: tab === 'wait', nifMinW: (30 + colsOn.reduce((n, x) => n + x.mn, 0) + 150 + 12 * (colsOn.length + 1) + 52) + 'px',
       nifHead: colsOn.map(x => ({ key: 'nh' + x.k, label: x.k === 'status' ? (tab === 'wait' ? 'Status' : T('Missing', 'Mangler')) : x.label })),
       nifAllChecked: rows.length > 0 && rows.every(r => nifSel[r.id]),
       nifToggleAll: () => set(s2 => { const cur = s2.nifSel || {}; const every = rows.length > 0 && rows.every(r => cur[r.id]); const nx = {}; if (!every) rows.forEach(r => { nx[r.id] = true; }); return { nifSel: nx }; }),
@@ -611,12 +635,20 @@ export const midMethods = {
       tNifActSel: tab === 'wait' ? T('Submit selected', 'Send inn valgte') : T('Send form link to selected', 'Send skjemalenke til valgte'),
       nifActSel: () => { if (tab === 'wait') send(chosen); else set({ nifSel: {}, nifMsg: T('Form link sent by email to ' + chosen.length + (chosen.length === 1 ? ' member.' : ' members.') + ' It is available for 7 days.', 'Skjemalenke er sendt på e-post til ' + chosen.length + (chosen.length === 1 ? ' medlem.' : ' medlemmer.') + ' Den er tilgjengelig i 7 dager.') }); },
       tSelectAll: T('Select all', 'Velg alle'), tBkClear: T('Clear selection', 'Fjern valg'),
-      nifRows: rows.map(r => ({ key: 'nr' + r.id, checked: !!nifSel[r.id], bg: nifSel[r.id] ? '#eaf7ed' : 'transparent',
+      // [design 17 Nov] column search cells, filter button colours, selection count and pagination
+      nifFilterCells: colsOn.map(x => ({ key: 'nfc' + x.k, val: nifCF[x.k] || '', ph: T('Search ', 'Søk ') + (x.k === 'status' && tab !== 'wait' ? T('missing', 'mangler') : x.label.toLowerCase()), onInput: (e) => { const v2 = e.target.value; set(s2 => ({ nifCF: Object.assign({}, s2.nifCF || {}, { [x.k]: v2 }), nifPage: 1 })); } })),
+      nfBtnBg: totalSel > 0 ? '#eaf7ed' : '#ffffff', nfBtnInk: totalSel > 0 ? '#1f7a3a' : '#16241a',
+      nifSelCount: chosen.length + T(' selected', ' valgt'),
+      nifPer: nifPerN, onNifPer: (e) => set({ nifPer: parseInt(e.target.value, 10), nifPage: 1 }),
+      nifRange: rows.length ? ((nifPg - 1) * nifPerN + 1) + '–' + Math.min(nifPg * nifPerN, rows.length) : '0', nifTotal: String(rows.length),
+      nifAtStart: nifPg <= 1, nifAtEnd: nifPg >= nifPages, nifPrevStyle: nifNav(nifPg <= 1), nifNextStyle: nifNav(nifPg >= nifPages),
+      nifFirst: () => set({ nifPage: 1 }), nifPrev: () => set({ nifPage: Math.max(1, nifPg - 1) }), nifNext: () => set({ nifPage: Math.min(nifPages, nifPg + 1) }), nifLast: () => set({ nifPage: nifPages }),
+      nifRows: nifPgRows.map(r => ({ key: 'nr' + r.id, checked: !!nifSel[r.id], bg: nifSel[r.id] ? '#eaf7ed' : 'transparent',
         toggle: () => set(s2 => { const nx = Object.assign({}, s2.nifSel || {}); if (nx[r.id]) delete nx[r.id]; else nx[r.id] = true; return { nifSel: nx }; }), name: r.first + ' ' + r.last, born: r.born, group: r.group, contact: r.contact,
         cells: colsOn.map(x => ({ key: 'nc' + x.k, isStatus: x.k === 'status', isText: x.k !== 'status', style: x.k === 'first' ? 'min-width: 0; font-family: var(--font-heading); font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap' : 'min-width: 0; color: rgba(22,36,26,.8); overflow: hidden; text-overflow: ellipsis; white-space: nowrap', val: x.k === 'status' ? (tab === 'wait' ? T('Ready to submit', 'Klar til innsending') : r.missing) : val(x.k, r) })),
-        pill: 'display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; ' + (tab === 'wait' ? 'background: rgba(116,205,133,.3); color: #16241a;' : 'background: #fff4cf; color: #6b4a00;'),
+        pill: 'display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; ' + (tab === 'wait' ? 'background: rgba(116,205,133,.3); color: #16241a;' : 'background: #fff4cf; color: #6b4a00;'),
         actLabel: tab === 'wait' ? T('Submit', 'Send inn') : T('Mark as completed', 'Marker som utfylt'),
-        btn: 'padding: 8px 14px; border-radius: 999px; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 12.5px; white-space: nowrap; ' + (tab === 'wait' ? 'border: 0; background: #1f7a3a; color: #ffffff;' : 'border: 1px solid rgba(22,36,26,.22); background: #ffffff; color: #16241a;'),
+        btn: 'padding: 4px 11px; border-radius: 999px; cursor: pointer; font-family: var(--font-body); font-weight: 700; font-size: 12px; white-space: nowrap; ' + (tab === 'wait' ? 'border: 0; background: #1f7a3a; color: #ffffff;' : 'border: 1px solid rgba(22,36,26,.22); background: #ffffff; color: #16241a;'),
         act: () => tab === 'wait' ? send([r]) : set(s2 => ({ nifOv: Object.assign({}, s2.nifOv || {}, { [r.id]: 'wait' }), nifMsg: T(r.first + ' ' + r.last + ' now has all required information and is ready for submission.', r.first + ' ' + r.last + ' har nå all nødvendig informasjon og er klar til innsending.') })) })),
       nifEmpty: rows.length === 0, tNifNone: tab === 'wait' ? T('No members are waiting for submission', 'Ingen medlemmer venter på innsendelse') : T('No members are missing information', 'Ingen medlemmer mangler informasjon')
     };
@@ -746,6 +778,10 @@ export const midMethods = {
       const blob = this.xlsxBook([{ name: 'Utbetalinger', rows: u, widths: [18, 24, 10, 10, 16, 14, 14, 14], freeze: 4 }, { name: 'Betalinger klubb', rows: kl, widths: [18, 24, 12, 10, 14, 14, 14], freeze: 4 }, { name: 'Betalinger grupper', rows: gr, widths: [18, 14, 24, 10, 14, 14, 14], freeze: 4 }]);
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
     };
+    // [design 17 Nov] settlement list pagination
+    const stPerN = [15, 50, 100, 250].indexOf(st.stPer) !== -1 ? st.stPer : 15;
+    const stPages = Math.max(1, Math.ceil(list.length / stPerN)), stPg = Math.min(st.stPage || 1, stPages);
+    const stNav = (off) => 'width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; border: 0; background: transparent; padding: 0; ' + (off ? 'color: rgba(22,36,26,.3); cursor: default;' : 'color: #16241a; cursor: pointer;');
     const chip = (on) => 'padding: 8px 15px; border-radius: 999px; cursor: pointer; font-family: var(--font-heading); font-weight: 800; font-size: 13px; transition: background .2s, color .2s; border: 1px solid ' + (on ? '#16241a' : 'rgba(22,36,26,.2)') + '; background: ' + (on ? '#16241a' : '#ffffff') + '; color: ' + (on ? '#f6f8f3' : '#16241a');
     return {
       tStTitle: T('Settlement reports', 'Oppgjørsrapporter'), tStIntro: T('One settlement per month: all payments received through Vipps, card and invoices are collected and paid out to the club account.', 'Ett oppgjør per måned: alle innbetalinger via Vipps, kort og faktura samles og utbetales til klubbens konto.'),
@@ -760,26 +796,115 @@ export const midMethods = {
       stAllChecked: list.length > 0 && chosen.length === list.length, stToggleAll: () => set(s2 => { const cur = s2.stSel || {}; const every = list.length > 0 && list.every(r => cur[r.id]); const nx = {}; if (!every) list.forEach(r => { nx[r.id] = true; }); return { stSel: nx }; }),
       stSelAny: chosen.length > 0, stClearSel: () => set({ stSel: {} }), tStDlSel: T('Download selected', 'Last ned valgte'), stDownloadSel: () => dl('oppgjor-valgte.xlsx', chosen),
       stSelNote: T('Selected ' + chosen.length + (chosen.length === 1 ? ' settlement.' : ' settlements.'), 'Valgt ' + chosen.length + (chosen.length === 1 ? ' oppgjør.' : ' oppgjør.')),
-      stRows: list.map(r => ({ key: r.key, checked: !!sel[r.id], bg: sel[r.id] ? '#eaf7ed' : 'transparent', toggle: () => set(s2 => { const nx = Object.assign({}, s2.stSel || {}); if (nx[r.id]) delete nx[r.id]; else nx[r.id] = true; return { stSel: nx }; }),
+      // [design 17 Nov] selection count, total and pagination
+      stSelCount: chosen.length + T(' selected', ' valgt'), stSumAll: kr(list.reduce((n, r) => n + r.sum, 0)),
+      stPer: stPerN, onStPer: (e) => set({ stPer: parseInt(e.target.value, 10), stPage: 1 }),
+      stRangeTxt: list.length ? ((stPg - 1) * stPerN + 1) + '–' + Math.min(stPg * stPerN, list.length) : '0', stTotal: String(list.length),
+      stAtStart: stPg <= 1, stAtEnd: stPg >= stPages, stPrevStyle: stNav(stPg <= 1), stNextStyle: stNav(stPg >= stPages),
+      stFirst: () => set({ stPage: 1 }), stPrev: () => set({ stPage: Math.max(1, stPg - 1) }), stNext: () => set({ stPage: Math.min(stPages, stPg + 1) }), stLast: () => set({ stPage: stPages }),
+      stRows: list.slice((stPg - 1) * stPerN, stPg * stPerN).map(r => ({ key: r.key, checked: !!sel[r.id], bg: sel[r.id] ? '#eaf7ed' : 'transparent', toggle: () => set(s2 => { const nx = Object.assign({}, s2.stSel || {}); if (nx[r.id]) delete nx[r.id]; else nx[r.id] = true; return { stSel: nx }; }),
         paid: r.paid, paidStyle: r.cur ? 'color: #6b4a00; font-weight: 700' : 'color: rgba(22,36,26,.85)', created: r.created, sum: kr(r.sum), accName: r.accName, accNo: r.accNo })),
       stEmpty: list.length === 0, tStNone: T('No settlements for this selection.', 'Ingen oppgjør for dette valget.')
     };
   },
 
   // ---- Helpers from the Nov design (dashboard fit, timetable resize/week scope) ----
+  // [design 17 Nov] dashFit now defers to fitMain(), which marks the page with
+  // data-fit-* attributes (and html.kza-fit) so the CSS can make the last
+  // content block fill the viewport and scroll inside its biggest card.
   dashFit() {
     if (!this._dashRs) { this._dashRs = () => this.dashFit(); window.addEventListener('resize', this._dashRs); }
     cancelAnimationFrame(this._dashRaf);
-    this._dashRaf = requestAnimationFrame(() => {
-      const els = document.querySelectorAll('[data-kza-split]');
-      els.forEach(el => {
-        const on = !!el.closest('[data-kza-root][data-dash="true"]') && window.innerWidth >= 981;
-        if (!on) { if (el.style.height) el.style.height = ''; return; }
-        const top = el.getBoundingClientRect().top + (window.scrollY || 0);
-        const h = Math.max(380, Math.floor(window.innerHeight - top - 16)) + 'px';
-        if (el.style.height !== h) el.style.height = h;
-      });
-    });
+    this._dashRaf = requestAnimationFrame(() => { try { this.fitMain(); } catch { /* layout pass is best effort */ } });
+  },
+
+  fitMain() {
+    const root = document.querySelector('[data-kza-root]');
+    const main = document.querySelector('[data-kza-main]');
+    ['data-fit', 'data-fit-row', 'data-fit-cell', 'data-fit-grid', 'data-fit-part', 'data-fit-stack', 'data-fit-gap', 'data-fit-hide', 'data-fit-fixed', 'data-fit-card', 'data-fit-scroll', 'data-fit-pass', 'data-fit-passchild', 'data-fit-sticky'].forEach(a => document.querySelectorAll('[' + a + ']').forEach(el => el.removeAttribute(a)));
+    document.querySelectorAll('[data-fit-rows-set]').forEach(el => { el.style.removeProperty('--fit-rows'); el.removeAttribute('data-fit-rows-set'); });
+    document.querySelectorAll('[data-kza-split]').forEach(el => { if (el.style.height) el.style.height = ''; });
+    let on = !!(root && main) && window.innerWidth >= 981 && window.innerHeight >= 520;
+    if (on) { const zm0 = parseFloat(getComputedStyle(document.body).zoom) || 1; if ((window.innerHeight - main.getBoundingClientRect().top) / zm0 < 380) on = false; }
+    document.documentElement.classList.toggle('kza-fit', on);
+    if (!on) return;
+    if ((window.scrollY || 0) > 0) window.scrollTo(0, 0);
+    const band = document.querySelector('[data-kza-band]');
+    if (band) { band.removeAttribute('data-fit-bandoff'); if (!(band.textContent || '').trim()) band.setAttribute('data-fit-bandoff', ''); }
+    const top = main.getBoundingClientRect().top;
+    const zm = parseFloat(getComputedStyle(document.body).zoom) || 1;
+    root.style.setProperty('--kza-fit-h', Math.max(320, Math.floor((window.innerHeight - top) / zm)) + 'px');
+    main.setAttribute('data-fit', 'main');
+    const isEmpty = (el) => !(el.textContent || '').trim() && !el.querySelector('img, svg, input, select, textarea, canvas, video, iframe');
+    main.querySelectorAll('[data-dash-main], [data-dash-cal]').forEach(el => { if (isEmpty(el)) el.setAttribute('data-fit-hide', ''); });
+    Array.from(main.children).forEach(el => { const c2 = getComputedStyle(el); if (c2.position !== 'fixed' && c2.display !== 'none' && isEmpty(el)) el.setAttribute('data-fit-hide', ''); });
+    main.querySelectorAll('[data-kza-split]').forEach(sp => { if (isEmpty(sp)) sp.setAttribute('data-fit-hide', ''); });
+    const vis = (el) => { const cs = getComputedStyle(el); return cs.display !== 'none' && cs.position !== 'fixed' && cs.position !== 'absolute' && el.getBoundingClientRect().height > 0; };
+    const isCard = (el) => { const cs = getComputedStyle(el); const bg = cs.backgroundColor; return (bg && bg !== 'transparent' && !/rgba\(\s*0,\s*0,\s*0,\s*0\s*\)/.test(bg)) || parseFloat(cs.borderTopWidth) > 0; };
+    const rowsOf = (kids) => { const tops = []; kids.forEach(k => { const tp = k.getBoundingClientRect().top; if (!tops.some(x => Math.abs(x - tp) < 6)) tops.push(tp); }); return tops.length; };
+    const stack = (el) => {
+      const kids = Array.from(el.children).filter(vis);
+      if (!kids.length || kids.length > 4 || rowsOf(kids) !== kids.length) return false;
+      el.setAttribute('data-fit-stack', '');
+      const g = getComputedStyle(el).rowGap; if (!g || g === 'normal' || g === '0px') el.setAttribute('data-fit-gap', '');
+      kids.forEach(k => { k.setAttribute('data-fit-part', ''); if (k.getBoundingClientRect().height < 200) k.setAttribute('data-fit-fixed', ''); });
+      return true;
+    };
+    const kids = Array.from(main.children).filter(vis);
+    const last = kids[kids.length - 1];
+    if (!last) return;
+    last.setAttribute('data-fit', 'last');
+    Array.from(last.children).forEach(k => { const c2 = getComputedStyle(k); if (c2.position !== 'fixed' && c2.position !== 'absolute' && c2.display !== 'none' && !k.hasAttribute('data-fit-keep') && k.getBoundingClientRect().height === 0) k.setAttribute('data-fit-hide', ''); });
+    const inner = Array.from(last.children).filter(vis);
+    if (!inner.length) return;
+    const cs = getComputedStyle(last);
+    const rows = rowsOf(inner);
+    if (cs.display.indexOf('grid') !== -1 && rows <= 3) {
+      last.setAttribute('data-fit-grid', '');
+      last.setAttribute('data-fit-rows-set', '');
+      last.style.setProperty('--fit-rows', rows > 1 ? 'repeat(' + (rows - 1) + ', auto) minmax(0, 1fr)' : 'minmax(0, 1fr)');
+      const lastTop = Math.max.apply(null, inner.map(k => k.getBoundingClientRect().top));
+      inner.forEach(k => { if (Math.abs(k.getBoundingClientRect().top - lastTop) < 6) { k.setAttribute('data-fit-part', ''); if (!isCard(k)) stack(k); } });
+    } else if (cs.display.indexOf('flex') !== -1 && cs.flexDirection.indexOf('row') === 0 && rows === 1 && inner.length >= 2) {
+      last.setAttribute('data-fit-row', '');
+      inner.forEach(k => { k.setAttribute('data-fit-cell', ''); if (!isCard(k)) stack(k); });
+    } else if (!isCard(last)) {
+      stack(last);
+    }
+    const fitCard = (c, depth) => {
+      if (depth > 3) return;
+      const kids = Array.from(c.children).filter(vis);
+      if (kids.length < 1 || rowsOf(kids) !== kids.length) return;
+      let big = kids[0]; kids.forEach(k => { if (k.getBoundingClientRect().height > big.getBoundingClientRect().height) big = k; });
+      c.setAttribute('data-fit-card', '');
+      big.setAttribute('data-fit-scroll', '');
+      const bk = Array.from(big.children).filter(vis);
+      const bh = big.scrollHeight;
+      if (bk.length >= 2 && bk.length <= 6 && rowsOf(bk) === bk.length) {
+        let bb = bk[0]; bk.forEach(k => { if (k.getBoundingClientRect().height > bb.getBoundingClientRect().height) bb = k; });
+        if (bb.scrollHeight > bh * 0.6 && bb.children.length > 0) { fitCard(big, depth + 1); return; }
+      }
+      let tk = bk, g2 = 0;
+      while (tk.length === 1 && g2 < 3) { tk = Array.from(tk[0].children).filter(vis); g2++; }
+      const hd = tk[0];
+      if (hd && tk.length > 2 && hd.getBoundingClientRect().height < 70 && hd.tagName !== 'TABLE') hd.setAttribute('data-fit-sticky', '');
+    };
+    const pass = (el) => {
+      let cur = el, n = 0;
+      while (cur && !isCard(cur) && n < 3) {
+        const ch = Array.from(cur.children).filter(vis);
+        if (ch.length !== 1) return null;
+        cur.setAttribute('data-fit-pass', '');
+        ch[0].setAttribute('data-fit-passchild', '');
+        cur = ch[0]; n++;
+      }
+      return cur && isCard(cur) ? cur : null;
+    };
+    const cards = [];
+    if (isCard(last)) cards.push(last);
+    else if (!last.hasAttribute('data-fit-grid') && !last.hasAttribute('data-fit-row') && !last.hasAttribute('data-fit-stack')) { const c0 = pass(last); if (c0) cards.push(c0); }
+    main.querySelectorAll('[data-fit-part], [data-fit-cell]').forEach(el => { if (el.hasAttribute('data-fit-stack')) return; if (isCard(el)) cards.push(el); else { const c1 = pass(el); if (c1) cards.push(c1); } });
+    cards.forEach(c => { if (c.scrollHeight > c.clientHeight + 1) fitCard(c, 0); });
   },
 
   ttWatchResize() {

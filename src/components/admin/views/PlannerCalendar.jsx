@@ -12,6 +12,12 @@ export default function PlannerCalendar({ v }) {
         <h2 style={sx("font-family: var(--font-heading); font-weight: 800; font-size: 20px; margin: 0; flex: 1; min-width: 0")}>
           {v.calMonthLabel}
         </h2>
+        {/* [design 17 Nov] quick "+" to add an activity on the picked day */}
+        <button type="button" onClick={v.planAddAct} aria-label={v.tQuickAct} title={v.tQuickAct} style={sx("width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border-radius: 999px; border: 0; background: #1f7a3a; color: #ffffff; cursor: pointer; transition: background .3s")} className="kza-ha">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          </svg>
+        </button>
         <button type="button" onClick={v.calPrev} aria-label={v.tPrevMonth} style={sx("width: 34px; height: 34px; border-radius: 999px; border: 1px solid rgba(22,36,26,.18); background: #ffffff; color: #16241a; font-size: 15px; cursor: pointer; transition: background .3s")} className="kza-h3">
           ←
         </button>

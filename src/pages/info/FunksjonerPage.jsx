@@ -13,7 +13,8 @@ import "../../styles/pages/funksjoner.css";
 /*
   "Kretz Funksjoner.dc.html" — the all-features overview: hero with a
   product mock and rotating toasts, an auto-advancing tab showcase, the
-  module grid, a bento of mini mocks, a quote marquee and the closing CTA.
+  module grid, a bento of mini mocks and the closing CTA. (The quote
+  marquee was removed from the design after 15 Nov 2026.)
 */
 
 // The dotted light-green "stage" the design puts mock UIs on, and the
@@ -201,39 +202,6 @@ const MODULES = [
   ]],
 ];
 
-const QUOTES = [
-  [
-    "«Vi gikk fra fire regneark og en skoeske til én skjerm. Kassereren smiler faktisk i november nå.»",
-    "“We went from four spreadsheets and a shoebox to one screen. Our treasurer actually smiles in November now.”",
-    "Marit Sunde · styreleder, Lade Kunstløp",
-    "Marit Sunde · chair, Lade Kunstløp",
-  ],
-  [
-    "«Cup-påmelding tok før en hel helg. Nå tar det en kaffepause.»",
-    "“Cup registration used to take a whole weekend. Now it takes a coffee break.”",
-    "Jonas Reite · sportslig leder, IL Fana",
-    "Jonas Reite · head of sport, IL Fana",
-  ],
-  [
-    "«Sponsorene ser endelig hva de får. Fornyelser gikk fra ringerunde til formalitet.»",
-    "“Sponsors finally see what they get. Renewals went from phone rounds to a formality.”",
-    "Ida Krogh · partneransvarlig, Molde Turn",
-    "Ida Krogh · partnerships lead, Molde Turn",
-  ],
-  [
-    "«Foreldrene booker halltid selv. Telefonen min er stille på søndag kveld.»",
-    "“Parents book hall time themselves. My phone is quiet on Sunday evenings.”",
-    "Thomas Lie · hallansvarlig, Varden BTK",
-    "Thomas Lie · hall manager, Varden BTK",
-  ],
-  [
-    "«Søknaden om støtte tok én ettermiddag i stedet for tre helger.»",
-    "“The grant application took one afternoon instead of three weekends.”",
-    "Anne Bjørk · kasserer, Fana Turn",
-    "Anne Bjørk · treasurer, Fana Turn",
-  ],
-];
-
 const SECTION_H2 =
   "font-family: var(--font-heading); font-weight: 800; font-size: clamp(28px, 3.6vw, 44px); line-height: 1.05; margin: 0";
 
@@ -314,37 +282,6 @@ export default function FunksjonerPage({ onOpenLogin, onOpenSignup, onOpenBookin
       </section>
 
       <Bento />
-
-      {/* QUOTES */}
-      <section style={{ padding: "56px 0 40px" }}>
-        <h2 data-reveal style={sx(SECTION_H2 + "; margin: 0 16px; text-align: center")}>
-          {t("Hva klubbene sier", "What the clubs say")}
-        </h2>
-        <div className="kzf-marquee-wrap" style={{ marginTop: 32 }}>
-          <div className="kzf-marquee">
-            {[0, 1].map((copy) => (
-              <div key={copy} aria-hidden={copy === 1 ? "true" : undefined} style={{ display: "flex" }}>
-                {QUOTES.map(([no, en, whoNo, whoEn]) => (
-                  <figure
-                    key={whoNo}
-                    style={sx(
-                      "flex: 0 0 auto; width: 360px; margin: 0 9px; border-radius: 24px; background: #ffffff; border: 1px solid rgba(22,36,26,.12); padding: 24px; box-sizing: border-box; white-space: normal",
-                    )}
-                  >
-                    <div aria-hidden="true" style={{ color: "#e0a100", letterSpacing: 2 }}>
-                      ★★★★★
-                    </div>
-                    <blockquote style={sx("margin: 12px 0 0; font-size: 16px; line-height: 1.55; font-weight: 600; color: #16241a")}>
-                      {t(no, en)}
-                    </blockquote>
-                    <figcaption style={{ marginTop: 14, fontSize: 13.5, color: "#4C5E50" }}>{t(whoNo, whoEn)}</figcaption>
-                  </figure>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       <FeatureCta
         title={t("Prøv Kretz gratis", "Try Kretz for free")}

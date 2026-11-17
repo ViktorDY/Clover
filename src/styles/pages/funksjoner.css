@@ -1,7 +1,7 @@
 /*
   Kretz Funksjoner — rules from the page's <helmet> that are not already in
   subpage.css. Keyframes and classes carry a kzf- prefix so they cannot clash
-  with the landing page's kz-float / kz-marquee.
+  with the landing page's kz-float.
 */
 .kz-fn .kz-arr {
   display: inline-block;
@@ -36,28 +36,6 @@
 }
 .kz-fn .kzf-float {
   animation: kzf-float 6s ease-in-out infinite;
-}
-
-@keyframes kzf-marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-.kz-fn .kzf-marquee {
-  display: flex;
-  width: max-content;
-  animation: kzf-marquee 70s linear infinite;
-}
-.kz-fn .kzf-marquee-wrap {
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-}
-.kz-fn .kzf-marquee-wrap:hover .kzf-marquee {
-  animation-play-state: paused;
 }
 
 @keyframes kzf-toast {
@@ -128,7 +106,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .kz-fn .kzf-float,
-  .kz-fn .kzf-marquee,
   .kz-fn .kzf-toast,
   .kz-fn .kzf-tabfill,
   .kz-fn .kzf-panel-in,

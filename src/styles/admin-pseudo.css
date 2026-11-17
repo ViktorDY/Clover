@@ -50,3 +50,10 @@
 .kza-a1x9:focus { border-color: #FFD23F !important; box-shadow: 0 0 0 3px rgba(255,210,63,.3) !important; }
 .kza-a1x10:hover { background: #ffe27a !important; }
 .kza-a1x11:hover { background: #f1f8ee !important; }
+
+/* [design 17 Nov] Hover states for the new tables, groups and roles pages. */
+.kza-d17b:hover { border-color: rgba(22,36,26,.2) !important; }
+.kza-d17c:hover { background: #eef3ec !important; }
+.kza-d17d:hover { background: #f6f8f3 !important; }
+.kza-d17e:hover { filter: brightness(.97) !important; }
+.kza-d17f:hover { background: #fbe9e5 !important; color: #b3261e !important; }

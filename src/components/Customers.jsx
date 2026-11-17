@@ -1,19 +1,12 @@
 import { useLang } from "../lib/langContext";
-import nardo from "../assets/design/club-nardo.png";
-import trondheimBtk from "../assets/design/club-trondheim-btk.png";
-import rbk from "../assets/design/club-rbk.png";
-import skoiteklubb from "../assets/design/club-skoiteklubb.png";
-import nca from "../assets/design/club-nca.png";
 
-const CLUBS = [
-  { src: nardo, alt: "Nardo FK", h: 78 },
-  { src: trondheimBtk, alt: "Trondheim Bordtennisklubb", h: 66 },
-  { src: rbk, alt: "Rosenborg BK", h: 50 },
-  { src: skoiteklubb, alt: "Trondhjems Skøiteklub", h: 52 },
-  { src: nca, alt: "Norwegian Combat Academy", h: 62 },
-];
+/*
+  Club strip right under the hero. The design (17 Nov) took out the five club
+  logos and the Nardo FK quote and left neutral placeholders in their place:
+  five green dots and a green block where the quote stood. Both are aria-hidden.
+*/
+const SLOTS = [0, 1, 2, 3, 4];
 
-// Club logo strip with a quote from Nardo FK, right under the hero.
 export default function Customers() {
   const { t } = useLang();
 
@@ -28,26 +21,15 @@ export default function Customers() {
             {t("Kan brukes av klubber i hele Norge", "Can be used by clubs across Norway")}
           </div>
           <div className="mt-[18px] grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] items-center gap-[22px]">
-            {CLUBS.map((club) => (
-              <div key={club.alt} className="grid min-w-0 place-items-center">
-                <img
-                  src={club.src}
-                  alt={club.alt}
-                  className="block w-auto max-w-full object-contain"
-                  style={{ height: club.h }}
-                />
+            {SLOTS.map((i) => (
+              <div key={i} className="grid min-w-0 place-items-center">
+                <span aria-hidden="true" className="block h-16 w-16 rounded-full bg-[#74cd85]" />
               </div>
             ))}
           </div>
         </div>
         <div className="border-l border-ink/14 pl-8 max-[760px]:border-l-0 max-[760px]:border-t max-[760px]:pl-0 max-[760px]:pt-5">
-          <p className="m-0 text-[17px] leading-[1.6] text-ink [text-wrap:pretty]">
-            {t(
-              "«Kretz gir oss bedre oversikt og sparer oss for mye administrasjon. Nå kan vi bruke mer tid på spillerne.»",
-              "“Kretz gives us a better overview and saves us a lot of administration. Now we can spend more time on the players.”",
-            )}
-          </p>
-          <div className="mt-3 text-[14px] text-[#4C5E50]">– Nardo Fotballklubb</div>
+          <div aria-hidden="true" className="h-[120px] rounded-2xl bg-[#74cd85]" />
         </div>
       </div>
     </section>

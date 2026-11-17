@@ -18,23 +18,43 @@ function FolderIcon({ w, h, color, front, style }) {
 
 export default function DocsView({ v }) {
   return (
+    // [design 17 Nov] Dokumenter sits under the board tabs; search and upload share one row,
+    // and the heading only shows for search results or inside a folder.
+    <div style={sx("margin-top: 4px; display: grid; gap: 16px; grid-template-rows: auto minmax(0, 1fr); align-content: start")}>
+    <div role="tablist" style={sx("display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid rgba(22,36,26,.1)")}>
+      {list(v.bdTabs).map((bt, i) => (
+        <button key={bt.key ?? i} type="button" role="tab" aria-selected={bt.on} onClick={bt.pick} style={sx(bt.style)}>
+          {bt.label}
+        </button>
+      ))}
+    </div>
     <div style={sx("border-radius: 26px; background: #ffffff; border: 1px solid rgba(22,36,26,.12); padding: 22px 24px 26px; min-width: 0; box-sizing: border-box")}>
-      <label style={sx("position: relative; display: block; max-width: 520px")}>
-        <span style={sx("position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)")}>{v.tDcSearch}</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style={sx("position: absolute; left: 16px; top: 13px")}>
-          <circle cx="11" cy="11" r="7" fill="none" stroke="#4C5E50" strokeWidth="2" />
-          <path d="M20 20l-4-4" stroke="#4C5E50" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-        <input
-          type="search"
-          value={v.dcQ ?? ""}
-          onChange={v.onDcQ}
-          placeholder={v.tDcSearch}
-          className="kza-f7"
-          style={sx("width: 100%; box-sizing: border-box; height: 42px; padding: 0 16px 0 42px; border-radius: 12px; border: 1px solid rgba(22,36,26,.12); background: #f4f8f2; font-family: var(--font-body); font-size: 14px; color: #16241a; outline: none")}
-        />
-      </label>
-      <div style={sx("display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 20px; margin-top: 22px")}>
+      <div style={sx("display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px")}>
+        <label style={sx("position: relative; display: block; flex: 1 1 320px; max-width: 520px")}>
+          <span style={sx("position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)")}>{v.tDcSearch}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style={sx("position: absolute; left: 16px; top: 13px")}>
+            <circle cx="11" cy="11" r="7" fill="none" stroke="#4C5E50" strokeWidth="2" />
+            <path d="M20 20l-4-4" stroke="#4C5E50" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <input
+            type="search"
+            value={v.dcQ ?? ""}
+            onChange={v.onDcQ}
+            placeholder={v.tDcSearch}
+            className="kza-f7"
+            style={sx("width: 100%; box-sizing: border-box; height: 42px; padding: 0 16px 0 42px; border-radius: 12px; border: 1px solid rgba(22,36,26,.12); background: #f4f8f2; font-family: var(--font-body); font-size: 14px; color: #16241a; outline: none")}
+          />
+        </label>
+        <span style={sx("flex: 1")} />
+        <label
+          className="kza-hf"
+          style={sx("position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 0 20px; height: 42px; box-sizing: border-box; border-radius: 999px; background: #16241a; color: #f6f8f3; font-family: var(--font-heading); font-weight: 800; font-size: 14px; cursor: pointer; transition: background .3s")}
+        >
+          <span aria-hidden="true" style={sx("font-size: 17px; line-height: 1")}>+</span> {v.tDcUpload}
+          <input type="file" multiple onChange={v.onDcFiles} style={sx("position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none")} />
+        </label>
+      </div>
+      <div style={sx("display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 20px; margin-top: 12px")}>
         <div style={sx("flex: 1; min-width: 220px")}>
           {v.dcInFolder ? (
             <nav aria-label={v.tDcTitle} style={sx("display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 13.5px; font-weight: 600")}>
@@ -45,16 +65,11 @@ export default function DocsView({ v }) {
               <span style={sx("color: rgba(22,36,26,.7)")}>{v.dcFolderName}</span>
             </nav>
           ) : null}
-          <h2 style={sx("margin: 0; font-family: var(--font-heading); font-weight: 800; font-size: 30px; letter-spacing: -.02em; color: #16241a")}>{v.dcHeading}</h2>
-          <div style={sx("margin-top: 4px; font-size: 14px; color: rgba(22,36,26,.62)")}>{v.dcSub}</div>
+          {v.dcShowHeading ? (
+            <h2 style={sx("margin: 0 0 4px; font-family: var(--font-heading); font-weight: 800; font-size: 24px; letter-spacing: -.02em; color: #16241a")}>{v.dcHeading}</h2>
+          ) : null}
+          <div style={sx("font-size: 14px; color: rgba(22,36,26,.62)")}>{v.dcSub}</div>
         </div>
-        <label
-          className="kza-hf"
-          style={sx("position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 999px; background: #16241a; color: #f6f8f3; font-family: var(--font-heading); font-weight: 800; font-size: 14px; cursor: pointer; transition: background .3s")}
-        >
-          <span aria-hidden="true" style={sx("font-size: 17px; line-height: 1")}>+</span> {v.tDcUpload}
-          <input type="file" multiple onChange={v.onDcFiles} style={sx("position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none")} />
-        </label>
       </div>
 
       {v.dcShowGrid ? (
@@ -205,6 +220,7 @@ export default function DocsView({ v }) {
           </div>
         </div>
       ) : null}
+    </div>
     </div>
   );
 }

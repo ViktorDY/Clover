@@ -27,11 +27,13 @@ import EventModal from "./views/EventModal";
 import ComposeModal from "./views/ComposeModal";
 import AdminSidebar from "./AdminSidebar";
 import AdminBand from "./AdminBand";
+import AdminTopbar from "./AdminTopbar";
 
 export default function AdminShell({ v }) {
   return (
     <div
       data-kza-root=""
+      data-wide={v.wideAttr}
       data-dash={v.dashAttr}
       data-mini={v.sideMiniAttr}
       style={{
@@ -61,6 +63,8 @@ export default function AdminShell({ v }) {
         }}
       />
       <AdminSidebar v={v} />
+      {/* [design 17 Nov] sticky top bar with breadcrumb, help and notifications */}
+      <AdminTopbar v={v} />
       <AdminBand v={v} />
       <main
         data-kza-main=""

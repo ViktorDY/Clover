@@ -310,3 +310,127 @@
 }
 [data-kza-svhead] > * { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 [data-kza-svhead] button { text-transform: inherit; letter-spacing: inherit; font: inherit; }
+
+/* ---- [design 17 Nov] top bar, full-width layout, fit-to-screen tables ---- */
+
+.kza-d17a:hover { color: #16241a !important; }
+@media (max-width: 1100px) { [data-kza-topbar] { position: relative !important; } }
+@media (max-width: 640px) {
+  [data-kza-tbtext] { display: none !important; }
+  [data-kza-topbar] { padding: 0 14px !important; }
+  [data-kza-topbar] nav > *:not([aria-current]) { display: none !important; }
+  [data-kza-topbar] nav { flex-wrap: nowrap !important; }
+}
+
+/* Desktop: the band and the main column use the full width; the band is compact. */
+@media (min-width: 981px) {
+  html [data-kza-root][data-kza-root] [data-kza-main][data-kza-main],
+  html [data-kza-root][data-kza-root] [data-kza-band][data-kza-band] { max-width: none !important; }
+  [data-kza-band] { padding-top: 16px !important; padding-bottom: 6px !important; }
+  [data-kza-band] h1 { font-size: clamp(28px, 2.8vw, 40px) !important; }
+}
+[data-kza-root][data-wide="true"] [data-kza-main],
+[data-kza-root][data-wide="true"] [data-kza-band] { max-width: 1760px !important; }
+@media (max-width: 980px) {
+  [data-kza-main] div, [data-kza-main] section, [data-kza-main] form { min-width: 0; }
+}
+
+/* Page grids: groups, member register, roles. Doubled attributes so these
+   beat the generic "[data-kza-root] [style*=display: grid]" one-column rule. */
+[data-kza-root] [data-kza-grp][data-kza-grp] { grid-template-columns: 330px minmax(0, 1fr); }
+[data-kza-root] [data-kza-mem][data-kza-mem] { grid-template-columns: minmax(0, 1.7fr) minmax(340px, 1fr); }
+@media (max-width: 1180px) { [data-kza-root] [data-kza-mem][data-kza-mem] { grid-template-columns: minmax(0, 1fr) !important; } }
+[data-kza-root] [data-kza-roles][data-kza-roles] { grid-template-columns: 320px minmax(0, 1fr); }
+[data-kza-root] [data-kza-roles][data-kza-roles] > [data-kza-roles-right] { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 1560px) {
+  [data-kza-root] [data-kza-roles][data-kza-roles] { grid-template-columns: 320px minmax(0, 1.15fr) minmax(0, 1fr); }
+  [data-kza-root] [data-kza-roles][data-kza-roles] > [data-kza-roles-right] { grid-column: auto; grid-template-columns: minmax(0, 1fr); }
+}
+@media (min-width: 1380px) {
+  [data-kza-root][data-mini="true"] [data-kza-roles][data-kza-roles] { grid-template-columns: 320px minmax(0, 1.15fr) minmax(0, 1fr); }
+  [data-kza-root][data-mini="true"] [data-kza-roles][data-kza-roles] > [data-kza-roles-right] { grid-column: auto; grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 980px) {
+  [data-kza-root] [data-kza-grp][data-kza-grp] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-kza-root] [data-kza-roles][data-kza-roles], [data-kza-root] [data-kza-roles][data-kza-roles] > [data-kza-roles-right] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-kza-root] [data-kza-roles][data-kza-roles] > div { max-height: none !important; }
+}
+@media (min-width: 1700px) { [data-mc-fields] { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; } }
+[data-mc-card], [data-mc-card][data-fit-part] { flex: 0 0 auto !important; overflow: visible !important; max-height: none !important; }
+[data-mc-card] [data-fit-scroll], [data-mc-card][data-fit-card] { overflow: visible !important; }
+
+/* Board calendar and hall-booking settings grid. */
+[data-bd-cal][data-bd-cal] { display: flex !important; flex-direction: column !important; gap: 8px !important; justify-content: flex-start !important; }
+[data-bd-cal] > [data-bd-calhead][data-bd-calhead] { flex: 0 0 auto !important; height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; align-self: stretch !important; margin: 0 !important; }
+[data-bd-cal] > [data-bd-calgrid][data-bd-calgrid] { flex: 0 0 auto !important; height: auto !important; }
+html.kza-fit [data-bd-cal] > [data-bd-calgrid][data-bd-calgrid] { flex: 1 1 0 !important; min-height: 0 !important; }
+[data-bk-banner] { min-height: min-content !important; flex: 0 0 auto !important; }
+[data-bk-grid] [data-bk-col] input[type=time] { padding-top: 4px !important; padding-bottom: 4px !important; }
+[data-bk-grid] input[type=date], [data-bk-grid] input[type=time] { padding-left: 8px !important; padding-right: 4px !important; font-size: 12.5px !important; }
+[data-bk-grid] label > span[style*="position: relative"] > span { text-transform: none; letter-spacing: 0; }
+html.kza-fit [data-bk-grid][data-bk-grid] { align-items: stretch !important; min-height: 0 !important; overflow: hidden !important; }
+html.kza-fit [data-bk-grid] > [data-bk-col] { overflow-y: auto; min-height: 0; max-height: 100%; scrollbar-width: thin; overscroll-behavior: contain; align-content: start; }
+[data-bk-save] > * { padding-top: 7px !important; padding-bottom: 7px !important; font-size: 13px !important; }
+[data-bk-grid] [data-bk-card] h2 + * { margin-top: 0; }
+[data-bk-grid] input:not([type=checkbox]):not([type=radio]), [data-bk-grid] select { padding-top: 6px !important; padding-bottom: 6px !important; border-radius: 10px !important; font-size: 13.5px !important; }
+[data-bk-grid] textarea { padding: 8px 12px !important; border-radius: 12px !important; font-size: 13.5px !important; }
+[data-bk-grid] label { gap: 4px !important; }
+@media (max-width: 1300px) { [data-bk-grid] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; } [data-bk-grid] > [data-bk-col]:last-child { grid-column: 1 / -1; } }
+@media (max-width: 980px) { [data-bk-grid] { grid-template-columns: minmax(0, 1fr) !important; } }
+
+/* Event table on the dashboard. */
+[data-ev-card] { width: 100%; box-sizing: border-box; }
+[data-ev-minw] > div { scrollbar-gutter: stable; overflow-y: hidden; }
+[data-ev-minw] > [data-ev-rows] { overflow-y: auto; }
+
+/* Fit-to-screen mode (html.kza-fit, desktop): the main column fills the
+   viewport and the last block / table body scrolls inside it. */
+@media (min-width: 981px) {
+  html.kza-fit, html.kza-fit body { overflow: hidden !important; height: 100%; }
+  [data-kza-main][data-fit="main"] { height: var(--kza-fit-h) !important; box-sizing: border-box; display: flex !important; flex-direction: column; overflow: hidden; padding-top: 16px !important; padding-bottom: 16px !important; }
+  [data-fit="main"] > * { flex-shrink: 0; }
+  [data-fit="main"] > [data-fit="last"] { flex: 1 1 0 !important; min-height: 0 !important; margin-bottom: 0 !important; margin-top: 0 !important; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; }
+  [data-fit="main"] > [data-fit="last"][data-fit-row] { overflow-y: hidden; align-items: stretch !important; grid-template-rows: minmax(0, 1fr) !important; }
+  [data-fit-cell] { min-height: 0 !important; max-height: 100% !important; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; align-self: stretch !important; height: auto !important; }
+  [data-fit="main"] > [data-fit="last"][data-fit-grid] { overflow: hidden; grid-template-rows: var(--fit-rows) !important; grid-auto-rows: auto !important; align-items: stretch !important; align-content: stretch !important; }
+  [data-fit-part] { min-height: 0 !important; max-height: none !important; align-self: stretch !important; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; box-sizing: border-box; }
+  [data-fit-stack] { display: flex !important; flex-direction: column; min-height: 0 !important; overflow: hidden !important; }
+  [data-fit-stack] > [data-fit-part] { flex: 1 1 auto; height: auto !important; margin-top: 0 !important; margin-bottom: 0 !important; }
+  [data-fit-stack][data-fit-part], [data-fit-stack][data-fit-cell] { height: 100%; }
+  [data-fit-stack][data-fit-gap] { gap: 16px; }
+  [data-fit-hide] { display: none !important; }
+  [data-fit-card] > * { flex: 0 0 auto; }
+  [data-fit-card] > [data-fit-scroll] { flex: 1 1 0 !important; min-height: 0 !important; max-height: none !important; overflow-y: auto !important; overscroll-behavior: contain; scrollbar-width: thin; }
+  [data-fit-card] { display: flex !important; flex-direction: column !important; min-height: 0 !important; overflow: hidden !important; }
+  [data-fit-scroll] thead th { position: sticky; top: 0; z-index: 1; }
+  [data-fit-sticky] { position: sticky; top: 0; z-index: 2; }
+  [data-fit-pass] { display: flex !important; flex-direction: column; min-height: 0 !important; overflow: hidden !important; }
+  [data-fit-pass] > * { flex: 0 0 auto; }
+  [data-fit-pass] > [data-fit-passchild] { flex: 1 1 0; min-height: 0 !important; margin-top: 0 !important; margin-bottom: 0 !important; }
+  [data-fit-stack] > [data-fit-part][data-fit-fixed] { flex: 0 0 auto; overflow: visible; }
+  [data-fit-stack] > [data-kza-rbox] { display: flex !important; flex-direction: column; }
+  [data-fit-stack] > [data-kza-rbox] > * { flex: 0 0 auto; }
+  [data-fit-stack] > [data-kza-rbox] > [data-kza-rlist] { flex: 1 1 0; min-height: 0 !important; max-height: none !important; overflow-y: auto; scrollbar-width: thin; }
+  html.kza-fit [data-kza-band][data-fit-bandoff] { display: none !important; }
+
+  html.kza-fit [data-mem-card] { display: flex !important; flex-direction: column; }
+  html.kza-fit [data-mem-card] > * { flex: 0 0 auto; }
+  html.kza-fit [data-mem-card] > [data-mem-tbl] { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  html.kza-fit [data-mem-tbl="pend"] { overflow-y: auto; }
+  html.kza-fit [data-mem-tbl="mem"] > [data-mem-minw] { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  html.kza-fit [data-mem-minw] > * { flex: 0 0 auto; }
+  html.kza-fit [data-mem-minw] > [data-mem-rows] { flex: 1 1 auto; min-height: 0; max-height: none !important; }
+  html.kza-fit [data-mem-tbl="mem"] > [data-kza-tblfoot] { flex: 0 0 auto; margin-top: auto; }
+
+  html.kza-fit :is([data-tf-card], [data-inv-card], [data-sv-card], [data-st-card], [data-nif-card], [data-ev-card]) { display: flex !important; flex-direction: column; min-height: 0; }
+  html.kza-fit :is([data-tf-card], [data-inv-card], [data-sv-card], [data-st-card], [data-nif-card], [data-ev-card]) > * { flex: 0 0 auto; }
+  html.kza-fit :is([data-tf-card] > [data-tf-tbl], [data-inv-card] > [data-inv-tbl], [data-sv-card] > [data-sv-tbl], [data-st-card] > [data-st-tbl], [data-nif-card] > [data-nif-tbl], [data-ev-card] > [data-ev-tbl]) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: hidden; }
+  html.kza-fit :is([data-tf-minw], [data-inv-minw], [data-sv-minw], [data-st-minw], [data-nif-minw], [data-ev-minw]) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  html.kza-fit :is([data-tf-minw], [data-inv-minw], [data-sv-minw], [data-st-minw], [data-nif-minw], [data-ev-minw]) > * { flex: 0 0 auto; }
+  html.kza-fit :is([data-tf-minw] > [data-tf-rows], [data-inv-minw] > [data-inv-rows], [data-sv-minw] > [data-sv-rows], [data-st-minw] > [data-st-rows], [data-nif-minw] > [data-nif-rows], [data-ev-minw] > [data-ev-rows]) { flex: 1 1 auto; min-height: 0; max-height: none !important; }
+
+  html.kza-fit [data-dash-main]:has([data-ev-card]) { display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+  html.kza-fit [data-dash-main] > div:has(> [data-ev-card]) { flex: 1 1 auto !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; align-items: stretch !important; }
+  html.kza-fit [data-dash-main] > div:has(> [data-ev-card]) > :not([data-ev-card]) { flex: 0 0 auto; }
+  [data-kza-root][data-dash="true"] [data-dash-left] { overflow: hidden !important; }
+}

@@ -339,7 +339,11 @@
    beat the generic "[data-kza-root] [style*=display: grid]" one-column rule. */
 [data-kza-root] [data-kza-grp][data-kza-grp] { grid-template-columns: 330px minmax(0, 1fr); }
 [data-kza-root] [data-kza-mem][data-kza-mem] { grid-template-columns: minmax(0, 1.7fr) minmax(340px, 1fr); }
-@media (max-width: 1180px) { [data-kza-root] [data-kza-mem][data-kza-mem] { grid-template-columns: minmax(0, 1fr) !important; } }
+/* Stack the member card under the table until the table has room for all its
+   columns (sidebar 240px + table ≈ 800px + card 340px). With the sidebar
+   collapsed there is room sooner. */
+@media (max-width: 1519px) { [data-kza-root]:not([data-mini="true"]) [data-kza-mem][data-kza-mem] { grid-template-columns: minmax(0, 1fr) !important; } }
+@media (max-width: 1319px) { [data-kza-root] [data-kza-mem][data-kza-mem] { grid-template-columns: minmax(0, 1fr) !important; } }
 [data-kza-root] [data-kza-roles][data-kza-roles] { grid-template-columns: 320px minmax(0, 1fr); }
 [data-kza-root] [data-kza-roles][data-kza-roles] > [data-kza-roles-right] { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (min-width: 1560px) {

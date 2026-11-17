@@ -1887,7 +1887,9 @@ export class AdminLogic extends LogicBase {
     const addedAll = (this.state.addedMems || []).filter(m => all || m.club === sel);
     // ---- design Nov 2026: member register with columns, filters, bulk actions and priority messages ----
     const memHid = this.state.memHidden || {}, memGrpOv = this.state.memGroupOv || {};
-    const tblSrcRaw0 = memList.map(m => ({ raw: m, open: () => this.setState({ member: m.id }), id: m.id, name: m.name, email: m.email, type: typeNames[typeOfRole(m)], paid: m.due === 0 })).concat(addedAll.filter(m => !mq || (m.name + ' ' + m.email).toLowerCase().includes(mq)).map(m => ({ id: m.id, name: m.name, email: m.email, type: typeNames[m.type] || m.type, paid: true, isNew: true, raw: m, open: () => {} })));
+    // On the Medlemmer tab a row click shows the member in the card beside the table;
+    // the full pop-up opens from the card's "Full profil" button.
+    const tblSrcRaw0 = memList.map(m => ({ raw: m, open: () => this.setState(tab === 'members' ? { memPick: m.id } : { member: m.id }), id: m.id, name: m.name, email: m.email, type: typeNames[typeOfRole(m)], paid: m.due === 0 })).concat(addedAll.filter(m => !mq || (m.name + ' ' + m.email).toLowerCase().includes(mq)).map(m => ({ id: m.id, name: m.name, email: m.email, type: typeNames[m.type] || m.type, paid: true, isNew: true, raw: m, open: () => {} })));
     const T2 = (a, b) => en ? a : b;
     const hh = (str) => Array.from(String(str)).reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);
     const pad2 = (n) => String(n).padStart(2, '0');

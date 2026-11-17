@@ -442,6 +442,9 @@ function MemberSide({ v }) {
                 <b style={sx("display: block; font-family: var(--font-heading); font-weight: 800; font-size: 17px")}>{v.memName}</b>
                 <span style={sx("display: block; margin-top: 2px; font-size: 13px; color: rgba(22,36,26,.65)")}>{v.mcSub}</span>
               </span>
+              <button type="button" onClick={v.mcOpenFull} style={sx("flex: 0 0 auto; padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(22,36,26,.2); background: #ffffff; color: #16241a; font-family: var(--font-heading); font-weight: 800; font-size: 13px; cursor: pointer; white-space: nowrap")} className="kza-h3">
+                {v.tMcFull}
+              </button>
             </div>
             <div data-mc-fields="" style={sx("display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 12px; align-content: start; padding-top: 8px; border-top: 1px solid rgba(22,36,26,.08)")}>
               {list(v.mcFields).map((f, i) => (

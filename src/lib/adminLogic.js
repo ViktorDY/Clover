@@ -2097,7 +2097,7 @@ export class AdminLogic extends LogicBase {
     const inputStyle = 'width: 100%; box-sizing: border-box; padding: 14px 18px; border-radius: 18px; border: 1px solid rgba(22,36,26,.18); background: #f4f8f2; color: #16241a; font-family: var(--font-body); font-size: 15px; outline: none';
 
     return {
-      tAdmin: en ? 'Administrator' : 'Administrator',
+      tAdmin: 'Admin', // sidebar badge under the wordmark
       langLabel: en ? 'NO' : 'EN',
       toggleLang: () => this.setState(s => ({ lang: s.lang === 'no' ? 'en' : 'no' })),
       initials: 'SA',
